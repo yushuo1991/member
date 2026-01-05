@@ -1,0 +1,64 @@
+# 依赖
+/node_modules
+/.pnp
+.pnp.js
+
+# 测试
+/coverage
+
+# Next.js
+/.next/
+/out/
+.next
+out
+
+# 生产环境
+/build
+.vercel
+.output
+
+# 环境变量
+.env
+.env*.local
+.env.development
+.env.production
+
+# 调试
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# 本地环境
+.DS_Store
+*.pem
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# IDE
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea
+*.swp
+*.swo
+*~
+
+# PM2
+logs/
+*.log
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# 其他
+.cache
+.temp
+dist
+tmp

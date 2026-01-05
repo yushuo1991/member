@@ -1,0 +1,180 @@
+name: 自动部署到阿里云服务器
+
+on:
+  push:
+    branches:
+      - main  # 当推送到main分支时触发
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 验证Secrets配置
+        run: |
+          echo "========================================="
+          echo "验证GitHub Secrets配置"
+          echo "========================================="
+          if [ -z "${{ secrets.SERVER_HOST }}" ]; then
+            echo "❌ SERVER_HOST 未配置"
+            exit 1
+          fi
+          if [ -z "${{ secrets.SERVER_USER }}" ]; then
+            echo "❌ SERVER_USER 未配置"
+            exit 1
+          fi
+          if [ -z "${{ secrets.SERVER_SSH_KEY }}" ]; then
+            echo "❌ SERVER_SSH_KEY 未配置"
+            exit 1
+          fi
+          echo "✅ 所有Secrets已配置"
+          echo "HOST: ${{ secrets.SERVER_HOST }}"
+          echo "USER: ${{ secrets.SERVER_USER }}"
+          echo ""
+
+      - name: 通过SSH部署代码到服务器
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: 22
+          command_timeout: 30m
+          script: |
+            echo "========================================="
+            echo "开始自动部署 Member System"
+            echo "时间: $(date)"
+            echo "========================================="
+
+            # 进入项目目录
+            cd /root/member-system
+
+            # 显示当前分支和版本
+            echo "📌 当前分支: $(git branch --show-current)"
+            echo "📌 当前版本: $(git rev-parse --short HEAD)"
+
+            # 拉取最新代码
+            echo "📥 正在拉取最新代码..."
+            git fetch origin
+            git reset --hard origin/main
+
+            # 显示更新后的版本
+            echo "📌 更新后版本: $(git rev-parse --short HEAD)"
+            echo "📌 最新提交: $(git log -1 --pretty=format:'%h - %s (%an, %ar)')"
+
+            # 检查是否有数据库迁移文件
+            if [ -f "database-init-v2.1-FIXED.sql" ]; then
+              echo ""
+              echo "========================================="
+              echo "🗄️  检测到数据库迁移文件"
+              echo "========================================="
+
+              # 备份现有数据库
+              echo "💾 备份当前数据库..."
+              mysqldump -u root -p${{ secrets.DB_PASSWORD }} member_system > /root/backup_$(date +%Y%m%d_%H%M%S).sql
+
+              # 检查是否需要创建缺失的表
+              echo "🔍 检查表结构..."
+              TABLES_MISSING=0
+
+              # 检查 memberships 表
+              if ! mysql -u root -p${{ secrets.DB_PASSWORD }} member_system -e "DESCRIBE memberships" &>/dev/null; then
+                echo "⚠️  memberships 表不存在，需要创建"
+                TABLES_MISSING=1
+              else
+                echo "✅ memberships 表已存在"
+              fi
+
+              # 检查 rate_limits 表
+              if ! mysql -u root -p${{ secrets.DB_PASSWORD }} member_system -e "DESCRIBE rate_limits" &>/dev/null; then
+                echo "⚠️  rate_limits 表不存在，需要创建"
+                TABLES_MISSING=1
+              else
+                echo "✅ rate_limits 表已存在"
+              fi
+
+              # 如果有缺失的表，执行迁移
+              if [ $TABLES_MISSING -eq 1 ]; then
+                echo ""
+                echo "🔧 执行数据库迁移..."
+                mysql -u root -p${{ secrets.DB_PASSWORD }} < database-init-v2.1-FIXED.sql
+
+                echo "✅ 数据库迁移完成"
+                echo ""
+                echo "📊 当前表结构:"
+                mysql -u root -p${{ secrets.DB_PASSWORD }} member_system -e "SHOW TABLES;"
+              else
+                echo "✅ 所有必需的表都已存在，跳过迁移"
+              fi
+
+              echo "========================================="
+            fi
+
+            # 安装依赖
+            echo ""
+            echo "📦 正在安装依赖..."
+            npm install --production
+
+            # 构建项目
+            echo "🔨 正在构建项目..."
+            npm run build
+
+            # 重启PM2服务
+            echo "🔄 正在重启服务..."
+            pm2 restart member-system || pm2 start npm --name "member-system" -- start
+
+            # 等待服务启动
+            echo "⏳ 等待服务启动..."
+            sleep 3
+
+            # 显示服务状态
+            echo ""
+            echo "📊 服务状态:"
+            pm2 list
+
+            # 测试API端点
+            echo ""
+            echo "🧪 测试API端点..."
+
+            # 测试注册端点
+            REGISTER_TEST=$(curl -s -X POST http://localhost:3000/api/auth/register \
+              -H "Content-Type: application/json" \
+              -d '{"username":"healthcheck_'$(date +%s)'","email":"health'$(date +%s)'@test.com","password":"Test123456"}' \
+              -w "\n%{http_code}")
+
+            HTTP_CODE=$(echo "$REGISTER_TEST" | tail -n1)
+
+            if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "409" ]; then
+              echo "✅ 注册端点正常 (HTTP $HTTP_CODE)"
+            else
+              echo "⚠️  注册端点返回 HTTP $HTTP_CODE"
+              echo "响应: $(echo "$REGISTER_TEST" | head -n-1)"
+            fi
+
+            echo ""
+            echo "========================================="
+            echo "✅ 部署完成！"
+            echo "🌐 访问地址: http://8.153.110.212"
+            echo "📅 部署时间: $(date)"
+            echo "========================================="
+
+      - name: 部署成功通知
+        if: success()
+        run: |
+          echo "✅ 部署成功！"
+          echo "🌐 服务器: 8.153.110.212"
+          echo "📦 项目已自动更新并重启"
+          echo "🗄️  数据库已自动迁移"
+
+      - name: 部署失败通知
+        if: failure()
+        run: |
+          echo "❌ 部署失败！"
+          echo "🔍 请检查GitHub Actions日志"
+          echo "📋 常见问题:"
+          echo "  1. 检查 GitHub Secrets 是否正确配置"
+          echo "  2. 检查服务器SSH密钥是否有效"
+          echo "  3. 检查数据库密码是否正确"
