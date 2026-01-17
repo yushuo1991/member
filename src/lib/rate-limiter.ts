@@ -6,6 +6,8 @@
 import { memberDatabase } from './database';
 import { NextRequest } from 'next/server';
 
+const debug = process.env.NODE_ENV === 'development';
+
 interface RateLimitConfig {
   maxAttempts: number; // 最大尝试次数
   windowMinutes: number; // 时间窗口（分钟）
@@ -133,7 +135,7 @@ export async function checkRateLimit(
     };
 
   } catch (error) {
-    console.error('[限流器] 检查限流失败:', error);
+    if (debug) console.error('[限流器] 检查限流失败:', error);
     // 发生错误时允许访问（避免影响正常用户）
     return { isAllowed: true };
   }
@@ -201,7 +203,7 @@ export async function recordAttempt(
     }
 
   } catch (error) {
-    console.error('[限流器] 记录尝试失败:', error);
+    if (debug) console.error('[限流器] 记录尝试失败:', error);
   }
 }
 
@@ -222,6 +224,6 @@ export async function resetRateLimit(
       [ipAddress, actionType]
     );
   } catch (error) {
-    console.error('[限流器] 重置限流记录失败:', error);
+    if (debug) console.error('[限流器] 重置限流记录失败:', error);
   }
 }

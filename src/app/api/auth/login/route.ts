@@ -8,7 +8,9 @@ import { memberDatabase } from '@/lib/database';
 import { verifyPassword, errorResponse, successResponse } from '@/lib/utils';
 import { generateToken, createAuthCookie } from '@/lib/auth-middleware';
 import { checkRateLimit, recordAttempt, resetRateLimit, getClientIP } from '@/lib/rate-limiter';
-import { LoginRequest } from '@/types/user';
+import { loginSchema, validate } from '@/lib/validation';
+
+const debug = process.env.NODE_ENV === 'development';
 
 export async function POST(request: NextRequest) {
   const clientIP = getClientIP(request);
@@ -23,15 +25,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 解析请求体
-    const body: LoginRequest = await request.json();
-    const { email, password } = body;
+    // 解析和验证请求体（使用Zod）
+    const body = await request.json();
+    const validation = validate(loginSchema, body);
 
-    // 输入验证
-    if (!email || !password) {
+    if (!validation.success) {
       await recordAttempt(clientIP, 'login', false);
-      return errorResponse('邮箱和密码不能为空', 400);
+      return errorResponse(validation.errors.join(', '), 400);
     }
+
+    const { email, password } = validation.data;
 
     const db = memberDatabase.getPool();
 
@@ -116,7 +119,7 @@ export async function POST(request: NextRequest) {
     return response;
 
   } catch (error) {
-    console.error('[登录API] 登录失败:', error);
+    if (debug) console.error('[登录API] 登录失败:', error);
     await recordAttempt(clientIP, 'login', false);
     return errorResponse('登录失败，请稍后重试', 500);
   }

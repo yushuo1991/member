@@ -7,10 +7,14 @@ export interface User {
   username: string;
   email: string;
   password_hash: string;
-  membership_level: 'none' | 'monthly' | 'quarterly' | 'yearly' | 'lifetime';
-  membership_expiry: Date | null;
   created_at: Date;
   updated_at: Date;
+}
+
+// 用户会员信息（从memberships表关联）
+export interface UserWithMembership extends User {
+  membership_level: 'none' | 'monthly' | 'quarterly' | 'yearly' | 'lifetime' | null;
+  membership_expiry: Date | null;
 }
 
 export interface UserSession {

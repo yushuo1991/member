@@ -9,6 +9,8 @@ import { verifyUserToken } from '@/lib/auth-middleware';
 import { hasAccess } from '@/lib/membership-levels';
 import { errorResponse, successResponse } from '@/lib/utils';
 
+const debug = process.env.NODE_ENV === 'development';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { slug: string } }
@@ -25,29 +27,45 @@ export async function GET(
 
     const db = memberDatabase.getPool();
 
-    // 查询产品信息
-    const [products] = await db.execute<any[]>(
-      'SELECT * FROM products WHERE slug = ?',
-      [slug]
+    // 一次查询获取产品和用户信息（优化N+1查询）
+    const [results] = await db.execute<any[]>(
+      `SELECT
+        p.*,
+        u.membership_level,
+        u.membership_expiry
+       FROM products p
+       CROSS JOIN users u
+       WHERE p.slug = ? AND u.id = ?`,
+      [slug, user.userId]
     );
 
-    if (products.length === 0) {
-      return errorResponse('产品不存在', 404);
-    }
-
-    const product = products[0];
-
-    // 获取用户会员信息
-    const [users] = await db.execute<any[]>(
-      'SELECT membership_level, membership_expiry FROM users WHERE id = ?',
-      [user.userId]
-    );
-
-    if (users.length === 0) {
+    if (results.length === 0) {
+      // 检查是产品不存在还是用户不存在
+      const [productCheck] = await db.execute<any[]>(
+        'SELECT id FROM products WHERE slug = ?',
+        [slug]
+      );
+      if (productCheck.length === 0) {
+        return errorResponse('产品不存在', 404);
+      }
       return errorResponse('用户不存在', 404);
     }
 
-    const userInfo = users[0];
+    const result = results[0];
+    const product = {
+      id: result.id,
+      slug: result.slug,
+      name: result.name,
+      description: result.description,
+      required_level: result.required_level,
+      content: result.content,
+      created_at: result.created_at,
+      updated_at: result.updated_at
+    };
+    const userInfo = {
+      membership_level: result.membership_level,
+      membership_expiry: result.membership_expiry
+    };
 
     // 检查访问权限
     const hasAccessPermission = hasAccess(
@@ -95,7 +113,7 @@ export async function GET(
     );
 
   } catch (error) {
-    console.error('[产品访问API] 访问检查失败:', error);
+    if (debug) console.error('[产品访问API] 访问检查失败:', error);
     return errorResponse('访问检查失败', 500);
   }
 }

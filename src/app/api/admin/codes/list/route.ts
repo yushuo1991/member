@@ -3,6 +3,8 @@ import { memberDatabase } from '@/lib/database';
 import { verifyAdminToken } from '@/lib/auth-middleware';
 import { errorResponse, successResponse } from '@/lib/utils';
 
+const debug = process.env.NODE_ENV === 'development';
+
 export async function GET(request: NextRequest) {
   try {
     const { isValid, admin, error } = verifyAdminToken(request);
@@ -28,7 +30,7 @@ export async function GET(request: NextRequest) {
     return successResponse({ codes });
 
   } catch (error) {
-    console.error('[获取激活码列表] 失败:', error);
+    if (debug) console.error('[获取激活码列表] 失败:', error);
     return errorResponse('获取激活码列表失败', 500);
   }
 }

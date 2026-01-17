@@ -9,7 +9,10 @@ import { verifyUserToken } from '@/lib/auth-middleware';
 import { errorResponse, successResponse } from '@/lib/utils';
 import { checkRateLimit, recordAttempt, getClientIP } from '@/lib/rate-limiter';
 import { MEMBERSHIP_LEVELS } from '@/lib/membership-levels';
-import { ActivationRequest, MembershipLevel } from '@/types/membership';
+import { activateCodeSchema, validate } from '@/lib/validation';
+import { MembershipLevel } from '@/types/membership';
+
+const debug = process.env.NODE_ENV === 'development';
 
 export async function POST(request: NextRequest) {
   const clientIP = getClientIP(request);
@@ -31,15 +34,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 解析请求体
-    const body: ActivationRequest = await request.json();
-    const { code } = body;
+    // 解析和验证请求体（使用Zod）
+    const body = await request.json();
+    const validation = validate(activateCodeSchema, body);
 
-    // 输入验证
-    if (!code) {
+    if (!validation.success) {
       await recordAttempt(clientIP, 'activate', false);
-      return errorResponse('激活码不能为空', 400);
+      return errorResponse(validation.errors.join(', '), 400);
     }
+
+    const { code } = validation.data;
 
     const db = memberDatabase.getPool();
 
@@ -154,7 +158,7 @@ export async function POST(request: NextRequest) {
     );
 
   } catch (error) {
-    console.error('[激活API] 激活失败:', error);
+    if (debug) console.error('[激活API] 激活失败:', error);
     await recordAttempt(clientIP, 'activate', false);
     return errorResponse('激活失败，请稍后重试', 500);
   }

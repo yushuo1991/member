@@ -7,7 +7,18 @@ import { NextRequest } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { JWTPayload } from '@/types/user';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const debug = process.env.NODE_ENV === 'development';
+
+// JWT密钥验证 - 生产环境必须设置
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET || JWT_SECRET === 'your-secret-key-change-in-production') {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('CRITICAL: JWT_SECRET environment variable must be set in production!');
+  }
+  console.warn('⚠️  WARNING: Using default JWT_SECRET. This is only acceptable in development!');
+}
+
+const EFFECTIVE_JWT_SECRET = JWT_SECRET || 'dev-only-secret-key-DO-NOT-USE-IN-PROD';
 const JWT_EXPIRES_IN = '7d'; // Token有效期7天
 
 /**
@@ -16,7 +27,7 @@ const JWT_EXPIRES_IN = '7d'; // Token有效期7天
  * @returns JWT字符串
  */
 export function generateToken(payload: Omit<JWTPayload, 'iat' | 'exp'>): string {
-  return jwt.sign(payload, JWT_SECRET, {
+  return jwt.sign(payload, EFFECTIVE_JWT_SECRET, {
     expiresIn: JWT_EXPIRES_IN
   });
 }
@@ -28,10 +39,10 @@ export function generateToken(payload: Omit<JWTPayload, 'iat' | 'exp'>): string 
  */
 export function verifyToken(token: string): JWTPayload | null {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
+    const decoded = jwt.verify(token, EFFECTIVE_JWT_SECRET) as JWTPayload;
     return decoded;
   } catch (error) {
-    console.error('[JWT] Token验证失败:', error);
+    if (debug) console.error('[JWT] Token验证失败:', error);
     return null;
   }
 }

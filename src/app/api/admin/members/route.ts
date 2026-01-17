@@ -4,9 +4,11 @@
  */
 
 import { NextRequest } from 'next/server';
-import { memberDatabase } from '@/lib/database';
 import { verifyAdminToken } from '@/lib/auth-middleware';
 import { errorResponse, successResponse } from '@/lib/utils';
+import { getMembersList } from '@/lib/queries';
+
+const debug = process.env.NODE_ENV === 'development';
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,41 +26,13 @@ export async function GET(request: NextRequest) {
     const membershipLevel = searchParams.get('level') || '';
     const searchQuery = searchParams.get('search') || '';
 
-    const offset = (page - 1) * limit;
-    const db = memberDatabase.getPool();
-
-    // 构建查询条件
-    let whereClause = 'WHERE 1=1';
-    const queryParams: any[] = [];
-
-    if (membershipLevel) {
-      whereClause += ' AND membership_level = ?';
-      queryParams.push(membershipLevel);
-    }
-
-    if (searchQuery) {
-      whereClause += ' AND (username LIKE ? OR email LIKE ?)';
-      const searchPattern = `%${searchQuery}%`;
-      queryParams.push(searchPattern, searchPattern);
-    }
-
-    // 查询总数
-    const [countResult] = await db.execute<any[]>(
-      `SELECT COUNT(*) as total FROM users ${whereClause}`,
-      queryParams
-    );
-
-    const total = countResult[0].total;
-
-    // 查询会员列表
-    const [members] = await db.execute<any[]>(
-      `SELECT id, username, email, membership_level, membership_expiry, created_at, updated_at
-       FROM users
-       ${whereClause}
-       ORDER BY created_at DESC
-       LIMIT ? OFFSET ?`,
-      [...queryParams, limit, offset]
-    );
+    // 使用共享查询函数
+    const { members, total } = await getMembersList({
+      page,
+      limit,
+      membershipLevel,
+      searchQuery
+    });
 
     return successResponse(
       {
@@ -66,7 +40,7 @@ export async function GET(request: NextRequest) {
           id: member.id,
           username: member.username,
           email: member.email,
-          membershipLevel: member.membership_level,
+          membershipLevel: member.membership_level || 'none',
           membershipExpiry: member.membership_expiry,
           createdAt: member.created_at,
           updatedAt: member.updated_at
@@ -82,7 +56,7 @@ export async function GET(request: NextRequest) {
     );
 
   } catch (error) {
-    console.error('[会员列表API] 查询失败:', error);
+    if (debug) console.error('[会员列表API] 查询失败:', error);
     return errorResponse('查询会员列表失败', 500);
   }
 }

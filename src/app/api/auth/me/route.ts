@@ -8,6 +8,8 @@ import { memberDatabase } from '@/lib/database';
 import { verifyUserToken } from '@/lib/auth-middleware';
 import { errorResponse, successResponse } from '@/lib/utils';
 
+const debug = process.env.NODE_ENV === 'development';
+
 export async function GET(request: NextRequest) {
   try {
     // 验证用户Token
@@ -46,7 +48,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('[获取用户信息API] 失败:', error);
+    if (debug) console.error('[获取用户信息API] 失败:', error);
     return errorResponse('获取用户信息失败', 500);
   }
 }

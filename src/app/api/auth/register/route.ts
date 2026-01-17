@@ -5,9 +5,11 @@
 
 import { NextRequest } from 'next/server';
 import { memberDatabase } from '@/lib/database';
-import { hashPassword, isValidEmail, isValidUsername, isValidPassword, errorResponse, successResponse } from '@/lib/utils';
+import { hashPassword, errorResponse, successResponse } from '@/lib/utils';
 import { checkRateLimit, recordAttempt, getClientIP } from '@/lib/rate-limiter';
-import { RegisterRequest } from '@/types/user';
+import { registerSchema, validate } from '@/lib/validation';
+
+const debug = process.env.NODE_ENV === 'development';
 
 export async function POST(request: NextRequest) {
   const clientIP = getClientIP(request);
@@ -22,30 +24,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 解析请求体
-    const body: RegisterRequest = await request.json();
-    const { username, email, password } = body;
+    // 解析和验证请求体（使用Zod）
+    const body = await request.json();
+    const validation = validate(registerSchema, body);
 
-    // 输入验证
-    if (!username || !email || !password) {
+    if (!validation.success) {
       await recordAttempt(clientIP, 'register', false);
-      return errorResponse('用户名、邮箱和密码不能为空', 400);
+      return errorResponse(validation.errors.join(', '), 400);
     }
 
-    if (!isValidUsername(username)) {
-      await recordAttempt(clientIP, 'register', false);
-      return errorResponse('用户名格式不正确（3-50字符，仅限字母数字下划线）', 400);
-    }
-
-    if (!isValidEmail(email)) {
-      await recordAttempt(clientIP, 'register', false);
-      return errorResponse('邮箱格式不正确', 400);
-    }
-
-    if (!isValidPassword(password)) {
-      await recordAttempt(clientIP, 'register', false);
-      return errorResponse('密码强度不足（至少8字符，包含字母和数字）', 400);
-    }
+    const { username, email, password } = validation.data;
 
     const db = memberDatabase.getPool();
 
@@ -120,7 +108,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('[注册API] 注册失败:', error);
+    if (debug) console.error('[注册API] 注册失败:', error);
     await recordAttempt(clientIP, 'register', false);
     return errorResponse('注册失败，请稍后重试', 500);
   }

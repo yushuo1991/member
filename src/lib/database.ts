@@ -5,6 +5,8 @@
 
 import mysql from 'mysql2/promise';
 
+const debug = process.env.NODE_ENV === 'development';
+
 // 数据库配置
 const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
@@ -26,6 +28,15 @@ const pool = mysql.createPool({
   enableKeepAlive: true,
   keepAliveInitialDelay: 0
 });
+
+// 连接重试配置
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 2000; // 2 seconds
+
+/**
+ * 延迟函数
+ */
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
  * 数据库连接管理类（单例模式）
@@ -53,7 +64,7 @@ export class MemberDatabase {
    */
   async initializeTables(): Promise<void> {
     try {
-      console.log('[数据库] 开始初始化数据库表...');
+      if (debug) console.log('[数据库] 开始初始化数据库表...');
 
       // 创建用户表
       await this.pool.execute(`
@@ -68,7 +79,8 @@ export class MemberDatabase {
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           INDEX idx_email (email),
           INDEX idx_username (username),
-          INDEX idx_membership (membership_level, membership_expiry)
+          INDEX idx_membership (membership_level, membership_expiry),
+          INDEX idx_level_created (membership_level, created_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `);
 
@@ -92,19 +104,23 @@ export class MemberDatabase {
         CREATE TABLE IF NOT EXISTS activation_codes (
           id INT AUTO_INCREMENT PRIMARY KEY,
           code VARCHAR(50) NOT NULL UNIQUE,
-          membership_level ENUM('monthly', 'quarterly', 'yearly', 'lifetime') NOT NULL,
+          level ENUM('monthly', 'quarterly', 'yearly', 'lifetime') NOT NULL,
           duration_days INT DEFAULT NULL COMMENT '会员时长（天），NULL表示永久',
-          is_used BOOLEAN DEFAULT FALSE,
+          used BOOLEAN DEFAULT FALSE,
           used_by INT DEFAULT NULL,
           used_at DATETIME DEFAULT NULL,
-          created_by INT NOT NULL COMMENT '生成管理员ID',
+          admin_id INT NOT NULL COMMENT '生成管理员ID',
+          batch_id VARCHAR(100) DEFAULT NULL COMMENT '批次ID',
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           expires_at DATETIME DEFAULT NULL COMMENT '激活码过期时间',
           INDEX idx_code (code),
-          INDEX idx_used (is_used),
+          INDEX idx_used (used),
           INDEX idx_expires (expires_at),
+          INDEX idx_batch_id (batch_id),
+          INDEX idx_admin_id (admin_id),
+          INDEX idx_available (used, expires_at),
           FOREIGN KEY (used_by) REFERENCES users(id) ON DELETE SET NULL,
-          FOREIGN KEY (created_by) REFERENCES admins(id) ON DELETE CASCADE
+          FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `);
 
@@ -139,6 +155,7 @@ export class MemberDatabase {
           INDEX idx_email (email),
           INDEX idx_ip (ip_address),
           INDEX idx_created (created_at),
+          INDEX idx_success_time (success, created_at),
           FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `);
@@ -159,10 +176,28 @@ export class MemberDatabase {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `);
 
-      console.log('[数据库] 数据库表初始化完成');
+      // 创建会员操作日志表（管理员操作审计）
+    await this.pool.execute(`
+      CREATE TABLE IF NOT EXISTS member_operation_logs (
+        id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT COMMENT '日志ID',
+        admin_id INT UNSIGNED NOT NULL COMMENT '管理员ID',
+        user_id INT UNSIGNED NOT NULL COMMENT '目标用户ID',
+        action VARCHAR(100) NOT NULL COMMENT '操作类型',
+        old_value TEXT COMMENT '旧值',
+        new_value TEXT COMMENT '新值',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+        INDEX idx_admin_id (admin_id),
+        INDEX idx_user_id (user_id),
+        INDEX idx_action (action),
+        INDEX idx_created_at (created_at),
+        INDEX idx_admin_time (admin_id, created_at)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    if (debug) console.log('[数据库] 数据库表初始化完成');
 
     } catch (error) {
-      console.error('[数据库] 初始化表失败:', error);
+      if (debug) console.error('[数据库] 初始化表失败:', error);
       throw error;
     }
   }
@@ -175,30 +210,83 @@ export class MemberDatabase {
   }
 
   /**
-   * 执行查询（封装错误处理）
+   * 执行查询（封装错误处理和重试逻辑）
    */
   async query<T = any>(sql: string, params?: any[]): Promise<T> {
-    try {
-      const [rows] = await this.pool.execute(sql, params);
-      return rows as T;
-    } catch (error) {
-      console.error('[数据库] 查询失败:', error);
-      throw error;
+    let lastError: any;
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const [rows] = await this.pool.execute(sql, params);
+        return rows as T;
+      } catch (error: any) {
+        lastError = error;
+
+        // 判断是否为可重试的错误
+        const isRetryable = this.isRetryableError(error);
+
+        if (debug) {
+          console.error(`[数据库] 查询失败 (尝试 ${attempt}/${MAX_RETRIES}):`, error.message);
+        }
+
+        // 如果是不可重试的错误，或已达到最大重试次数，直接抛出
+        if (!isRetryable || attempt === MAX_RETRIES) {
+          break;
+        }
+
+        // 等待后重试（指数退避）
+        const retryDelay = RETRY_DELAY * attempt;
+        if (debug) console.log(`[数据库] ${retryDelay}ms后重试...`);
+        await delay(retryDelay);
+      }
     }
+
+    if (debug) console.error('[数据库] 查询最终失败:', lastError);
+    throw lastError;
   }
 
   /**
-   * 测试数据库连接
+   * 判断错误是否可重试
+   */
+  private isRetryableError(error: any): boolean {
+    const retryableErrors = [
+      'PROTOCOL_CONNECTION_LOST',
+      'ECONNREFUSED',
+      'ETIMEDOUT',
+      'ENOTFOUND',
+      'ER_LOCK_WAIT_TIMEOUT',
+      'ER_LOCK_DEADLOCK'
+    ];
+
+    return retryableErrors.some(code =>
+      error.code === code || error.message?.includes(code)
+    );
+  }
+
+  /**
+   * 测试数据库连接（带重试）
    */
   async testConnection(): Promise<boolean> {
-    try {
-      await this.pool.execute('SELECT 1');
-      console.log('[数据库] 数据库连接测试成功');
-      return true;
-    } catch (error) {
-      console.error('[数据库] 数据库连接测试失败:', error);
-      return false;
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        await this.pool.execute('SELECT 1');
+        if (debug) console.log('[数据库] 数据库连接测试成功');
+        return true;
+      } catch (error: any) {
+        if (debug) {
+          console.error(`[数据库] 数据库连接测试失败 (尝试 ${attempt}/${MAX_RETRIES}):`, error.message);
+        }
+
+        if (attempt < MAX_RETRIES) {
+          const retryDelay = RETRY_DELAY * attempt;
+          if (debug) console.log(`[数据库] ${retryDelay}ms后重试连接...`);
+          await delay(retryDelay);
+        }
+      }
     }
+
+    if (debug) console.error('[数据库] 数据库连接测试最终失败');
+    return false;
   }
 
   /**
@@ -211,9 +299,9 @@ export class MemberDatabase {
         WHERE blocked_until IS NOT NULL AND blocked_until < NOW()
         AND last_attempt_at < DATE_SUB(NOW(), INTERVAL 24 HOUR)
       `);
-      console.log('[数据库] 清理过期限流记录完成');
+      if (debug) console.log('[数据库] 清理过期限流记录完成');
     } catch (error) {
-      console.error('[数据库] 清理过期限流记录失败:', error);
+      if (debug) console.error('[数据库] 清理过期限流记录失败:', error);
     }
   }
 

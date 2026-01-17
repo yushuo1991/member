@@ -4,11 +4,14 @@
  */
 
 import { NextRequest } from 'next/server';
-import { memberDatabase } from '@/lib/database';
 import { verifyAdminToken } from '@/lib/auth-middleware';
 import { errorResponse, successResponse } from '@/lib/utils';
-import { MEMBERSHIP_LEVELS, calculateExpiry } from '@/lib/membership-levels';
+import { calculateExpiry } from '@/lib/membership-levels';
+import { adjustMembershipSchema, validate } from '@/lib/validation';
 import { MembershipLevel } from '@/types/membership';
+import { getUserWithMembership, updateUserMembership } from '@/lib/queries';
+
+const debug = process.env.NODE_ENV === 'development';
 
 export async function PUT(
   request: NextRequest,
@@ -28,32 +31,26 @@ export async function PUT(
       return errorResponse('无效的用户ID', 400);
     }
 
-    // 解析请求体
+    // 解析和验证请求体（使用Zod）
     const body = await request.json();
-    const { membershipLevel, customExpiry } = body;
+    const validation = validate(adjustMembershipSchema, body);
 
-    // 输入验证
-    if (!membershipLevel) {
-      return errorResponse('会员等级不能为空', 400);
+    if (!validation.success) {
+      return errorResponse(validation.errors.join(', '), 400);
     }
 
-    if (!MEMBERSHIP_LEVELS[membershipLevel as MembershipLevel]) {
-      return errorResponse('无效的会员等级', 400);
-    }
-
-    const db = memberDatabase.getPool();
+    const { membershipLevel, customExpiry } = validation.data;
 
     // 查询用户是否存在
-    const [users] = await db.execute<any[]>(
-      'SELECT id, username, membership_level, membership_expiry FROM users WHERE id = ?',
-      [userId]
-    );
+    const user = await getUserWithMembership(userId);
 
-    if (users.length === 0) {
+    if (!user) {
       return errorResponse('用户不存在', 404);
     }
 
-    const user = users[0];
+    // 记录旧值
+    const previousLevel = user.membership_level || 'none';
+    const previousExpiry = user.membership_expiry;
 
     // 计算新的过期时间
     let newExpiry: Date | null;
@@ -66,20 +63,20 @@ export async function PUT(
       newExpiry = calculateExpiry(membershipLevel as MembershipLevel);
     }
 
-    // 更新会员等级
-    await db.execute(
-      `UPDATE users
-       SET membership_level = ?, membership_expiry = ?, updated_at = CURRENT_TIMESTAMP
-       WHERE id = ?`,
-      [membershipLevel, newExpiry, userId]
+    // 更新会员等级（使用共享函数）
+    await updateUserMembership(
+      userId,
+      admin.userId,
+      membershipLevel as MembershipLevel,
+      newExpiry
     );
 
     return successResponse(
       {
         userId,
         username: user.username,
-        previousLevel: user.membership_level,
-        previousExpiry: user.membership_expiry,
+        previousLevel,
+        previousExpiry,
         newLevel: membershipLevel,
         newExpiry: newExpiry?.toISOString() || null,
         adjustedBy: admin.username
@@ -88,7 +85,7 @@ export async function PUT(
     );
 
   } catch (error) {
-    console.error('[调整会员等级API] 调整失败:', error);
+    if (debug) console.error('[调整会员等级API] 调整失败:', error);
     return errorResponse('调整会员等级失败', 500);
   }
 }

@@ -7,6 +7,8 @@ import { NextRequest } from 'next/server';
 import { verifyUserToken, createDeleteCookie } from '@/lib/auth-middleware';
 import { errorResponse, successResponse } from '@/lib/utils';
 
+const debug = process.env.NODE_ENV === 'development';
+
 export async function POST(request: NextRequest) {
   try {
     // 验证用户Token（可选，登出可以不验证）
@@ -24,7 +26,7 @@ export async function POST(request: NextRequest) {
     return response;
 
   } catch (error) {
-    console.error('[登出API] 登出失败:', error);
+    if (debug) console.error('[登出API] 登出失败:', error);
     return errorResponse('登出失败', 500);
   }
 }
