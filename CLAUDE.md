@@ -246,9 +246,9 @@ PORT=3000
 
 **Required GitHub Secrets:**
 - `DEPLOY_HOST` - Server IP/hostname
-- `DEPLOY_SSH_KEY` - Private key for SSH auth (for user `deploy`)
+- `DEPLOY_SSH_KEY` - Private key for SSH auth (for root user)
 
-**Note:** The optimized workflow uses hardcoded username `deploy` and port `22`. Server path is `/www/wwwroot/member-system`.
+**Note:** The optimized workflow uses root user for deployment to avoid permission issues. Server path is `/www/wwwroot/member-system`.
 
 ### PM2 Configuration
 
