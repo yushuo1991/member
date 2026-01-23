@@ -74,6 +74,21 @@ export async function PUT(
       [membershipLevel, newExpiry, userId]
     );
 
+    // 记录审计日志
+    await db.execute(
+      `INSERT INTO admin_audit_logs
+        (admin_id, action, target_type, target_id, old_value, new_value, description, ip_address)
+       VALUES (?, 'adjust_membership', 'user', ?, ?, ?, ?, ?)`,
+      [
+        admin.userId,
+        userId,
+        JSON.stringify({ level: user.membership_level, expiry: user.membership_expiry }),
+        JSON.stringify({ level: membershipLevel, expiry: newExpiry?.toISOString() || null }),
+        `调整会员等级: ${user.username} (${user.membership_level} → ${membershipLevel})`,
+        request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown'
+      ]
+    );
+
     return successResponse(
       {
         userId,

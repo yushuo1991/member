@@ -85,17 +85,19 @@ export async function POST(request: NextRequest) {
     await connection.beginTransaction();
 
     try {
+      // Step 1: 插入 users 表（试用次数字段有 DEFAULT 5，会自动初始化）
       const [result] = await connection.execute<any>(
-        `INSERT INTO users (username, email, password_hash)
-         VALUES (?, ?, ?)`,
+        `INSERT INTO users (username, email, password_hash, trial_bk, trial_xinli, trial_fuplan)
+         VALUES (?, ?, ?, 5, 5, 5)`,
         [username, email, passwordHash]
       );
 
       const userId = result.insertId;
 
+      // Step 2: 创建 memberships 记录（免费会员，无过期时间）
       await connection.execute(
-        `INSERT INTO memberships (user_id, level, expires_at)
-         VALUES (?, 'none', NULL)`,
+        `INSERT INTO memberships (user_id, level, expires_at, activated_at)
+         VALUES (?, 'none', NULL, NOW())`,
         [userId]
       );
 

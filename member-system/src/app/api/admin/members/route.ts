@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
 
     // 查询会员列表
     const [members] = await db.execute<any[]>(
-      `SELECT id, username, email, membership_level, membership_expiry, created_at, updated_at
+      `SELECT id, username, email, membership_level, membership_expiry, status, created_at, updated_at
        FROM users
        ${whereClause}
        ORDER BY created_at DESC
@@ -68,6 +68,7 @@ export async function GET(request: NextRequest) {
           email: member.email,
           membershipLevel: member.membership_level,
           membershipExpiry: member.membership_expiry,
+          isFrozen: member.status === 0,
           createdAt: member.created_at,
           updatedAt: member.updated_at
         })),
