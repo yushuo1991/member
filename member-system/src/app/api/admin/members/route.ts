@@ -32,19 +32,22 @@ export async function GET(request: NextRequest) {
     const queryParams: any[] = [];
 
     if (membershipLevel) {
-      whereClause += ' AND membership_level = ?';
+      whereClause += ' AND m.level = ?';
       queryParams.push(membershipLevel);
     }
 
     if (searchQuery) {
-      whereClause += ' AND (username LIKE ? OR email LIKE ?)';
+      whereClause += ' AND (u.username LIKE ? OR u.email LIKE ?)';
       const searchPattern = `%${searchQuery}%`;
       queryParams.push(searchPattern, searchPattern);
     }
 
     // 查询总数
     const [countResult] = await db.execute<any[]>(
-      `SELECT COUNT(*) as total FROM users ${whereClause}`,
+      `SELECT COUNT(*) as total
+       FROM users u
+       LEFT JOIN memberships m ON u.id = m.user_id
+       ${whereClause}`,
       queryParams
     );
 
@@ -52,10 +55,12 @@ export async function GET(request: NextRequest) {
 
     // 查询会员列表
     const [members] = await db.execute<any[]>(
-      `SELECT id, username, email, membership_level, membership_expiry, status, created_at, updated_at
-       FROM users
+      `SELECT u.id, u.username, u.email, u.status, u.created_at, u.updated_at,
+              m.level as membership_level, m.expires_at as membership_expiry
+       FROM users u
+       LEFT JOIN memberships m ON u.id = m.user_id
        ${whereClause}
-       ORDER BY created_at DESC
+       ORDER BY u.created_at DESC
        LIMIT ? OFFSET ?`,
       [...queryParams, limit, offset]
     );

@@ -27,9 +27,9 @@ export async function GET(request: NextRequest) {
 
     // 统计各等级会员数
     const [membershipStats] = await db.execute<any[]>(
-      `SELECT membership_level, COUNT(*) as count
-       FROM users
-       GROUP BY membership_level`
+      `SELECT level, COUNT(*) as count
+       FROM memberships
+       GROUP BY level`
     );
 
     // 统计今日新增用户
@@ -43,8 +43,8 @@ export async function GET(request: NextRequest) {
     const [activationStats] = await db.execute<any[]>(
       `SELECT
          COUNT(*) as total,
-         SUM(CASE WHEN is_used = TRUE THEN 1 ELSE 0 END) as used,
-         SUM(CASE WHEN is_used = FALSE AND (expires_at IS NULL OR expires_at > NOW()) THEN 1 ELSE 0 END) as available
+         SUM(CASE WHEN used = 1 THEN 1 ELSE 0 END) as used,
+         SUM(CASE WHEN used = 0 AND (expires_at IS NULL OR expires_at > NOW()) THEN 1 ELSE 0 END) as available
        FROM activation_codes`
     );
 
@@ -68,10 +68,10 @@ export async function GET(request: NextRequest) {
     const revenueByLevel: any = {};
 
     membershipStats.forEach((stat: any) => {
-      if (stat.membership_level !== 'none') {
-        const revenue = (membershipRevenue[stat.membership_level] || 0) * stat.count;
+      if (stat.level !== 'none') {
+        const revenue = (membershipRevenue[stat.level] || 0) * stat.count;
         totalRevenue += revenue;
-        revenueByLevel[stat.membership_level] = revenue;
+        revenueByLevel[stat.level] = revenue;
       }
     });
 
@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
           totalRevenue
         },
         membershipStats: membershipStats.map((stat: any) => ({
-          level: stat.membership_level,
+          level: stat.level,
           count: stat.count
         })),
         activationCodes: {

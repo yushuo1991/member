@@ -147,6 +147,19 @@ export const PRODUCTS: Product[] = [
     sortOrder: 1
   },
   {
+    slug: 'circle',
+    name: '学习圈',
+    description: '私密学习圈，包含微信群和百度网盘资源',
+    detailDescription: '加入宇硕学习圈，获取专属微信群邀请和百度网盘学习资源，与志同道合的交易者共同成长。',
+    icon: '👥',
+    requiredLevel: 'monthly',
+    priceType: 'membership',
+    trialEnabled: false,
+    trialCount: 0,
+    features: ['专属微信群', '百度网盘资源', '每日复盘分享', '实时交流答疑'],
+    sortOrder: 1
+  },
+  {
     slug: 'bankuaizhushou',
     name: '板块助手',
     description: '智能板块分析软件，自动化复盘神器',
@@ -162,6 +175,20 @@ export const PRODUCTS: Product[] = [
   },
   {
     slug: 'bankuaijiezou',
+    name: '板块节奏系统',
+    description: '涨停板追踪分析系统，实时追踪市场热点',
+    detailDescription: '专业的涨停板追踪系统，实时监控市场热点，提供7日涨停数据分析，帮助您把握板块轮动节奏。',
+    url: '/bk',
+    icon: '📊',
+    requiredLevel: 'quarterly',
+    priceType: 'membership',
+    trialEnabled: true,
+    trialCount: 5,
+    features: ['实时涨停监控', '7日数据分析', '板块轮动追踪', '热点主题挖掘'],
+    sortOrder: 3
+  },
+  {
+    slug: 'bk',
     name: '板块节奏系统',
     description: '涨停板追踪分析系统，实时追踪市场热点',
     detailDescription: '专业的涨停板追踪系统，实时监控市场热点，提供7日涨停数据分析，帮助您把握板块轮动节奏。',

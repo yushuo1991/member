@@ -45,7 +45,10 @@ export async function PUT(
 
     // 查询用户是否存在
     const [users] = await db.execute<any[]>(
-      'SELECT id, username, membership_level, membership_expiry FROM users WHERE id = ?',
+      `SELECT u.id, u.username, m.level as membership_level, m.expires_at as membership_expiry
+       FROM users u
+       LEFT JOIN memberships m ON u.id = m.user_id
+       WHERE u.id = ?`,
       [userId]
     );
 
@@ -66,12 +69,16 @@ export async function PUT(
       newExpiry = calculateExpiry(membershipLevel as MembershipLevel);
     }
 
-    // 更新会员等级
+    // 更新或插入会员记录
     await db.execute(
-      `UPDATE users
-       SET membership_level = ?, membership_expiry = ?, updated_at = CURRENT_TIMESTAMP
-       WHERE id = ?`,
-      [membershipLevel, newExpiry, userId]
+      `INSERT INTO memberships (user_id, level, expires_at, activated_at, updated_at)
+       VALUES (?, ?, ?, NOW(), NOW())
+       ON DUPLICATE KEY UPDATE
+       level = VALUES(level),
+       expires_at = VALUES(expires_at),
+       activated_at = NOW(),
+       updated_at = NOW()`,
+      [userId, membershipLevel, newExpiry]
     );
 
     // 记录审计日志
