@@ -1,0 +1,115 @@
+name: Deploy member-system (Optimized)
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "member-system/**"
+      - ".github/workflows/deploy-optimized.yml"
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-member-system-optimized
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: member-system/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./member-system
+        run: npm ci
+
+      - name: Build application
+        working-directory: ./member-system
+        run: npm run build
+
+      - name: Prepare deployment files
+        run: |
+          cd member-system
+          # 创建部署目录
+          mkdir -p deploy
+
+          # 复制必要的文件
+          cp -r .next deploy/
+          cp -r public deploy/
+          cp package.json package-lock.json deploy/
+          cp next.config.js deploy/
+          cp ecosystem.config.js deploy/
+          cp -r src deploy/ 2>/dev/null || true
+
+          # 复制数据库脚本
+          cp database-init-v3.sql deploy/ 2>/dev/null || true
+
+          echo "✅ Deployment files prepared"
+
+      - name: Deploy to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: deploy
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: 22
+          source: "member-system/deploy/*"
+          target: "/tmp/member-system-deploy"
+          strip_components: 2
+          rm: true
+
+      - name: Restart application
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: deploy
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: 22
+          command_timeout: 5m
+          script: |
+            set -e
+
+            DEPLOY_PATH="/www/wwwroot/member-system"
+            TEMP_PATH="/tmp/member-system-deploy"
+
+            # 备份当前版本（保留.env文件）
+            if [ -f "$DEPLOY_PATH/.env" ]; then
+              cp "$DEPLOY_PATH/.env" /tmp/.env.backup
+            fi
+
+            # 同步新文件到部署目录
+            rsync -av --delete \
+              --exclude='.env' \
+              --exclude='logs' \
+              --exclude='node_modules' \
+              "$TEMP_PATH/" "$DEPLOY_PATH/"
+
+            # 恢复.env文件
+            if [ -f /tmp/.env.backup ]; then
+              cp /tmp/.env.backup "$DEPLOY_PATH/.env"
+            fi
+
+            # 进入部署目录
+            cd "$DEPLOY_PATH"
+
+            # 只安装生产依赖（不重新构建）
+            npm ci --only=production --prefer-offline
+
+            # 重启PM2
+            pm2 startOrReload ecosystem.config.js --env production
+            pm2 save
+
+            # 清理临时文件
+            rm -rf "$TEMP_PATH"
+
+            echo "✅ Deployment completed successfully!"
+            echo "Application status:"
+            pm2 info member-system --no-daemon || pm2 status
