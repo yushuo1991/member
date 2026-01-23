@@ -59,10 +59,10 @@ jobs:
           username: root
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: 22
-          source: "member-system/deploy/*"
-          target: "/tmp/member-system-deploy"
-          strip_components: 2
-          rm: true
+          source: "member-system/deploy/"
+          target: "/tmp/"
+          strip_components: 0
+          rm: false
 
       - name: Restart application
         uses: appleboy/ssh-action@v1.0.3
@@ -76,7 +76,7 @@ jobs:
             set -e
 
             DEPLOY_PATH="/www/wwwroot/member-system"
-            TEMP_PATH="/tmp/member-system-deploy"
+            TEMP_PATH="/tmp/member-system/deploy"
 
             echo "🔍 检查部署目录..."
             if [ ! -d "$DEPLOY_PATH" ]; then
@@ -122,7 +122,7 @@ jobs:
             pm2 save
 
             echo "🧹 清理临时文件..."
-            rm -rf "$TEMP_PATH"
+            rm -rf /tmp/member-system
 
             echo ""
             echo "✅ Deployment completed successfully!"
