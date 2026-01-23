@@ -29,11 +29,13 @@ All commands run from `member-system/` directory:
 ```bash
 npm install              # Install dependencies
 npm run dev              # Start dev server (http://localhost:3000)
-npm run build            # Production build (standalone output)
+npm run build            # Production build (standalone output + postbuild asset copy)
 npm run start            # Run production build locally
 npm run lint             # ESLint checks
 npm run type-check       # TypeScript validation (tsc --noEmit)
 ```
+
+**Note:** `npm run build` automatically runs a postbuild script (`scripts/copy-standalone-assets.mjs`) that copies `.next/static`, `public`, and `.env` files to the standalone output directory.
 
 ### Database Management
 ```bash
@@ -213,33 +215,40 @@ APP_URL=http://localhost:3000
 PORT=3000
 ```
 
-**CRITICAL:** Never commit `.env` files. The deployment workflow excludes `.env` from rsync.
+**CRITICAL:** Never commit `.env` files. The deployment workflow excludes `.env` from rsync/scp and preserves the server's existing `.env` file during deployment.
+
+**Production Deployment Path:** `/www/wwwroot/member-system` (configured in deploy-optimized.yml)
 
 ## Deployment System
 
 ### Automated GitHub Actions Deployment
 
-**Workflow:** `.github/workflows/deploy-member-system.yml`
+**Workflows:**
+- **Optimized (recommended):** `.github/workflows/deploy-optimized.yml` - Builds on GitHub, deploys artifacts
+- **Legacy:** `.github/workflows/deploy-member-system.yml` - rsync source code, build on server
 
-**Trigger:** Push to `main` branch
+**Trigger:** Push to `main` branch (only when `member-system/**` changes)
 
-**Steps:**
+**Optimized Workflow Steps:**
 1. Checkout code
-2. Setup Node.js with npm cache
-3. rsync to server (excludes `.env`, `node_modules`, `.next`)
-4. SSH to server and run:
+2. Setup Node.js and install dependencies
+3. Build application on GitHub Actions runner
+4. Prepare deployment files (`.next`, `public`, config files)
+5. SCP artifacts to server `/tmp` directory
+6. SSH to server and:
    ```bash
-   npm ci
-   npm run build
+   rsync -av --delete --exclude='.env' /tmp/member-system-deploy/ /www/wwwroot/member-system/
+   npm ci --only=production --prefer-offline
    pm2 startOrReload ecosystem.config.js --env production
    ```
 
+**Benefits:** Faster deployment (no build on server), reduced server load, build artifacts cached.
+
 **Required GitHub Secrets:**
 - `DEPLOY_HOST` - Server IP/hostname
-- `DEPLOY_USER` - SSH user (non-root recommended)
-- `DEPLOY_SSH_KEY` - Private key for SSH auth
-- `DEPLOY_PORT` - SSH port (default: 22)
-- `DEPLOY_PATH` - Server path (default: /opt/member-system)
+- `DEPLOY_SSH_KEY` - Private key for SSH auth (for user `deploy`)
+
+**Note:** The optimized workflow uses hardcoded username `deploy` and port `22`. Server path is `/www/wwwroot/member-system`.
 
 ### PM2 Configuration
 
@@ -255,7 +264,7 @@ PORT=3000
 **Server Setup:**
 1. Create deploy user with sudo access
 2. Install Node.js 18+, npm, PM2, MySQL, Nginx
-3. Create `/opt/member-system` directory
+3. Create `/www/wwwroot/member-system` directory (ensure `deploy` user has write access)
 4. Copy `.env` from `.env.example` (DO NOT commit secrets)
 5. Run database init script
 6. Configure Nginx reverse proxy (use `ops/nginx-member-system.conf`)
@@ -291,6 +300,16 @@ sudo nginx -t && sudo systemctl reload nginx
 **Global Styles:** `member-system/src/app/globals.css`
 
 ## Key Development Patterns
+
+### Standalone Build Output
+
+Next.js is configured with `output: 'standalone'` for optimized production deployment. The postbuild script (`scripts/copy-standalone-assets.mjs`) automatically:
+
+1. Copies `.next/static` to `.next/standalone/.next/static`
+2. Copies `public/` to `.next/standalone/public`
+3. Copies `.env` to `.next/standalone/.env`
+
+This ensures the standalone build has all necessary assets. The GitHub Actions workflow deploys this complete standalone directory.
 
 ### When Adding New Products
 
