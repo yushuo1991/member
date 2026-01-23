@@ -1,0 +1,51 @@
+name: 🧪 SSH连接测试（诊断用）
+
+on:
+  workflow_dispatch:  # 手动触发
+
+jobs:
+  test-ssh:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检查Secrets配置
+        run: |
+          echo "========================================="
+          echo "检查GitHub Secrets配置"
+          echo "========================================="
+          echo "SERVER_HOST: ${{ secrets.SERVER_HOST != '' && '✅ 已配置' || '❌ 未配置' }}"
+          echo "SERVER_USER: ${{ secrets.SERVER_USER != '' && '✅ 已配置' || '❌ 未配置' }}"
+          echo "SERVER_SSH_KEY: ${{ secrets.SERVER_SSH_KEY != '' && '✅ 已配置' || '❌ 未配置' }}"
+          echo ""
+          echo "SERVER_HOST值: ${{ secrets.SERVER_HOST }}"
+          echo "SERVER_USER值: ${{ secrets.SERVER_USER }}"
+          echo "SSH_KEY长度: $(echo '${{ secrets.SERVER_SSH_KEY }}' | wc -c)"
+          echo ""
+
+      - name: 测试SSH连接 - 方法1 (appleboy/ssh-action)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: 22
+          script: |
+            echo "========================================="
+            echo "✅ SSH连接成功！"
+            echo "服务器: $(hostname)"
+            echo "时间: $(date)"
+            echo "用户: $(whoami)"
+            echo "========================================="
+
+      - name: 测试执行简单命令
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: 22
+          script: |
+            cd /root/member-system
+            pwd
+            ls -la | head -5
+            git status
