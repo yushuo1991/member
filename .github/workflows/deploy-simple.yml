@@ -1,0 +1,52 @@
+name: Deploy member-system (Simplified)
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "member-system/**"
+      - ".github/workflows/deploy-simple.yml"
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-member-system-simple
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: deploy
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: 22
+          script: |
+            set -e
+
+            # 定义路径
+            DEPLOY_PATH="/www/wwwroot/member-system"
+
+            # 进入部署目录
+            cd "$DEPLOY_PATH"
+
+            # 拉取最新代码
+            git pull origin main || echo "Git pull failed, continuing..."
+
+            # 安装依赖
+            npm ci
+
+            # 构建项目
+            npm run build
+
+            # 重启 PM2
+            pm2 startOrReload ecosystem.config.js --env production
+            pm2 save
+
+            echo "✅ Deployment completed successfully!"
