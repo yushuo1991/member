@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     const queryParams: any[] = [];
 
     if (membershipLevel) {
-      whereClause += ' AND m.level = ?';
+      whereClause += ' AND COALESCE(m.level, \'none\') = ?';
       queryParams.push(membershipLevel);
     }
 
@@ -56,7 +56,8 @@ export async function GET(request: NextRequest) {
     // 查询会员列表
     const [members] = await db.execute<any[]>(
       `SELECT u.id, u.username, u.email, u.status, u.created_at, u.updated_at,
-              m.level as membership_level, m.expires_at as membership_expiry
+              COALESCE(m.level, 'none') as membership_level,
+              m.expires_at as membership_expiry
        FROM users u
        LEFT JOIN memberships m ON u.id = m.user_id
        ${whereClause}
@@ -71,8 +72,8 @@ export async function GET(request: NextRequest) {
           id: member.id,
           username: member.username,
           email: member.email,
-          membershipLevel: member.membership_level,
-          membershipExpiry: member.membership_expiry,
+          membershipLevel: member.membership_level || 'none',
+          membershipExpiry: member.membership_expiry || null,
           isFrozen: member.status === 0,
           createdAt: member.created_at,
           updatedAt: member.updated_at
