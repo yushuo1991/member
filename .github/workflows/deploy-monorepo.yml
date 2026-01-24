@@ -1,0 +1,483 @@
+name: Deploy Monorepo (Turborepo + Multi-App)
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "apps/**"
+      - "packages/**"
+      - "turbo.json"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/deploy-monorepo.yml"
+  workflow_dispatch:
+    inputs:
+      apps:
+        description: 'Apps to deploy (comma-separated: web,bk,fuplan,xinli or "all")'
+        required: false
+        default: 'all'
+
+concurrency:
+  group: deploy-monorepo-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PNPM_VERSION: 8.15.0
+  NODE_VERSION: 18.19.0
+
+jobs:
+  # 检测哪些应用需要部署
+  detect-changes:
+    name: Detect Changed Apps
+    runs-on: ubuntu-latest
+    outputs:
+      web: ${{ steps.filter.outputs.web }}
+      bk: ${{ steps.filter.outputs.bk }}
+      fuplan: ${{ steps.filter.outputs.fuplan }}
+      xinli: ${{ steps.filter.outputs.xinli }}
+      packages: ${{ steps.filter.outputs.packages }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect file changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            web:
+              - 'apps/web/**'
+              - 'packages/**'
+              - 'turbo.json'
+            bk:
+              - 'apps/bk/**'
+              - 'packages/**'
+              - 'turbo.json'
+            fuplan:
+              - 'apps/fuplan/**'
+              - 'packages/**'
+              - 'turbo.json'
+            xinli:
+              - 'apps/xinli/**'
+              - 'packages/**'
+              - 'turbo.json'
+            packages:
+              - 'packages/**'
+
+  # 并行构建所有应用
+  build:
+    name: Build Apps (Turborepo)
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: |
+      needs.detect-changes.outputs.web == 'true' ||
+      needs.detect-changes.outputs.bk == 'true' ||
+      needs.detect-changes.outputs.fuplan == 'true' ||
+      needs.detect-changes.outputs.xinli == 'true' ||
+      github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build all apps with Turbo
+        run: pnpm turbo run build --filter="./apps/*"
+        env:
+          NODE_ENV: production
+
+      - name: Prepare deployment artifacts
+        run: |
+          mkdir -p deployment-artifacts
+
+          # 打包每个应用的构建产物
+          cd apps
+
+          # Web应用
+          if [ -d "web/.next" ]; then
+            echo "📦 Packaging web app..."
+            cd web
+            tar -czf ../../deployment-artifacts/web-build.tar.gz \
+              .next \
+              public \
+              package.json \
+              next.config.js \
+              ecosystem.config.js \
+              database-init-v3.sql
+            cd ..
+          fi
+
+          # BK应用
+          if [ -d "bk/.next" ]; then
+            echo "📦 Packaging bk app..."
+            cd bk
+            tar -czf ../../deployment-artifacts/bk-build.tar.gz \
+              .next \
+              public \
+              package.json \
+              next.config.js
+            cd ..
+          fi
+
+          # Fuplan应用
+          if [ -d "fuplan/.next" ]; then
+            echo "📦 Packaging fuplan app..."
+            cd fuplan
+            tar -czf ../../deployment-artifacts/fuplan-build.tar.gz \
+              .next \
+              public \
+              package.json \
+              next.config.js
+            cd ..
+          fi
+
+          # Xinli应用
+          if [ -d "xinli/.next" ]; then
+            echo "📦 Packaging xinli app..."
+            cd xinli
+            tar -czf ../../deployment-artifacts/xinli-build.tar.gz \
+              .next \
+              public \
+              package.json \
+              next.config.js
+            cd ..
+          fi
+
+          echo "✅ All artifacts packaged"
+          ls -lh ../deployment-artifacts/
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: deployment-artifacts/*.tar.gz
+          retention-days: 7
+
+  # 部署Web应用(会员系统)
+  deploy-web:
+    name: Deploy Web App
+    runs-on: ubuntu-latest
+    needs: [detect-changes, build]
+    if: needs.detect-changes.outputs.web == 'true' || github.event.inputs.apps == 'all' || contains(github.event.inputs.apps, 'web')
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: ./artifacts
+
+      - name: Deploy to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: root
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: 22
+          source: "artifacts/web-build.tar.gz"
+          target: "/tmp/"
+          strip_components: 1
+
+      - name: Extract and restart web app
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: root
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: 22
+          command_timeout: 15m
+          script: |
+            set -e
+
+            DEPLOY_PATH="/www/wwwroot/member-system"
+            APP_NAME="member-web"
+
+            echo "🚀 Deploying Web App (Member System)..."
+
+            # 备份.env
+            if [ -f "$DEPLOY_PATH/.env" ]; then
+              cp "$DEPLOY_PATH/.env" /tmp/.env.web.backup
+            fi
+
+            # 创建部署目录
+            mkdir -p "$DEPLOY_PATH"
+
+            # 解压构建产物
+            cd "$DEPLOY_PATH"
+            tar -xzf /tmp/web-build.tar.gz
+
+            # 恢复.env
+            if [ -f /tmp/.env.web.backup ]; then
+              cp /tmp/.env.web.backup .env
+            fi
+
+            # 安装生产依赖
+            rm -rf node_modules package-lock.json
+            npm install --production --no-audit
+
+            # PM2重启
+            pm2 describe $APP_NAME > /dev/null 2>&1 && pm2 delete $APP_NAME || true
+            pm2 start ecosystem.config.js --name $APP_NAME --env production
+            pm2 save
+
+            # 清理
+            rm -f /tmp/web-build.tar.gz
+
+            echo "✅ Web app deployed successfully"
+            pm2 info $APP_NAME --no-daemon
+
+  # 部署BK应用(板块节奏系统)
+  deploy-bk:
+    name: Deploy BK App
+    runs-on: ubuntu-latest
+    needs: [detect-changes, build]
+    if: needs.detect-changes.outputs.bk == 'true' || github.event.inputs.apps == 'all' || contains(github.event.inputs.apps, 'bk')
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: ./artifacts
+
+      - name: Deploy to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: root
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: 22
+          source: "artifacts/bk-build.tar.gz"
+          target: "/tmp/"
+          strip_components: 1
+
+      - name: Extract and restart bk app
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: root
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: 22
+          command_timeout: 15m
+          script: |
+            set -e
+
+            DEPLOY_PATH="/www/wwwroot/bk-system"
+            APP_NAME="member-bk"
+
+            echo "🚀 Deploying BK App (Board Rhythm System)..."
+
+            if [ -f "$DEPLOY_PATH/.env" ]; then
+              cp "$DEPLOY_PATH/.env" /tmp/.env.bk.backup
+            fi
+
+            mkdir -p "$DEPLOY_PATH"
+            cd "$DEPLOY_PATH"
+            tar -xzf /tmp/bk-build.tar.gz
+
+            if [ -f /tmp/.env.bk.backup ]; then
+              cp /tmp/.env.bk.backup .env
+            fi
+
+            rm -rf node_modules package-lock.json
+            npm install --production --no-audit
+
+            pm2 describe $APP_NAME > /dev/null 2>&1 && pm2 delete $APP_NAME || true
+            pm2 start npm --name $APP_NAME -- start -- -p 3001
+            pm2 save
+
+            rm -f /tmp/bk-build.tar.gz
+
+            echo "✅ BK app deployed successfully"
+            pm2 info $APP_NAME --no-daemon
+
+  # 部署Fuplan应用(复盘系统)
+  deploy-fuplan:
+    name: Deploy Fuplan App
+    runs-on: ubuntu-latest
+    needs: [detect-changes, build]
+    if: needs.detect-changes.outputs.fuplan == 'true' || github.event.inputs.apps == 'all' || contains(github.event.inputs.apps, 'fuplan')
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: ./artifacts
+
+      - name: Deploy to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: root
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: 22
+          source: "artifacts/fuplan-build.tar.gz"
+          target: "/tmp/"
+          strip_components: 1
+
+      - name: Extract and restart fuplan app
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: root
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: 22
+          command_timeout: 15m
+          script: |
+            set -e
+
+            DEPLOY_PATH="/www/wwwroot/fuplan-system"
+            APP_NAME="member-fuplan"
+
+            echo "🚀 Deploying Fuplan App (Review System)..."
+
+            if [ -f "$DEPLOY_PATH/.env" ]; then
+              cp "$DEPLOY_PATH/.env" /tmp/.env.fuplan.backup
+            fi
+
+            mkdir -p "$DEPLOY_PATH"
+            cd "$DEPLOY_PATH"
+            tar -xzf /tmp/fuplan-build.tar.gz
+
+            if [ -f /tmp/.env.fuplan.backup ]; then
+              cp /tmp/.env.fuplan.backup .env
+            fi
+
+            rm -rf node_modules package-lock.json
+            npm install --production --no-audit
+
+            pm2 describe $APP_NAME > /dev/null 2>&1 && pm2 delete $APP_NAME || true
+            pm2 start npm --name $APP_NAME -- start -- -p 3002
+            pm2 save
+
+            rm -f /tmp/fuplan-build.tar.gz
+
+            echo "✅ Fuplan app deployed successfully"
+            pm2 info $APP_NAME --no-daemon
+
+  # 部署Xinli应用(心理测评系统)
+  deploy-xinli:
+    name: Deploy Xinli App
+    runs-on: ubuntu-latest
+    needs: [detect-changes, build]
+    if: needs.detect-changes.outputs.xinli == 'true' || github.event.inputs.apps == 'all' || contains(github.event.inputs.apps, 'xinli')
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: ./artifacts
+
+      - name: Deploy to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: root
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: 22
+          source: "artifacts/xinli-build.tar.gz"
+          target: "/tmp/"
+          strip_components: 1
+
+      - name: Extract and restart xinli app
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: root
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: 22
+          command_timeout: 15m
+          script: |
+            set -e
+
+            DEPLOY_PATH="/www/wwwroot/xinli-system"
+            APP_NAME="member-xinli"
+
+            echo "🚀 Deploying Xinli App (Psychology System)..."
+
+            if [ -f "$DEPLOY_PATH/.env" ]; then
+              cp "$DEPLOY_PATH/.env" /tmp/.env.xinli.backup
+            fi
+
+            mkdir -p "$DEPLOY_PATH"
+            cd "$DEPLOY_PATH"
+            tar -xzf /tmp/xinli-build.tar.gz
+
+            if [ -f /tmp/.env.xinli.backup ]; then
+              cp /tmp/.env.xinli.backup .env
+            fi
+
+            rm -rf node_modules package-lock.json
+            npm install --production --no-audit
+
+            pm2 describe $APP_NAME > /dev/null 2>&1 && pm2 delete $APP_NAME || true
+            pm2 start npm --name $APP_NAME -- start -- -p 3003
+            pm2 save
+
+            rm -f /tmp/xinli-build.tar.gz
+
+            echo "✅ Xinli app deployed successfully"
+            pm2 info $APP_NAME --no-daemon
+
+  # 部署后健康检查
+  health-check:
+    name: Health Check
+    runs-on: ubuntu-latest
+    needs: [deploy-web, deploy-bk, deploy-fuplan, deploy-xinli]
+    if: always() && (needs.deploy-web.result == 'success' || needs.deploy-bk.result == 'success' || needs.deploy-fuplan.result == 'success' || needs.deploy-xinli.result == 'success')
+
+    steps:
+      - name: Check deployed apps
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: root
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: 22
+          script: |
+            echo "📊 Application Status:"
+            echo "===================="
+            pm2 list
+
+            echo ""
+            echo "🔍 Health Checks:"
+            echo "===================="
+
+            # Web App (Port 3000)
+            if pm2 describe member-web > /dev/null 2>&1; then
+              curl -f http://127.0.0.1:3000 > /dev/null 2>&1 && echo "✅ Web App: Healthy" || echo "❌ Web App: Failed"
+            fi
+
+            # BK App (Port 3001)
+            if pm2 describe member-bk > /dev/null 2>&1; then
+              curl -f http://127.0.0.1:3001 > /dev/null 2>&1 && echo "✅ BK App: Healthy" || echo "❌ BK App: Failed"
+            fi
+
+            # Fuplan App (Port 3002)
+            if pm2 describe member-fuplan > /dev/null 2>&1; then
+              curl -f http://127.0.0.1:3002 > /dev/null 2>&1 && echo "✅ Fuplan App: Healthy" || echo "❌ Fuplan App: Failed"
+            fi
+
+            # Xinli App (Port 3003)
+            if pm2 describe member-xinli > /dev/null 2>&1; then
+              curl -f http://127.0.0.1:3003 > /dev/null 2>&1 && echo "✅ Xinli App: Healthy" || echo "❌ Xinli App: Failed"
+            fi
+
+            echo ""
+            echo "✅ Deployment completed!"

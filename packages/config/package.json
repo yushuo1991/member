@@ -1,0 +1,12 @@
+{
+  "name": "@repo/config",
+  "version": "0.0.1",
+  "private": true,
+  "description": "宇硕会员体系 - 共享配置",
+  "main": "./index.js",
+  "files": [
+    "tailwind.config.js",
+    "tsconfig.json",
+    "eslint.config.js"
+  ]
+}

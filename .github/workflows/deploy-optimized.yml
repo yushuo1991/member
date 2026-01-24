@@ -1,10 +1,14 @@
-name: Deploy member-system (Optimized)
+name: Deploy Member System (Optimized - Legacy Compatible)
+
+# 此workflow用于部署单个member-system应用(旧结构)
+# 如果使用Monorepo结构,请使用 deploy-monorepo.yml
 
 on:
   push:
     branches: [main, master]
     paths:
       - "member-system/**"
+      - "apps/web/**"
       - ".github/workflows/deploy-optimized.yml"
   workflow_dispatch: {}
 
@@ -25,17 +29,36 @@ jobs:
         with:
           node-version: '18'
 
+      # 检测是Monorepo还是单仓库结构
+      - name: Detect repository structure
+        id: detect
+        run: |
+          if [ -d "apps/web" ]; then
+            echo "structure=monorepo" >> $GITHUB_OUTPUT
+            echo "work_dir=apps/web" >> $GITHUB_OUTPUT
+            echo "📦 Detected Monorepo structure"
+          elif [ -d "member-system" ]; then
+            echo "structure=single" >> $GITHUB_OUTPUT
+            echo "work_dir=member-system" >> $GITHUB_OUTPUT
+            echo "📦 Detected Single-repo structure"
+          else
+            echo "❌ Unable to detect project structure"
+            exit 1
+          fi
+
       - name: Install dependencies
-        working-directory: ./member-system
+        working-directory: ${{ steps.detect.outputs.work_dir }}
         run: npm ci
 
       - name: Build application
-        working-directory: ./member-system
+        working-directory: ${{ steps.detect.outputs.work_dir }}
         run: npm run build
 
       - name: Prepare deployment files
         run: |
-          cd member-system
+          WORK_DIR="${{ steps.detect.outputs.work_dir }}"
+          cd "$WORK_DIR"
+
           # 创建部署目录
           mkdir -p deploy
 
@@ -44,13 +67,14 @@ jobs:
           cp -r public deploy/
           cp package.json package-lock.json deploy/
           cp next.config.js deploy/
-          cp ecosystem.config.js deploy/
+          cp ecosystem.config.js deploy/ 2>/dev/null || echo "No ecosystem.config.js"
           cp -r src deploy/ 2>/dev/null || true
 
           # 复制数据库脚本
           cp database-init-v3.sql deploy/ 2>/dev/null || true
 
           echo "✅ Deployment files prepared"
+          ls -la deploy/
 
       - name: Deploy to server
         uses: appleboy/scp-action@v0.1.7
@@ -59,9 +83,9 @@ jobs:
           username: root
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: 22
-          source: "member-system/deploy/"
-          target: "/tmp/"
-          strip_components: 0
+          source: "${{ steps.detect.outputs.work_dir }}/deploy/*"
+          target: "/tmp/member-system-deploy/"
+          strip_components: 2
           rm: false
 
       - name: Restart application
@@ -76,7 +100,8 @@ jobs:
             set -e
 
             DEPLOY_PATH="/www/wwwroot/member-system"
-            TEMP_PATH="/tmp/member-system/deploy"
+            TEMP_PATH="/tmp/member-system-deploy"
+            APP_NAME="member-web"
 
             echo "🔍 检查部署目录..."
             if [ ! -d "$DEPLOY_PATH" ]; then
@@ -115,21 +140,34 @@ jobs:
             npm install --production --no-audit --prefer-offline
 
             echo "🔧 检查PM2状态..."
-            pm2 describe member-system > /dev/null 2>&1 && pm2 stop member-system || echo "PM2进程不存在"
+            if pm2 describe member-system > /dev/null 2>&1; then
+              echo "停止旧进程: member-system"
+              pm2 delete member-system
+            fi
+
+            if pm2 describe $APP_NAME > /dev/null 2>&1; then
+              echo "停止旧进程: $APP_NAME"
+              pm2 stop $APP_NAME
+            fi
 
             echo "🚀 启动应用..."
-            pm2 startOrReload ecosystem.config.js --env production
+            if [ -f "ecosystem.config.js" ]; then
+              pm2 startOrReload ecosystem.config.js --env production
+            else
+              pm2 start npm --name $APP_NAME -- start -- -p 3000
+            fi
             pm2 save
 
             echo "🧹 清理临时文件..."
-            rm -rf /tmp/member-system
+            rm -rf "$TEMP_PATH"
 
             echo ""
             echo "✅ Deployment completed successfully!"
             echo ""
             echo "📊 Application status:"
-            pm2 info member-system --no-daemon || pm2 list
+            pm2 list
 
             echo ""
             echo "🌐 测试本地访问..."
+            sleep 3
             curl -I http://127.0.0.1:3000 2>&1 | head -5 || echo "⚠️ 应用可能未正常启动"
