@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Product, MembershipLevel } from '@/types/membership';
 import { MEMBERSHIP_LEVELS } from '@/lib/membership-levels';
 
@@ -39,108 +40,125 @@ export default function ProductCard({ product }: ProductCardProps) {
   const priceTypeLabel = getPriceTypeLabel();
 
   return (
-    <div className="group bg-white rounded-2xl p-5 sm:p-6 shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-[#ff8c42]/30 hover:-translate-y-1 flex flex-col h-full">
-      {/* 顶部标签区域 */}
-      <div className="flex flex-wrap gap-2 mb-3 sm:mb-4">
-        {/* 价格类型标签 */}
-        {priceTypeLabel && (
-          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${priceTypeLabel.color}`}>
-            {priceTypeLabel.text}
-          </span>
-        )}
-
-        {/* 试用标签 */}
-        {product.trialEnabled && (
-          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-            可试用{product.trialCount}次
-          </span>
-        )}
-      </div>
-
-      {/* Icon */}
-      <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-[#ff8c42] to-[#e67d3a] rounded-xl sm:rounded-2xl flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-        <span className="text-2xl sm:text-3xl">{product.icon}</span>
-      </div>
-
-      {/* Title */}
-      <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 group-hover:text-[#ff8c42] transition-colors line-clamp-1">
-        {product.name}
-      </h3>
-
-      {/* Description */}
-      <p className="text-gray-600 text-sm mb-3 sm:mb-4 leading-relaxed line-clamp-2 flex-grow-0">
-        {product.description}
-      </p>
-
-      {/* 所需等级或价格 */}
-      <div className="mb-3 sm:mb-4">
-        {product.priceType === 'membership' && levelConfig && (
-          <div className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${levelColors[product.requiredLevel]}`}>
-            🔑 需要{levelConfig.name}
+    <div className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-[#ff8c42]/30 hover:-translate-y-1 flex flex-col h-full">
+      {/* 产品图片 */}
+      <div className="relative w-full h-40 sm:h-48 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
+        {product.imageUrl ? (
+          <Image
+            src={product.imageUrl}
+            alt={product.name}
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            priority={false}
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#ff8c42] to-[#e67d3a]">
+            <span className="text-6xl">{product.icon}</span>
           </div>
         )}
 
-        {(product.priceType === 'standalone' || product.priceType === 'both') && product.standalonePrices && (
-          <div className="flex flex-wrap gap-1.5">
-            {product.standalonePrices.monthly && (
-              <span className="inline-block bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs">
-                ¥{product.standalonePrices.monthly}/月
-              </span>
-            )}
-            {product.standalonePrices.yearly && (
-              <span className="inline-block bg-green-50 text-green-700 px-2 py-0.5 rounded text-xs">
-                ¥{product.standalonePrices.yearly}/年
-              </span>
-            )}
-            {product.standalonePrices.lifetime && (
-              <span className="inline-block bg-purple-50 text-purple-700 px-2 py-0.5 rounded text-xs">
-                ¥{product.standalonePrices.lifetime}买断
-              </span>
-            )}
-          </div>
-        )}
+        {/* 图片上的标签 */}
+        <div className="absolute top-3 left-3 flex flex-wrap gap-2">
+          {priceTypeLabel && (
+            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium backdrop-blur-sm bg-white/90 ${priceTypeLabel.color} shadow-sm`}>
+              {priceTypeLabel.text}
+            </span>
+          )}
+          {product.trialEnabled && (
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium backdrop-blur-sm bg-white/90 bg-green-100 text-green-700 shadow-sm">
+              可试用{product.trialCount}次
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* Features - 只在较大屏幕显示 */}
-      <ul className="hidden sm:block space-y-2 mb-4 flex-grow">
-        {product.features.slice(0, 3).map((feature, index) => (
-          <li key={index} className="flex items-start">
-            <svg
-              className="w-4 h-4 text-[#ff8c42] mt-0.5 mr-2 flex-shrink-0"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-            <span className="text-gray-600 text-xs">{feature}</span>
-          </li>
-        ))}
-        {product.features.length > 3 && (
-          <li className="text-gray-400 text-xs ml-6">
-            +{product.features.length - 3} 更多功能...
-          </li>
-        )}
-      </ul>
+      {/* 内容区域 */}
+      <div className="flex flex-col flex-grow p-4 sm:p-5">
+        {/* Title */}
+        <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 group-hover:text-[#ff8c42] transition-colors line-clamp-1">
+          {product.name}
+        </h3>
 
-      {/* 移动端简化features显示 */}
-      <div className="sm:hidden text-xs text-gray-500 mb-3 flex-grow">
-        {product.features.length}项功能特性
-      </div>
+        {/* Description */}
+        <p className="text-gray-600 text-sm mb-3 sm:mb-4 leading-relaxed line-clamp-2 flex-grow-0">
+          {product.description}
+        </p>
 
-      {/* CTA Button */}
-      <div className="mt-auto">
-        <Link
-          href={`/products/${product.slug}`}
-          className="block w-full py-2.5 sm:py-3 px-4 sm:px-6 bg-gray-100 text-gray-900 rounded-full hover:bg-[#ff8c42] hover:text-white transition-all duration-300 font-medium text-center text-sm sm:text-base"
-        >
-          了解详情
-        </Link>
+        {/* 所需等级或价格 */}
+        <div className="mb-3 sm:mb-4">
+          {product.priceType === 'membership' && levelConfig && (
+            <div className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${levelColors[product.requiredLevel]}`}>
+              🔑 需要{levelConfig.name}
+            </div>
+          )}
+
+          {(product.priceType === 'standalone' || product.priceType === 'both') && product.standalonePrices && (
+            <div className="flex flex-wrap gap-1.5">
+              {product.standalonePrices.monthly && (
+                <span className="inline-block bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs font-medium">
+                  ¥{product.standalonePrices.monthly}/月
+                </span>
+              )}
+              {product.standalonePrices.yearly && (
+                <span className="inline-block bg-green-50 text-green-700 px-2 py-0.5 rounded text-xs font-medium">
+                  ¥{product.standalonePrices.yearly}/年
+                </span>
+              )}
+              {product.standalonePrices.lifetime && (
+                <span className="inline-block bg-purple-50 text-purple-700 px-2 py-0.5 rounded text-xs font-medium">
+                  ¥{product.standalonePrices.lifetime}买断
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Features - 桌面端显示 */}
+        <ul className="hidden sm:block space-y-2 mb-4 flex-grow">
+          {product.features.slice(0, 3).map((feature, index) => (
+            <li key={index} className="flex items-start">
+              <svg
+                className="w-4 h-4 text-[#ff8c42] mt-0.5 mr-2 flex-shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              <span className="text-gray-600 text-xs leading-relaxed">{feature}</span>
+            </li>
+          ))}
+          {product.features.length > 3 && (
+            <li className="text-gray-400 text-xs ml-6">
+              +{product.features.length - 3} 更多功能...
+            </li>
+          )}
+        </ul>
+
+        {/* 移动端简化features显示 */}
+        <div className="sm:hidden text-xs text-gray-500 mb-3 flex items-center gap-1 flex-grow">
+          <svg className="w-3 h-3 text-[#ff8c42]" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+            <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd"/>
+          </svg>
+          <span>{product.features.length} 项功能特性</span>
+        </div>
+
+        {/* CTA Button */}
+        <div className="mt-auto">
+          <Link
+            href={`/products/${product.slug}`}
+            className="block w-full py-2.5 sm:py-3 px-4 sm:px-6 bg-gray-100 text-gray-900 rounded-full hover:bg-[#ff8c42] hover:text-white transition-all duration-300 font-medium text-center text-sm sm:text-base shadow-sm hover:shadow-md"
+          >
+            了解详情
+          </Link>
+        </div>
       </div>
     </div>
   );

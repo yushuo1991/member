@@ -104,8 +104,8 @@ export default function Home() {
             </div>
           </div>
 
-          {/* 产品网格 - 响应式：手机1列，平板2列，桌面3列，大屏4列 */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+          {/* 产品网格 - 响应式：手机1列，平板2列，桌面3列 */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
             {filteredProducts.map((product) => (
               <ProductCard key={product.slug} product={product} />
             ))}
@@ -125,54 +125,6 @@ export default function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {membershipTiers.map((tier) => (
               <PricingCard key={tier.level} tier={tier} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Standalone Products Section */}
-      <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-8 sm:mb-12">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-3 sm:mb-4">单独购买</h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-600">无需会员，按需购买</p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            {getStandaloneProducts().map((product) => (
-              <div
-                key={product.slug}
-                className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300"
-              >
-                <div className="text-4xl mb-4">{product.icon}</div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">{product.name}</h3>
-                <p className="text-gray-600 text-sm mb-4">{product.description}</p>
-                {product.standalonePrices && (
-                  <div className="mb-4">
-                    {product.standalonePrices.monthly && (
-                      <span className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm mr-2 mb-2">
-                        ¥{product.standalonePrices.monthly}/月
-                      </span>
-                    )}
-                    {product.standalonePrices.yearly && (
-                      <span className="inline-block bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm mr-2 mb-2">
-                        ¥{product.standalonePrices.yearly}/年
-                      </span>
-                    )}
-                    {product.standalonePrices.lifetime && (
-                      <span className="inline-block bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm mb-2">
-                        ¥{product.standalonePrices.lifetime}买断
-                      </span>
-                    )}
-                  </div>
-                )}
-                <Link
-                  href={`/products/${product.slug}`}
-                  className="block w-full text-center py-2 px-4 bg-gray-100 text-gray-900 rounded-full hover:bg-gray-200 transition-all text-sm font-medium"
-                >
-                  了解详情
-                </Link>
-              </div>
             ))}
           </div>
         </div>
