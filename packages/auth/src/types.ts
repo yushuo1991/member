@@ -7,6 +7,8 @@ export interface JWTPayload {
   username: string;
   email: string;
   type: 'user' | 'admin';
+  membership_level?: string;
+  membership_expiry?: string | null;
   iat?: number;
   exp?: number;
 }

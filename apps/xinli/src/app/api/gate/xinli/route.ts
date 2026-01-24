@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@repo/auth';
-import { getDatabase } from '@repo/database';
+import { memberDatabase } from '@repo/database';
 
 /**
  * 心理测评系统访问权限检查
@@ -20,7 +20,6 @@ export async function GET(request: NextRequest) {
     }
 
     const user = authResult.user;
-    const db = getDatabase();
 
     // 会员等级权重
     const levelWeights: Record<string, number> = {
@@ -31,7 +30,7 @@ export async function GET(request: NextRequest) {
       lifetime: 4,
     };
 
-    const userWeight = levelWeights[user.membership_level] || 0;
+    const userWeight = levelWeights[user.membership_level || 'none'] || 0;
     const requiredWeight = levelWeights['yearly']; // 需要年度会员
 
     // 检查会员等级
@@ -55,10 +54,10 @@ export async function GET(request: NextRequest) {
     }
 
     // 检查试用次数
-    const [trials] = await db.execute(
+    const [trials] = await memberDatabase.query(
       `SELECT trial_count FROM user_product_trials
        WHERE user_id = ? AND product_slug = 'xinli'`,
-      [user.id]
+      [user.userId]
     );
 
     const trialCount = (trials as any[]).length > 0 ? (trials as any[])[0].trial_count : 0;
@@ -111,21 +110,20 @@ export async function POST(request: NextRequest) {
     }
 
     const user = authResult.user;
-    const db = getDatabase();
 
     // 增加试用次数
-    await db.execute(
+    await memberDatabase.query(
       `INSERT INTO user_product_trials (user_id, product_slug, trial_count)
        VALUES (?, 'xinli', 1)
        ON DUPLICATE KEY UPDATE trial_count = trial_count + 1`,
-      [user.id]
+      [user.userId]
     );
 
     // 获取最新试用次数
-    const [trials] = await db.execute(
+    const [trials] = await memberDatabase.query(
       `SELECT trial_count FROM user_product_trials
        WHERE user_id = ? AND product_slug = 'xinli'`,
-      [user.id]
+      [user.userId]
     );
 
     const trialCount = (trials as any[])[0].trial_count;

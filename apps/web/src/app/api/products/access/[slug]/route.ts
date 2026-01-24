@@ -18,7 +18,6 @@ import {
   getProductRedirectUrl
 } from '@/lib/trial-service';
 import { errorResponse, successResponse } from '@repo/auth';
-import { errorResponse, successResponse, generateActivationCode, isValidEmail, isValidUsername, isValidPassword, formatDateTime } from '@/lib/utils';
 import type { AccessType, MembershipLevel } from '@/types/membership';
 
 export async function GET(

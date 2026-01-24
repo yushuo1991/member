@@ -6,9 +6,7 @@
 
 import { NextRequest } from 'next/server';
 import { memberDatabase } from '@repo/database';
-import { verifyUserToken } from '@repo/auth';
-import { errorResponse, successResponse } from '@repo/auth';
-import { errorResponse, successResponse, generateActivationCode, isValidEmail, isValidUsername, isValidPassword, formatDateTime } from '@/lib/utils';
+import { verifyUserToken, errorResponse, successResponse } from '@repo/auth';
 import { checkRateLimit, recordAttempt, getClientIP } from '@/lib/rate-limiter';
 import { MEMBERSHIP_LEVELS, getProductBySlug, calculateProductExpiry } from '@/lib/membership-levels';
 import { ActivationRequest, MembershipLevel, CodeType, PurchaseType } from '@/types/membership';

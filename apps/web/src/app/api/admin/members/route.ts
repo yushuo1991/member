@@ -5,9 +5,7 @@
 
 import { NextRequest } from 'next/server';
 import { memberDatabase } from '@repo/database';
-import { verifyAdminToken } from '@repo/auth';
-import { errorResponse, successResponse } from '@repo/auth';
-import { errorResponse, successResponse, generateActivationCode, isValidEmail, isValidUsername, isValidPassword, formatDateTime } from '@/lib/utils';
+import { verifyAdminToken, errorResponse, successResponse } from '@repo/auth';
 
 export async function GET(request: NextRequest) {
   try {

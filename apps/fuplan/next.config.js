@@ -2,7 +2,9 @@
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@repo/ui', '@repo/auth', '@repo/database', '@repo/utils'],
-  output: 'standalone',
+  // Windows环境下暂时禁用standalone以避免符号链接权限问题
+  // 生产环境（Linux）可以启用
+  // output: 'standalone',
 
   // 配置静态资源
   async headers() {

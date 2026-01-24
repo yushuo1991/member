@@ -16,7 +16,9 @@ export {
   createAuthCookie,
   createDeleteCookie,
   verifyAuth,
-  requireAdmin
+  requireAdmin,
+  errorResponse,
+  successResponse
 } from './auth-middleware';
 
 // 导出密码函数

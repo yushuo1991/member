@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@repo/auth';
-import { getDatabase } from '@repo/database';
+import { memberDatabase } from '@repo/database';
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,11 +13,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const userId = authResult.user.id;
-    const db = getDatabase();
+    const userId = authResult.user.userId;
 
     // 获取所有测评历史
-    const [tests] = await db.execute(
+    const [tests] = await memberDatabase.query(
       `SELECT id, test_name, status, progress, started_at, completed_at, updated_at
        FROM user_psychology_tests
        WHERE user_id = ?

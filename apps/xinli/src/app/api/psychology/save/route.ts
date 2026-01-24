@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@repo/auth';
-import { getDatabase } from '@repo/database';
+import { memberDatabase } from '@repo/database';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userId = authResult.user.id;
+    const userId = authResult.user.userId;
     const body = await request.json();
     const { answers, status } = body;
 
@@ -24,10 +24,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const db = getDatabase();
-
     // 查找或创建测评记录
-    const [existingTests] = await db.execute(
+    const [existingTests] = await memberDatabase.query(
       `SELECT id, progress FROM user_psychology_tests
        WHERE user_id = ? AND status = 'in_progress'
        ORDER BY started_at DESC LIMIT 1`,
@@ -41,7 +39,7 @@ export async function POST(request: NextRequest) {
       testId = (existingTests as any[])[0].id;
     } else {
       // 创建新测评
-      const [result] = await db.execute(
+      const [result] = await memberDatabase.query(
         `INSERT INTO user_psychology_tests (user_id, progress, status)
          VALUES (?, 0, 'in_progress')`,
         [userId]
@@ -55,7 +53,7 @@ export async function POST(request: NextRequest) {
 
       if (!scenarioId) continue;
 
-      await db.execute(
+      await memberDatabase.query(
         `INSERT INTO user_psychology_answers
          (test_id, scenario_id, operation, thought)
          VALUES (?, ?, ?, ?)
@@ -72,7 +70,7 @@ export async function POST(request: NextRequest) {
     const newStatus = status === 'completed' ? 'completed' : 'in_progress';
     const completedAt = status === 'completed' ? new Date() : null;
 
-    await db.execute(
+    await memberDatabase.query(
       `UPDATE user_psychology_tests
        SET progress = ?, status = ?, completed_at = ?, updated_at = CURRENT_TIMESTAMP
        WHERE id = ?`,

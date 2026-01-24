@@ -218,3 +218,39 @@ export type AuthResult = {
   user?: JWTPayload;
   error?: string;
 };
+
+/**
+ * 统一API响应格式
+ */
+import { NextResponse } from 'next/server';
+
+function apiResponse<T = any>(
+  success: boolean,
+  data: T | null,
+  message: string,
+  statusCode: number = 200
+) {
+  return NextResponse.json(
+    {
+      success,
+      data,
+      message,
+      timestamp: new Date().toISOString()
+    },
+    { status: statusCode }
+  );
+}
+
+/**
+ * 错误响应快捷方式
+ */
+export function errorResponse(message: string, statusCode: number = 400) {
+  return apiResponse(false, null, message, statusCode);
+}
+
+/**
+ * 成功响应快捷方式
+ */
+export function successResponse<T = any>(data: T, message: string = 'Success') {
+  return apiResponse(true, data, message, 200);
+}

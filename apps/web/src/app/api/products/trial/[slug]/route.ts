@@ -14,7 +14,6 @@ import {
   createTrialResult
 } from '@/lib/trial-service';
 import { errorResponse, successResponse } from '@repo/auth';
-import { errorResponse, successResponse, generateActivationCode, isValidEmail, isValidUsername, isValidPassword, formatDateTime } from '@/lib/utils';
 
 export async function POST(
   request: NextRequest,

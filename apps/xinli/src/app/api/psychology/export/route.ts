@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@repo/auth';
-import { getDatabase } from '@repo/database';
+import { memberDatabase } from '@repo/database';
 import { scenarios } from '@/lib/scenarios';
 
 export async function GET(request: NextRequest) {
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const userId = authResult.user.id;
+    const userId = authResult.user.userId;
     const { searchParams } = new URL(request.url);
     const testId = searchParams.get('testId');
 
@@ -25,10 +25,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const db = getDatabase();
-
     // 验证测评是否属于当前用户
-    const [tests] = await db.execute(
+    const [tests] = await memberDatabase.query(
       `SELECT id, status, progress, started_at, completed_at
        FROM user_psychology_tests
        WHERE id = ? AND user_id = ?`,
@@ -43,7 +41,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 获取所有答案
-    const [answers] = await db.execute(
+    const [answers] = await memberDatabase.query(
       `SELECT scenario_id, operation, thought
        FROM user_psychology_answers
        WHERE test_id = ?

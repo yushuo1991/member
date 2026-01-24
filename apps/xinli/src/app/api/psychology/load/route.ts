@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@repo/auth';
-import { getDatabase } from '@repo/database';
+import { memberDatabase } from '@repo/database';
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,11 +13,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const userId = authResult.user.id;
-    const db = getDatabase();
+    const userId = authResult.user.userId;
 
     // 获取最新的进行中的测评
-    const [tests] = await db.execute(
+    const [tests] = await memberDatabase.query(
       `SELECT id, progress, status, started_at, completed_at
        FROM user_psychology_tests
        WHERE user_id = ?
@@ -38,7 +37,7 @@ export async function GET(request: NextRequest) {
     const testId = test.id;
 
     // 获取所有答案
-    const [answers] = await db.execute(
+    const [answers] = await memberDatabase.query(
       `SELECT scenario_id, operation, thought, updated_at
        FROM user_psychology_answers
        WHERE test_id = ?
