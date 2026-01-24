@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Toast, { ToastType } from '@/components/Toast';
+import { copyToClipboard } from '@/lib/clipboard-utils';
 
 interface ActivationCode {
   id: number;
@@ -17,6 +19,12 @@ interface ActivationCode {
   batch_id: string | null;
 }
 
+interface ToastMessage {
+  id: number;
+  message: string;
+  type: ToastType;
+}
+
 export default function CodesPage() {
   const [generating, setGenerating] = useState(false);
   const [quantity, setQuantity] = useState(10);
@@ -24,6 +32,32 @@ export default function CodesPage() {
   const [codes, setCodes] = useState<ActivationCode[]>([]);
   const [generatedCodes, setGeneratedCodes] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  // Toast 管理
+  const showToast = (message: string, type: ToastType = 'success') => {
+    const id = Date.now();
+    setToasts((prev) => [...prev, { id, message, type }]);
+  };
+
+  const removeToast = (id: number) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  };
+
+  // 复制到剪贴板
+  const handleCopy = async (text: string) => {
+    try {
+      const success = await copyToClipboard(text);
+      if (success) {
+        showToast('激活码已复制到剪贴板', 'success');
+      } else {
+        showToast('复制失败，请手动复制', 'error');
+      }
+    } catch (error) {
+      console.error('Copy failed:', error);
+      showToast('复制失败，请手动复制', 'error');
+    }
+  };
 
   // 加载激活码列表
   useEffect(() => {
@@ -42,6 +76,7 @@ export default function CodesPage() {
       }
     } catch (error) {
       console.error('加载激活码失败:', error);
+      showToast('加载激活码列表失败', 'error');
     } finally {
       setLoading(false);
     }
@@ -70,13 +105,13 @@ export default function CodesPage() {
       }
 
       setGeneratedCodes(payload.codes || []);
-      alert(`成功生成 ${payload.quantity ?? (payload.codes?.length ?? 0)} 个激活码！`);
+      showToast(`成功生成 ${payload.quantity ?? (payload.codes?.length ?? 0)} 个激活码`, 'success');
 
       // 重新加载列表
       await loadCodes();
 
     } catch (error: any) {
-      alert('生成失败：' + error.message);
+      showToast('生成失败：' + error.message, 'error');
     } finally {
       setGenerating(false);
     }
@@ -106,6 +141,18 @@ export default function CodesPage() {
 
   return (
     <div>
+      {/* Toast Container */}
+      <div className="fixed top-4 right-4 z-50 space-y-2">
+        {toasts.map((toast) => (
+          <Toast
+            key={toast.id}
+            message={toast.message}
+            type={toast.type}
+            onClose={() => removeToast(toast.id)}
+          />
+        ))}
+      </div>
+
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">激活码管理</h1>
@@ -127,9 +174,9 @@ export default function CodesPage() {
                 <div key={index} className="flex items-center justify-between bg-white p-2 rounded">
                   <code className="font-mono text-sm">{code}</code>
                   <button
-                    onClick={() => navigator.clipboard.writeText(code)}
-                    className="ml-2 p-1 text-blue-600 hover:bg-blue-50 rounded"
-                    title="复制"
+                    onClick={() => handleCopy(code)}
+                    className="ml-2 p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                    title="复制激活码"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -307,7 +354,7 @@ export default function CodesPage() {
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button
-                          onClick={() => navigator.clipboard.writeText(code.code)}
+                          onClick={() => handleCopy(code.code)}
                           className="p-2 text-[#007AFF] hover:bg-blue-50 rounded-lg transition-colors duration-200"
                           title="复制激活码"
                         >
@@ -336,7 +383,7 @@ export default function CodesPage() {
 
         {/* Pagination */}
         <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
-          <p className="text-sm text-gray-600">显示 1-3 条，共 3 条</p>
+          <p className="text-sm text-gray-600">显示 1-{codes.length} 条，共 {codes.length} 条</p>
           <div className="flex gap-2">
             <button className="px-4 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
               上一页
