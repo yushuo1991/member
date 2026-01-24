@@ -36,10 +36,18 @@ export default function AdminLoginPage() {
       })
 
       const data = await response.json().catch(() => ({}))
+
+      // 检查HTTP状态码
       if (!response.ok) {
         throw new Error(data?.message || '管理员登录失败')
       }
 
+      // 检查业务逻辑状态
+      if (!data.success) {
+        throw new Error(data?.message || '管理员登录失败')
+      }
+
+      // 登录成功，跳转到管理后台
       router.replace(nextPath)
     } catch (err: any) {
       setError(err?.message || '管理员登录失败')
