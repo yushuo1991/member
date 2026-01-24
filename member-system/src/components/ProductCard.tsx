@@ -14,6 +14,9 @@ export default function ProductCard({ product }: ProductCardProps) {
     ? MEMBERSHIP_LEVELS[product.requiredLevel]
     : null;
 
+  // 判断是否需要在新窗口打开（板块节奏系统和复盘系统）
+  const shouldOpenInNewTab = product.slug === 'bk' || product.slug === 'fuplan';
+
   // 等级徽章颜色映射
   const levelColors: Record<MembershipLevel, string> = {
     none: 'bg-gray-100 text-gray-600',
@@ -155,6 +158,10 @@ export default function ProductCard({ product }: ProductCardProps) {
           <Link
             href={`/products/${product.slug}`}
             className="block w-full py-2.5 sm:py-3 px-4 sm:px-6 bg-gray-100 text-gray-900 rounded-full hover:bg-[#ff8c42] hover:text-white transition-all duration-300 font-medium text-center text-sm sm:text-base shadow-sm hover:shadow-md"
+            {...(shouldOpenInNewTab && {
+              target: '_blank',
+              rel: 'noopener noreferrer'
+            })}
           >
             了解详情
           </Link>
