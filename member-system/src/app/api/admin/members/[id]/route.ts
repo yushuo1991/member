@@ -156,18 +156,23 @@ export async function DELETE(
       [userId]
     );
 
-    // 记录审计日志
-    await db.execute(
-      `INSERT INTO admin_audit_logs
-        (admin_id, action, target_type, target_id, description, ip_address)
-       VALUES (?, 'delete_user', 'user', ?, ?, ?)`,
-      [
-        admin.userId,
-        userId,
-        `删除用户: ${user.username} (${user.email})`,
-        request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown'
-      ]
-    );
+    // 记录审计日志（失败不影响主操作）
+    try {
+      await db.execute(
+        `INSERT INTO admin_audit_logs
+          (admin_id, action, target_type, target_id, description, ip_address)
+         VALUES (?, 'delete_user', 'user', ?, ?, ?)`,
+        [
+          admin.userId,
+          userId,
+          `删除用户: ${user.username} (${user.email})`,
+          request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown'
+        ]
+      );
+    } catch (auditError) {
+      console.warn('[删除用户API] 审计日志记录失败:', auditError);
+      // 继续执行，不影响主操作
+    }
 
     return successResponse(
       {

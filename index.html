@@ -1,0 +1,1817 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>宇硕短线 SaaS 平台</title>
+
+    <!-- React & ReactDOM (UMD) -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+    <!-- Babel Standalone (JSX 转译) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Tailwind 配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#fffbf5',
+                            100: '#ffefe0',
+                            200: '#ffd6b3',
+                            300: '#ffb380',
+                            400: '#ff8c42', // 主色
+                            500: '#ff6b1a',
+                            600: '#f04f00',
+                            900: '#2d1b0e',
+                        }
+                    },
+                    boxShadow: {
+                        'card': '0 10px 30px -5px rgba(0,0,0,0.1)',
+                        'glass': '0 8px 32px rgba(0, 0, 0, 0.1)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #F5F7FA;
+            color: #1d1d1f;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* 磨砂玻璃效果 */
+        .glass-effect {
+            backdrop-filter: blur(16px);
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* 动画 */
+        @keyframes slide-in {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-slide-in {
+            animation: slide-in 0.3s ease-out;
+        }
+
+        .animate-fade-in {
+            animation: fade-in 0.4s ease-out;
+        }
+
+        /* 页面切换动画 */
+        .page-transition {
+            animation: fade-in 0.3s ease-out;
+        }
+
+        /* 产品卡片悬停效果 */
+        .product-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        @media (min-width: 768px) {
+            .product-card:hover {
+                transform: translateY(-8px);
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+            }
+        }
+
+        /* 移动端优化 */
+        .product-card:active {
+            transform: scale(0.98);
+        }
+
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // ==================== 常量配置 ====================
+
+        const STORAGE_KEYS = {
+            USERS: 'ys_users',
+            ACTIVATION_CODES: 'ys_activation_codes',
+            SESSION_USER: 'ys_session_user'
+        };
+
+        // 产品配置
+        const PRODUCTS = {
+            'learning-circle': {
+                id: 'learning-circle',
+                name: '学习圈',
+                desc: '私密学习圈，9大核心权益',
+                price: '799元/月',
+                icon: '👥',
+                color: 'from-orange-50 to-white',
+                borderColor: 'border-orange-100',
+                textColor: 'text-orange-600',
+                bgColor: 'bg-white',
+                iconBg: 'bg-white',
+                requiredTier: ['monthly', 'quarterly', 'yearly'],
+                canBuyout: false
+            },
+            'emotion-table': {
+                id: 'emotion-table',
+                name: '情绪表格',
+                desc: '8大核心表格，看透市场情绪',
+                price: '600元买断',
+                icon: '📊',
+                color: 'bg-white',
+                borderColor: 'border-gray-100',
+                textColor: 'text-blue-600',
+                bgColor: 'bg-white',
+                iconBg: 'bg-blue-50',
+                requiredTier: [],
+                canBuyout: true
+            },
+            'sector-assistant': {
+                id: 'sector-assistant',
+                name: '板块助手',
+                desc: '自动化复盘神器',
+                price: '包含在会员中',
+                icon: '💻',
+                color: 'bg-[#111]',
+                borderColor: 'border-gray-800',
+                textColor: 'text-green-400',
+                bgColor: 'bg-[#111]',
+                iconBg: 'bg-gray-800',
+                requiredTier: ['monthly', 'quarterly', 'yearly'],
+                canBuyout: false
+            },
+            'sector-rhythm': {
+                id: 'sector-rhythm',
+                name: '板块节奏系统',
+                desc: '智能识别板块生命周期',
+                price: '包含在季度/年费会员',
+                icon: '🎵',
+                color: 'bg-white',
+                borderColor: 'border-purple-100',
+                textColor: 'text-purple-600',
+                bgColor: 'bg-white',
+                iconBg: 'bg-purple-50',
+                requiredTier: ['quarterly', 'yearly'],
+                canBuyout: false
+            },
+            'review-system': {
+                id: 'review-system',
+                name: '复盘系统',
+                desc: '交易日志与数据分析',
+                price: '包含在年费会员',
+                icon: '📝',
+                color: 'bg-white',
+                borderColor: 'border-indigo-100',
+                textColor: 'text-indigo-600',
+                bgColor: 'bg-white',
+                iconBg: 'bg-indigo-50',
+                requiredTier: ['yearly'],
+                canBuyout: false
+            },
+            'psychology-test': {
+                id: 'psychology-test',
+                name: '心理测评系统',
+                desc: '交易心理专业评估',
+                price: '包含在年费会员',
+                icon: '🧠',
+                color: 'bg-white',
+                borderColor: 'border-teal-100',
+                textColor: 'text-teal-600',
+                bgColor: 'bg-white',
+                iconBg: 'bg-teal-50',
+                requiredTier: ['yearly'],
+                canBuyout: false
+            }
+        };
+
+        // 产品详细内容配置
+        const getProductDetails = (productId) => {
+            const details = {
+                'learning-circle': {
+                    features: [
+                        { icon: '📚', title: '定制学习路径', desc: '根据基础定制路线，超捷径最快入门，入门即高手' },
+                        { icon: '🧠', title: '主流短线思维', desc: '理解力胜于模式。聚焦主线，打磨三套核心模式' },
+                        { icon: '📰', title: '盘前精选早报', desc: '每日视频精选关键资讯，提前获悉市场动态' },
+                        { icon: '⏱️', title: '盘中实时解盘', desc: '动态解读情绪，从回测、风格、核心聚焦，捕捉机会' },
+                        { icon: '🔄', title: '盘后深度复盘', desc: '精选每日视频解析走势，总结规律，助你提升盘感' },
+                        { icon: '💬', title: '情绪节点讨论', desc: '对当下情绪节点定性，参与方向的共同讨论' },
+                        { icon: '💡', title: '早晚知识卡片', desc: '推送游资前辈语录，利用碎片时间拓展认知边界' },
+                        { icon: '💻', title: '板块助手(免费)', desc: '圈内成员免费使用。一键整理热门板块、核心个股' },
+                        { icon: '🤖', title: 'AI 知识库', desc: '喂入13,000+篇干货，随时提问，AI秒回解答' }
+                    ]
+                },
+                'emotion-table': {
+                    features: [
+                        {
+                            icon: '📊',
+                            title: '表A1：市场整体数据（自2020年底）',
+                            desc: '反应市场的整体情况，左侧主要是反应市场整体势能，右侧主要反应市场整体动能。两者共振可反应共振冰或共振高潮，提示机会与风险，左右不平衡可反应大盘与情绪背离。底色是自动填充的，底色一定程度上表达了历史极值数据，可预判次日分歧情况。红色网格底纹和绿色网格底纹表示在整张数据表格中（3年）数据处于极值10%，准确性高，是我日常参照的重要指标之一。最右侧部分是当天涨停个股大于4的板块，标注好颜色后可反应板块情况，配合后续表格有个印象。',
+                            image: 'https://wuqq-obsidian.oss-cn-shanghai.aliyuncs.com/obsidian%E5%9B%BE%E7%89%87/20231120155629.png'
+                        },
+                        {
+                            icon: '🚨',
+                            title: '表A2：连板数据溢价',
+                            desc: '此表格记录市场2板以上个股及20cm首板个股的溢价情况。1、用于直观反应整体情况的多空。2、当近期活跃个股出现黑色块跌停，则可能是吹哨。3、也可看退潮期的活口与半活口。4、在历史复盘中，嵌入核心个股的分时图，鼠标悬停可现，方便回顾周期。5、可纵向筛选当天的亏钱效应个股，以看其对应的板块，也可横向筛选某题材板块，看其板块节奏。6、橙色为创业板个股，紫色为科创板个股。',
+                            image: 'https://wuqq-obsidian.oss-cn-shanghai.aliyuncs.com/obsidian%E5%9B%BE%E7%89%87/72cfe5ac5510436e9c28366a78ca2ee.png'
+                        },
+                        {
+                            icon: '⚖️',
+                            title: '表格A3：情绪溢价数据统计',
+                            desc: '通过首板和连板的数据情况，反应情绪。根据一定的权重比例公式计算情绪阶段，我作为参考使用的。公式计算的结果不如自己查看数据后判断的灵敏。',
+                            image: 'https://wuqq-obsidian.oss-cn-shanghai.aliyuncs.com/obsidian%E5%9B%BE%E7%89%87/20231120162317.png'
+                        },
+                        {
+                            icon: '📈',
+                            title: '表格A4：最高连板及溢价',
+                            desc: '查看：晋级向右上，掉队向右下。作用：用于记录最高板的高度及断板溢价情况，方便查看高度压制与做空动能逆转。表格隐藏溢价后，看到的就是板块高度图。',
+                            image: 'https://wuqq-obsidian.oss-cn-shanghai.aliyuncs.com/obsidian%E5%9B%BE%E7%89%87/20231120162603.png'
+                        },
+                        {
+                            icon: '🎯',
+                            title: '表格5：板块强度',
+                            desc: '数据源为开盘啦板块强度，用于查看板块轮动情况。重点板块可用软件查看其细分概念的强度和对应个股。',
+                            image: 'https://wuqq-obsidian.oss-cn-shanghai.aliyuncs.com/obsidian%E5%9B%BE%E7%89%87/20231120162758.png'
+                        },
+                        {
+                            icon: '🔍',
+                            title: '表格6：板块梯队',
+                            desc: '用于查看近期活跃板块的溢价情况，横向看，一栏为一个题材，个股顺序按照首封时间排序，可以清晰的看出来板块的节奏和个股的次日及第三日溢价情况。可以看板块节奏，也可以看板块间的竞争情况。',
+                            image: 'https://wuqq-obsidian.oss-cn-shanghai.aliyuncs.com/obsidian%E5%9B%BE%E7%89%87/20231120162904.png'
+                        },
+                        {
+                            icon: '💎',
+                            title: '表格7：连板个股溢价情况',
+                            desc: '记录连板个股的属性及后两日溢价情况，直观的反应情绪。其中个股名称蓝底代表一字板，绿底代表T字板。没有参考价值的数据已隐层。下方是反包板及溢价情况。',
+                            image: 'https://wuqq-obsidian.oss-cn-shanghai.aliyuncs.com/obsidian%E5%9B%BE%E7%89%87/20231120152139.png'
+                        },
+                        {
+                            icon: '📉',
+                            title: '表格8：趋势板块及个股（未启用可参考）',
+                            desc: '按区间涨幅排行的板块和个股，以及溢价情况，用于趋势行情的核心个股捕捉。',
+                            image: 'https://wuqq-obsidian.oss-cn-shanghai.aliyuncs.com/obsidian%E5%9B%BE%E7%89%87/20231120163424.png'
+                        }
+                    ],
+                    videoUrl: 'https://mp.weixin.qq.com/s/J4ixYxRY7FN4DWaVaSlPyg?mpshare=1&scene=1&srcid=0105jUXKSWzDt0pRUkQdwsWL&sharer_shareinfo=498a87bde624da3a9d0343925e914ba0&sharer_shareinfo_first=498a87bde624da3a9d0343925e914ba0&from=industrynews&color_scheme=light#rd',
+                    videoTitle: '数据表格的设计思路及解读（含快速录入演示）共30分钟'
+                },
+                'sector-assistant': {
+                    features: [
+                        { icon: '🤖', title: '自动化复盘', desc: '每日自动生成板块复盘报告，节省1小时手动整理' },
+                        { icon: '📊', title: '板块分析', desc: '板块强度、持续性智能评分，快速定位优质板块' },
+                        { icon: '🎯', title: '龙头追踪', desc: '自动追踪板块龙头股走势，实时掌握主线动向' },
+                        { icon: '📈', title: '涨停分析', desc: '涨停股板块归类与分析，发现板块轮动机会' },
+                        { icon: '💡', title: '机会挖掘', desc: '潜在板块机会智能挖掘，提前布局下一个热点' },
+                        { icon: '🔔', title: '实时推送', desc: '重要板块异动实时提醒，不错过任何交易机会' }
+                    ]
+                },
+                'sector-rhythm': {
+                    features: [
+                        { icon: '🎵', title: '节奏识别', desc: '智能识别板块启动、加速、衰退三大阶段，把握最佳时机' },
+                        { icon: '📊', title: '生命周期可视化', desc: '板块从启动到结束的完整过程图表，直观展示' },
+                        { icon: '⏰', title: '最佳时机提示', desc: '智能提示买入、加仓、减仓、清仓时机，避免追涨杀跌' },
+                        { icon: '🔄', title: '轮动分析', desc: '追踪市场热点板块轮动规律，预判下一个热点方向' },
+                        { icon: '📈', title: '强度动态评分', desc: '实时评估板块强度变化，量化板块表现' },
+                        { icon: '🎯', title: '参与策略建议', desc: '不同节奏阶段的具体操作建议，新手也能轻松上手' }
+                    ]
+                },
+                'review-system': {
+                    features: [
+                        { icon: '📝', title: '交易日志', desc: '详细记录每笔交易全过程：买入理由、心态、执行情况' },
+                        { icon: '📊', title: '数据统计', desc: '自动计算胜率、盈亏比、最大回撤等关键指标' },
+                        { icon: '🎯', title: '问题诊断', desc: 'AI 自动诊断交易中的常见问题：追涨杀跌、止损不及时等' },
+                        { icon: '💡', title: '改进建议', desc: '基于交易数据给出个性化改进建议，持续优化策略' },
+                        { icon: '📈', title: '成长曲线', desc: '可视化展示交易能力成长轨迹，见证自己的进步' },
+                        { icon: '🏆', title: '成就系统', desc: '设定目标，记录交易里程碑，激励持续进步' }
+                    ]
+                },
+                'psychology-test': {
+                    features: [
+                        { icon: '🧠', title: '心理测评', desc: '多维度评估交易心理状态：风险偏好、情绪控制、决策风格' },
+                        { icon: '😌', title: '情绪管理', desc: '识别并管理交易中的恐惧、贪婪等情绪，建立稳定心态' },
+                        { icon: '💪', title: '心态训练', desc: '通过练习和反思建立稳定的交易心态，克服心理弱点' },
+                        { icon: '📊', title: '心理报告', desc: '生成详细的心理分析报告和建议，深入了解自己' },
+                        { icon: '🎯', title: '弱点识别', desc: '找出影响交易表现的心理弱点，针对性改进' },
+                        { icon: '🔄', title: '持续跟踪', desc: '长期跟踪心理状态变化，观察进步趋势' }
+                    ]
+                }
+            };
+
+            return details[productId] || { features: [] };
+        };
+
+        // ==================== 工具函数 ====================
+
+        // 初始化数据
+        const initializeData = () => {
+            if (!localStorage.getItem(STORAGE_KEYS.USERS)) {
+                const initialUsers = [
+                    {
+                        id: 1,
+                        username: 'admin',
+                        password: 'admin888',
+                        email: 'admin@yushuo.com',
+                        role: 'admin',
+                        tier: 'yearly',
+                        status: 'active',
+                        expiry: null,
+                        specialPerms: ['emotion-table'],
+                        createdAt: new Date().toISOString(),
+                        lastLogin: new Date().toISOString()
+                    }
+                ];
+                localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(initialUsers));
+            }
+
+            if (!localStorage.getItem(STORAGE_KEYS.ACTIVATION_CODES)) {
+                const initialCodes = [
+                    {
+                        code: 'YS-M-DEMO',
+                        type: 'monthly',
+                        duration: 30,
+                        products: ['learning-circle', 'sector-assistant'],
+                        isUsed: false,
+                        usedBy: null,
+                        usedAt: null,
+                        createdAt: new Date().toISOString(),
+                        batchId: 'DEMO-001'
+                    },
+                    {
+                        code: 'YS-Q-DEMO',
+                        type: 'quarterly',
+                        duration: 90,
+                        products: ['learning-circle', 'sector-assistant', 'sector-rhythm'],
+                        isUsed: false,
+                        usedBy: null,
+                        usedAt: null,
+                        createdAt: new Date().toISOString(),
+                        batchId: 'DEMO-001'
+                    },
+                    {
+                        code: 'YS-Y-DEMO',
+                        type: 'yearly',
+                        duration: 365,
+                        products: ['learning-circle', 'sector-assistant', 'sector-rhythm', 'review-system', 'psychology-test'],
+                        isUsed: false,
+                        usedBy: null,
+                        usedAt: null,
+                        createdAt: new Date().toISOString(),
+                        batchId: 'DEMO-001'
+                    },
+                    {
+                        code: 'YS-T-DEMO',
+                        type: 'buyout-emotion',
+                        duration: null,
+                        products: ['emotion-table'],
+                        isUsed: false,
+                        usedBy: null,
+                        usedAt: null,
+                        createdAt: new Date().toISOString(),
+                        batchId: 'DEMO-001'
+                    }
+                ];
+                localStorage.setItem(STORAGE_KEYS.ACTIVATION_CODES, JSON.stringify(initialCodes));
+            }
+        };
+
+        // 检查用户是否有权访问某个产品
+        const hasProductAccess = (user, productId) => {
+            if (!user) return false;
+            if (user.role === 'admin') return true;
+            if (user.status === 'paused') return false;
+
+            const product = PRODUCTS[productId];
+            if (!product) return false;
+
+            // 检查买断权益
+            if (user.specialPerms && user.specialPerms.includes(productId)) return true;
+
+            // 检查会员权限
+            if (product.requiredTier.includes(user.tier)) {
+                // 检查是否过期
+                if (user.expiry) {
+                    const now = new Date();
+                    const expiryDate = new Date(user.expiry);
+                    if (now > expiryDate) return false;
+                }
+                return true;
+            }
+
+            return false;
+        };
+
+        // 获取会员等级显示名称
+        const getTierDisplayName = (tier) => {
+            const map = {
+                guest: '游客',
+                monthly: '月费会员',
+                quarterly: '季度会员',
+                yearly: '年费会员'
+            };
+            return map[tier] || '未知';
+        };
+
+        // 获取会员等级徽章颜色
+        const getTierBadgeColor = (tier) => {
+            const map = {
+                guest: 'bg-gray-100 text-gray-600',
+                monthly: 'bg-blue-100 text-blue-600',
+                quarterly: 'bg-purple-100 text-purple-600',
+                yearly: 'bg-orange-100 text-orange-600'
+            };
+            return map[tier] || 'bg-gray-100 text-gray-600';
+        };
+
+        // 更新用户数据
+        const updateUser = (updatedUser) => {
+            const users = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS));
+            const index = users.findIndex(u => u.id === updatedUser.id);
+            if (index !== -1) {
+                users[index] = updatedUser;
+                localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+                localStorage.setItem(STORAGE_KEYS.SESSION_USER, JSON.stringify(updatedUser));
+            }
+        };
+
+        // 激活码验证与激活
+        const activateCode = (user, codeInput) => {
+            const codePattern = /^YS-[MQYT]-[A-Z0-9]{4}$/;
+            if (!codePattern.test(codeInput)) {
+                return { success: false, message: '激活码格式错误' };
+            }
+
+            const codes = JSON.parse(localStorage.getItem(STORAGE_KEYS.ACTIVATION_CODES));
+            const codeObj = codes.find(c => c.code === codeInput);
+
+            if (!codeObj) {
+                return { success: false, message: '激活码不存在' };
+            }
+
+            if (codeObj.isUsed) {
+                return { success: false, message: '激活码已被使用' };
+            }
+
+            let updatedUser = { ...user };
+
+            if (codeObj.type === 'buyout-emotion') {
+                if (!updatedUser.specialPerms.includes('emotion-table')) {
+                    updatedUser.specialPerms.push('emotion-table');
+                }
+            } else {
+                const tierMap = {
+                    monthly: 'monthly',
+                    quarterly: 'quarterly',
+                    yearly: 'yearly'
+                };
+
+                const newTier = tierMap[codeObj.type];
+
+                let newExpiry;
+                if (user.expiry && new Date(user.expiry) > new Date()) {
+                    newExpiry = new Date(user.expiry);
+                    newExpiry.setDate(newExpiry.getDate() + codeObj.duration);
+                } else {
+                    newExpiry = new Date();
+                    newExpiry.setDate(newExpiry.getDate() + codeObj.duration);
+                }
+
+                const tierPriority = { guest: 0, monthly: 1, quarterly: 2, yearly: 3 };
+                if (tierPriority[newTier] >= (tierPriority[user.tier] || 0)) {
+                    updatedUser.tier = newTier;
+                }
+
+                updatedUser.expiry = newExpiry.toISOString();
+            }
+
+            updateUser(updatedUser);
+
+            codeObj.isUsed = true;
+            codeObj.usedBy = user.id;
+            codeObj.usedAt = new Date().toISOString();
+            localStorage.setItem(STORAGE_KEYS.ACTIVATION_CODES, JSON.stringify(codes));
+
+            return {
+                success: true,
+                message: '激活成功！',
+                user: updatedUser
+            };
+        };
+
+        // ==================== 组件定义 ====================
+
+        // Toast 提示组件
+        const Toast = ({ message, type, onClose }) => {
+            useEffect(() => {
+                const timer = setTimeout(onClose, 3000);
+                return () => clearTimeout(timer);
+            }, []);
+
+            const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+
+            return (
+                <div className={`fixed bottom-8 right-8 ${bgColor} text-white px-6 py-4 rounded-xl shadow-2xl animate-slide-in z-50 max-w-sm`}>
+                    <div className="flex items-center gap-3">
+                        <span className="text-xl">{type === 'success' ? '✓' : '✗'}</span>
+                        <span>{message}</span>
+                    </div>
+                </div>
+            );
+        };
+
+        // NavBar 组件
+        const NavBar = ({ user, navigate, onLogout }) => {
+            const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+            return (
+                <nav className="glass-effect fixed w-full z-50 top-0 shadow-sm">
+                    <div className="max-w-7xl mx-auto px-4 py-4">
+                        <div className="flex items-center justify-between">
+                            {/* Logo */}
+                            <div
+                                className="text-2xl font-bold text-brand-400 cursor-pointer flex items-center gap-2"
+                                onClick={() => navigate('home')}
+                            >
+                                <span className="text-3xl">🎯</span>
+                                <span>宇硕短线</span>
+                            </div>
+
+                            {/* Desktop Menu */}
+                            <div className="hidden md:flex items-center gap-6">
+                                <button
+                                    onClick={() => navigate('home')}
+                                    className="hover:text-brand-500 transition font-medium"
+                                >
+                                    首页
+                                </button>
+                                {user && (
+                                    <>
+                                        <button
+                                            onClick={() => navigate('profile')}
+                                            className="hover:text-brand-500 transition font-medium"
+                                        >
+                                            个人中心
+                                        </button>
+                                        {user.role === 'admin' && (
+                                            <button
+                                                onClick={() => navigate('admin')}
+                                                className="hover:text-brand-500 transition font-medium"
+                                            >
+                                                管理后台
+                                            </button>
+                                        )}
+                                    </>
+                                )}
+
+                                {user ? (
+                                    <div className="flex items-center gap-3">
+                                        <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getTierBadgeColor(user.tier)}`}>
+                                            {getTierDisplayName(user.tier)}
+                                        </span>
+                                        <div className="w-10 h-10 rounded-full bg-brand-500 text-white flex items-center justify-center font-bold cursor-pointer hover:bg-brand-600 transition">
+                                            {user.username[0].toUpperCase()}
+                                        </div>
+                                        <button
+                                            onClick={onLogout}
+                                            className="text-gray-500 hover:text-red-500 transition text-sm"
+                                        >
+                                            退出
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={() => navigate('auth', { mode: 'login' })}
+                                        className="bg-brand-500 text-white px-6 py-2 rounded-full hover:bg-brand-600 transition font-semibold"
+                                    >
+                                        登录
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Mobile Menu Button */}
+                            <button
+                                className="md:hidden text-2xl"
+                                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                            >
+                                ☰
+                            </button>
+                        </div>
+
+                        {/* Mobile Menu */}
+                        {mobileMenuOpen && (
+                            <div className="md:hidden mt-4 pb-4 border-t pt-4 animate-fade-in">
+                                <div className="flex flex-col gap-3">
+                                    <button
+                                        onClick={() => { navigate('home'); setMobileMenuOpen(false); }}
+                                        className="text-left py-2 hover:text-brand-500 transition font-medium"
+                                    >
+                                        首页
+                                    </button>
+                                    {user && (
+                                        <>
+                                            <button
+                                                onClick={() => { navigate('profile'); setMobileMenuOpen(false); }}
+                                                className="text-left py-2 hover:text-brand-500 transition font-medium"
+                                            >
+                                                个人中心
+                                            </button>
+                                            {user.role === 'admin' && (
+                                                <button
+                                                    onClick={() => { navigate('admin'); setMobileMenuOpen(false); }}
+                                                    className="text-left py-2 hover:text-brand-500 transition font-medium"
+                                                >
+                                                    管理后台
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => { onLogout(); setMobileMenuOpen(false); }}
+                                                className="text-left py-2 text-red-500 hover:text-red-600 transition font-medium"
+                                            >
+                                                退出登录
+                                            </button>
+                                        </>
+                                    )}
+                                    {!user && (
+                                        <button
+                                            onClick={() => { navigate('auth', { mode: 'login' }); setMobileMenuOpen(false); }}
+                                            className="bg-brand-500 text-white px-6 py-3 rounded-xl hover:bg-brand-600 transition font-semibold"
+                                        >
+                                            登录
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </nav>
+            );
+        };
+
+        // Footer 组件
+        const Footer = () => (
+            <footer className="bg-gray-900 text-white py-8 mt-20">
+                <div className="max-w-7xl mx-auto px-4 text-center">
+                    <p className="text-lg font-semibold mb-2">宇硕短线 SaaS 平台</p>
+                    <p className="text-gray-400 text-sm">专业的金融教育学习平台 · 助力短线交易成功</p>
+                    <p className="text-gray-500 text-xs mt-4">&copy; 2026 版权所有</p>
+                </div>
+            </footer>
+        );
+
+        // ProductCard 组件
+        const ProductCard = ({ product, hasAccess, onClick }) => {
+            const isSpecial = product.id === 'sector-assistant';
+            const textClass = isSpecial ? 'text-white' : 'text-gray-900';
+            const descClass = isSpecial ? 'text-gray-400' : 'text-gray-600';
+
+            return (
+                <div
+                    onClick={onClick}
+                    className={`product-card cursor-pointer ${product.color} rounded-3xl p-6 border ${product.borderColor} relative overflow-hidden shadow-card min-h-[220px] flex flex-col justify-between`}
+                >
+                    <div className="relative z-10">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className={`text-2xl font-bold ${textClass}`}>{product.name}</h3>
+                            <div className={`w-10 h-10 ${product.iconBg} rounded-xl flex items-center justify-center text-lg shadow-sm`}>
+                                <span className={isSpecial ? 'text-green-400' : ''}>{product.icon}</span>
+                            </div>
+                        </div>
+                        <p className={`${descClass} text-sm line-clamp-2 mb-3`}>{product.desc}</p>
+                        <p className={`${product.textColor} font-semibold text-sm`}>{product.price}</p>
+                    </div>
+
+                    {hasAccess && (
+                        <div className="relative z-10 mt-4">
+                            <span className="bg-green-100 text-green-600 px-3 py-1 rounded-full text-xs font-semibold">
+                                ✓ 已拥有
+                            </span>
+                        </div>
+                    )}
+
+                    <div className={`relative z-10 flex items-center ${product.textColor} font-bold text-sm mt-4`}>
+                        查看详情 <span className="ml-2">→</span>
+                    </div>
+                </div>
+            );
+        };
+
+        // 路由组件
+        const Router = ({ page, params, user, navigate, showToast, setCurrentUser }) => {
+            const pages = {
+                'home': <HomePage user={user} navigate={navigate} />,
+                'auth': <AuthPage mode={params.mode || 'login'} navigate={navigate} showToast={showToast} setCurrentUser={setCurrentUser} />,
+                'profile': user ? <ProfilePage user={user} showToast={showToast} setCurrentUser={setCurrentUser} navigate={navigate} /> : null,
+                'product': <ProductDetailPage productId={params.productId} user={user} navigate={navigate} showToast={showToast} />,
+                'admin': (user && user.role === 'admin') ? <AdminDashboard user={user} showToast={showToast} /> : null
+            };
+
+            const currentPage = pages[page];
+
+            if (!currentPage && page !== 'home') {
+                navigate('home');
+                return null;
+            }
+
+            return <div className="page-transition">{currentPage}</div>;
+        };
+
+        // HomePage 组件
+        const HomePage = ({ user, navigate }) => {
+            // 动态快速入口配置
+            const quickAccessConfig = {
+                monthly: [
+                    { id: 'sector-assistant', name: '⚡ 启动板块助手', icon: '🚀', color: 'from-green-400 to-green-600' }
+                ],
+                quarterly: [
+                    { id: 'sector-rhythm', name: '🚀 启动板块节奏系统', icon: '📊', color: 'from-purple-400 to-purple-600' }
+                ],
+                yearly: [
+                    { id: 'sector-rhythm', name: '板块节奏系统', icon: '📊', color: 'from-purple-400 to-purple-600' },
+                    { id: 'review-system', name: '复盘系统', icon: '📝', color: 'from-indigo-400 to-indigo-600' },
+                    { id: 'psychology-test', name: '心理测评系统', icon: '🧠', color: 'from-teal-400 to-teal-600' }
+                ]
+            };
+
+            const quickAccessItems = user && user.tier !== 'guest' ? quickAccessConfig[user.tier] || [] : [];
+
+            return (
+                <div className="min-h-screen bg-white pt-20">
+                    {/* Hero Section */}
+                    <div className="bg-gradient-to-br from-brand-50 to-brand-100 py-16 md:py-24">
+                        <div className="max-w-7xl mx-auto px-4 text-center animate-fade-in">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/50 border border-brand-200 text-brand-600 text-xs font-bold mb-6">
+                                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                                SYSTEM V3.0 ONLINE
+                            </div>
+
+                            <h1 className="text-4xl md:text-6xl font-black text-gray-900 mb-6 leading-tight">
+                                看透市场情绪<br />
+                                <span className="bg-clip-text text-transparent bg-gradient-to-r from-brand-400 to-red-600">
+                                    捕捉短线龙头
+                                </span>
+                            </h1>
+
+                            <p className="text-base md:text-xl text-gray-600 max-w-2xl mx-auto mb-8 leading-relaxed">
+                                全网粉丝6W+。拒绝内幕，只信数据。<br />
+                                全栈式超短军火库，请选择工具进入。
+                            </p>
+
+                            {!user && (
+                                <button
+                                    onClick={() => navigate('auth', { mode: 'register' })}
+                                    className="bg-brand-500 text-white px-8 py-4 rounded-full text-lg font-bold hover:bg-brand-600 transition shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                                >
+                                    立即开始 →
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Dynamic Quick Access */}
+                    {quickAccessItems.length > 0 && (
+                        <div className="max-w-7xl mx-auto px-4 py-12">
+                            <h2 className="text-2xl md:text-3xl font-bold mb-6 text-center">快速访问</h2>
+                            <div className={`grid grid-cols-1 ${quickAccessItems.length === 1 ? 'md:grid-cols-1 max-w-md mx-auto' : 'md:grid-cols-3'} gap-6`}>
+                                {quickAccessItems.map(item => (
+                                    <button
+                                        key={item.id}
+                                        onClick={() => navigate('product', { productId: item.id })}
+                                        className={`bg-gradient-to-r ${item.color} text-white p-6 rounded-2xl text-xl font-semibold hover:scale-105 transition-transform shadow-lg`}
+                                    >
+                                        <span className="text-4xl mr-3">{item.icon}</span>
+                                        {item.name}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Product Grid */}
+                    <div className="max-w-7xl mx-auto px-4 py-12">
+                        <h2 className="text-2xl md:text-3xl font-bold mb-8 text-center">全部产品</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {Object.values(PRODUCTS).map(product => (
+                                <ProductCard
+                                    key={product.id}
+                                    product={product}
+                                    hasAccess={hasProductAccess(user, product.id)}
+                                    onClick={() => navigate('product', { productId: product.id })}
+                                />
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* CTA Section */}
+                    <div className="bg-gray-50 py-16">
+                        <div className="max-w-4xl mx-auto px-4 text-center">
+                            <h2 className="text-3xl font-bold mb-4">准备好开始了吗？</h2>
+                            <p className="text-gray-600 mb-8">加入宇硕短线，开启专业交易之路</p>
+                            {!user ? (
+                                <button
+                                    onClick={() => navigate('auth', { mode: 'register' })}
+                                    className="bg-brand-500 text-white px-8 py-4 rounded-full text-lg font-bold hover:bg-brand-600 transition shadow-lg"
+                                >
+                                    立即注册
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => navigate('profile')}
+                                    className="bg-brand-500 text-white px-8 py-4 rounded-full text-lg font-bold hover:bg-brand-600 transition shadow-lg"
+                                >
+                                    管理会员
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // 由于代码长度限制，后续组件将在下一部分继续...
+        // AuthPage, ProfilePage, ProductDetailPage, AdminDashboard 等组件
+        // 将在接下来的代码中添加
+
+        // ==================== 主应用 ====================
+
+        const App = () => {
+            const [currentUser, setCurrentUser] = useState(null);
+            const [currentPage, setCurrentPage] = useState('home');
+            const [pageParams, setPageParams] = useState({});
+            const [toast, setToast] = useState(null);
+
+            useEffect(() => {
+                initializeData();
+
+                const sessionUser = localStorage.getItem(STORAGE_KEYS.SESSION_USER);
+                if (sessionUser) {
+                    const user = JSON.parse(sessionUser);
+                    setCurrentUser(user);
+                }
+            }, []);
+
+            const navigate = (page, params = {}) => {
+                setCurrentPage(page);
+                setPageParams(params);
+                window.scrollTo(0, 0);
+            };
+
+            const showToast = (message, type = 'success') => {
+                setToast({ message, type });
+            };
+
+            const handleLogout = () => {
+                localStorage.removeItem(STORAGE_KEYS.SESSION_USER);
+                setCurrentUser(null);
+                navigate('home');
+                showToast('已退出登录', 'success');
+            };
+
+            return (
+                <div className="app">
+                    <NavBar user={currentUser} navigate={navigate} onLogout={handleLogout} />
+                    <Router
+                        page={currentPage}
+                        params={pageParams}
+                        user={currentUser}
+                        navigate={navigate}
+                        showToast={showToast}
+                        setCurrentUser={setCurrentUser}
+                    />
+                    <Footer />
+                    {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+                </div>
+            );
+        };
+
+        // AuthPage 组件 - 登录/注册
+        const AuthPage = ({ mode: initialMode, navigate, showToast, setCurrentUser }) => {
+            const [authMode, setAuthMode] = useState(initialMode || 'login');
+            const [formData, setFormData] = useState({
+                username: '',
+                password: '',
+                confirmPassword: '',
+                email: ''
+            });
+
+            const handleLogin = () => {
+                if (!formData.username || !formData.password) {
+                    showToast('请填写用户名和密码', 'error');
+                    return;
+                }
+
+                const users = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS));
+                const user = users.find(
+                    u => u.username === formData.username && u.password === formData.password
+                );
+
+                if (!user) {
+                    showToast('用户名或密码错误', 'error');
+                    return;
+                }
+
+                if (user.status === 'paused') {
+                    showToast('账号已被冻结，请联系管理员', 'error');
+                    return;
+                }
+
+                user.lastLogin = new Date().toISOString();
+                updateUser(user);
+
+                setCurrentUser(user);
+                localStorage.setItem(STORAGE_KEYS.SESSION_USER, JSON.stringify(user));
+                showToast('登录成功！', 'success');
+                navigate('home');
+            };
+
+            const handleRegister = () => {
+                if (!formData.username || !formData.password) {
+                    showToast('请填写用户名和密码', 'error');
+                    return;
+                }
+
+                if (formData.password !== formData.confirmPassword) {
+                    showToast('两次密码输入不一致', 'error');
+                    return;
+                }
+
+                if (formData.password.length < 6) {
+                    showToast('密码长度至少6位', 'error');
+                    return;
+                }
+
+                const users = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS));
+
+                if (users.find(u => u.username === formData.username)) {
+                    showToast('用户名已存在', 'error');
+                    return;
+                }
+
+                const newUser = {
+                    id: Math.max(...users.map(u => u.id), 0) + 1,
+                    username: formData.username,
+                    password: formData.password,
+                    email: formData.email,
+                    role: 'member',
+                    tier: 'guest',
+                    status: 'active',
+                    expiry: null,
+                    specialPerms: [],
+                    createdAt: new Date().toISOString(),
+                    lastLogin: new Date().toISOString()
+                };
+
+                users.push(newUser);
+                localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+
+                showToast('注册成功！请登录', 'success');
+                setAuthMode('login');
+                setFormData({ username: formData.username, password: '', confirmPassword: '', email: '' });
+            };
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (authMode === 'login') {
+                    handleLogin();
+                } else {
+                    handleRegister();
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-brand-50 to-brand-100 flex items-center justify-center pt-20 px-4">
+                    <div className="bg-white rounded-3xl p-8 shadow-2xl max-w-md w-full animate-fade-in">
+                        <div className="text-center mb-8">
+                            <div className="text-5xl mb-4">🎯</div>
+                            <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                                {authMode === 'login' ? '欢迎回来' : '创建账号'}
+                            </h2>
+                            <p className="text-gray-600">
+                                {authMode === 'login' ? '登录您的账号' : '加入宇硕短线社区'}
+                            </p>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-gray-700 font-medium mb-2">用户名</label>
+                                <input
+                                    type="text"
+                                    placeholder="请输入用户名"
+                                    value={formData.username}
+                                    onChange={(e) => setFormData({...formData, username: e.target.value})}
+                                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-gray-700 font-medium mb-2">密码</label>
+                                <input
+                                    type="password"
+                                    placeholder="请输入密码"
+                                    value={formData.password}
+                                    onChange={(e) => setFormData({...formData, password: e.target.value})}
+                                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
+                                />
+                            </div>
+
+                            {authMode === 'register' && (
+                                <>
+                                    <div>
+                                        <label className="block text-gray-700 font-medium mb-2">确认密码</label>
+                                        <input
+                                            type="password"
+                                            placeholder="请再次输入密码"
+                                            value={formData.confirmPassword}
+                                            onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                                            className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-gray-700 font-medium mb-2">邮箱（可选）</label>
+                                        <input
+                                            type="email"
+                                            placeholder="请输入邮箱"
+                                            value={formData.email}
+                                            onChange={(e) => setFormData({...formData, email: e.target.value})}
+                                            className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
+                                        />
+                                    </div>
+                                </>
+                            )}
+
+                            <button
+                                type="submit"
+                                className="w-full bg-brand-500 text-white py-3 rounded-xl font-semibold hover:bg-brand-600 transition shadow-lg transform hover:-translate-y-0.5"
+                            >
+                                {authMode === 'login' ? '登录' : '注册'}
+                            </button>
+                        </form>
+
+                        <div className="mt-6 text-center">
+                            <p className="text-gray-600">
+                                {authMode === 'login' ? '还没有账号？' : '已有账号？'}
+                                <button
+                                    onClick={() => {
+                                        setAuthMode(authMode === 'login' ? 'register' : 'login');
+                                        setFormData({ username: '', password: '', confirmPassword: '', email: '' });
+                                    }}
+                                    className="text-brand-500 ml-2 hover:underline font-semibold"
+                                >
+                                    {authMode === 'login' ? '立即注册' : '去登录'}
+                                </button>
+                            </p>
+                        </div>
+
+                        {authMode === 'login' && (
+                            <div className="mt-6 p-4 bg-blue-50 rounded-xl">
+                                <p className="text-sm text-blue-800 font-semibold mb-2">🔐 演示账号</p>
+                                <p className="text-xs text-blue-600">
+                                    用户名: admin<br />
+                                    密码: admin888
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // ProfilePage 组件 - 个人中心
+        const ProfilePage = ({ user, showToast, setCurrentUser, navigate }) => {
+            const [activationCode, setActivationCode] = useState('');
+
+            const handleActivate = () => {
+                if (!activationCode.trim()) {
+                    showToast('请输入激活码', 'error');
+                    return;
+                }
+
+                const result = activateCode(user, activationCode.trim().toUpperCase());
+                if (result.success) {
+                    // 更新当前用户状态
+                    setCurrentUser(result.user);
+                    // 同时更新 LocalStorage 的 session（确保刷新后仍保持）
+                    localStorage.setItem(STORAGE_KEYS.SESSION_USER, JSON.stringify(result.user));
+                    showToast(result.message, 'success');
+                    setActivationCode('');
+                    // 强制刷新页面以确保所有组件都获取到最新数据
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    showToast(result.message, 'error');
+                }
+            };
+
+            const accessibleProducts = Object.values(PRODUCTS).filter(p => hasProductAccess(user, p.id));
+            const daysLeft = user.expiry
+                ? Math.ceil((new Date(user.expiry) - new Date()) / (1000 * 60 * 60 * 24))
+                : null;
+
+            const isExpired = user.expiry && new Date(user.expiry) < new Date();
+
+            return (
+                <div className="min-h-screen bg-gray-50 pt-24 pb-12 px-4">
+                    <div className="max-w-4xl mx-auto">
+                        {/* 用户信息卡片 */}
+                        <div className="bg-white rounded-3xl p-8 shadow-lg mb-6 animate-fade-in">
+                            <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-6 mb-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-white flex items-center justify-center text-3xl font-bold">
+                                        {user.username[0].toUpperCase()}
+                                    </div>
+                                    <div>
+                                        <h2 className="text-3xl font-bold text-gray-900">{user.username}</h2>
+                                        <p className="text-gray-600">{user.email || '未设置邮箱'}</p>
+                                        <p className="text-xs text-gray-400 mt-1">
+                                            加入于 {new Date(user.createdAt).toLocaleDateString('zh-CN')}
+                                        </p>
+                                    </div>
+                                </div>
+                                <span className={`px-4 py-2 rounded-full font-semibold text-lg ${getTierBadgeColor(user.tier)}`}>
+                                    {getTierDisplayName(user.tier)}
+                                </span>
+                            </div>
+
+                            {/* 会员状态 */}
+                            {user.tier !== 'guest' && user.expiry && (
+                                <div className={`${isExpired ? 'bg-red-50' : 'bg-brand-50'} rounded-xl p-4 mb-6`}>
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-700">会员到期时间</p>
+                                            <p className="text-xl font-bold text-gray-900">
+                                                {new Date(user.expiry).toLocaleDateString('zh-CN', {
+                                                    year: 'numeric',
+                                                    month: 'long',
+                                                    day: 'numeric'
+                                                })}
+                                            </p>
+                                        </div>
+                                        <div className="text-right">
+                                            {isExpired ? (
+                                                <p className="text-red-600 font-bold text-lg">已过期</p>
+                                            ) : (
+                                                <>
+                                                    <p className="text-brand-600 font-bold text-2xl">{daysLeft}</p>
+                                                    <p className="text-sm text-gray-600">天后到期</p>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* 激活码输入 */}
+                            <div className="border-t pt-6">
+                                <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                                    <span>🎫</span>
+                                    激活会员
+                                </h3>
+                                <div className="flex flex-col md:flex-row gap-4">
+                                    <input
+                                        type="text"
+                                        placeholder="请输入激活码（如：YS-M-XXXX）"
+                                        value={activationCode}
+                                        onChange={(e) => setActivationCode(e.target.value.toUpperCase())}
+                                        className="flex-1 px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500 transition font-mono"
+                                        maxLength={11}
+                                    />
+                                    <button
+                                        onClick={handleActivate}
+                                        className="bg-brand-500 text-white px-8 py-3 rounded-xl font-semibold hover:bg-brand-600 transition shadow-lg"
+                                    >
+                                        激活
+                                    </button>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-2">
+                                    💡 提示：激活码格式为 YS-M/Q/Y/T-XXXX
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* 已拥有的产品 */}
+                        <div className="bg-white rounded-3xl p-8 shadow-lg animate-fade-in">
+                            <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                                <span>📦</span>
+                                我的产品
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {accessibleProducts.length > 0 ? (
+                                    accessibleProducts.map(product => (
+                                        <div
+                                            key={product.id}
+                                            onClick={() => navigate('product', { productId: product.id })}
+                                            className="border border-gray-200 rounded-xl p-4 flex items-center justify-between hover:border-brand-400 hover:shadow-md transition cursor-pointer"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-12 h-12 ${product.iconBg} rounded-xl flex items-center justify-center text-2xl`}>
+                                                    {product.icon}
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-semibold text-lg text-gray-900">{product.name}</h4>
+                                                    <p className="text-gray-600 text-sm">{product.desc}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col items-end gap-2">
+                                                <span className="bg-green-100 text-green-600 px-3 py-1 rounded-full text-xs font-semibold">
+                                                    ✓ 已拥有
+                                                </span>
+                                                {user.specialPerms.includes(product.id) && (
+                                                    <span className="bg-purple-100 text-purple-600 px-2 py-0.5 rounded text-xs font-semibold">
+                                                        买断
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="col-span-2 text-center py-12">
+                                        <div className="text-6xl mb-4">📭</div>
+                                        <p className="text-gray-500 text-lg mb-4">暂无可用产品</p>
+                                        <p className="text-gray-400 text-sm mb-6">激活会员码或购买产品后即可使用</p>
+                                        <button
+                                            onClick={() => navigate('home')}
+                                            className="bg-brand-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-brand-600 transition"
+                                        >
+                                            浏览产品
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* 演示激活码提示 */}
+                            {user.tier === 'guest' && (
+                                <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                                    <p className="text-sm text-blue-800 font-semibold mb-2">🎁 演示激活码</p>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-blue-600 font-mono">
+                                        <div>月费: YS-M-DEMO</div>
+                                        <div>季度: YS-Q-DEMO</div>
+                                        <div>年费: YS-Y-DEMO</div>
+                                        <div>买断: YS-T-DEMO</div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ProductDetailPage 组件 - 产品详情页
+        const ProductDetailPage = ({ productId, user, navigate, showToast }) => {
+            const product = PRODUCTS[productId];
+            const hasAccess = hasProductAccess(user, productId);
+            const productDetails = getProductDetails(productId);
+
+            if (!product) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center pt-20">
+                        <div className="text-center">
+                            <div className="text-6xl mb-4">❓</div>
+                            <h2 className="text-3xl font-bold mb-4">产品不存在</h2>
+                            <button
+                                onClick={() => navigate('home')}
+                                className="bg-brand-500 text-white px-6 py-3 rounded-xl hover:bg-brand-600 transition"
+                            >
+                                返回首页
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            const handleCTA = () => {
+                if (!user) {
+                    navigate('auth', { mode: 'login' });
+                    return;
+                }
+
+                if (hasAccess) {
+                    showToast(`正在启动 ${product.name}...`, 'success');
+                } else {
+                    navigate('profile');
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-gray-50">
+                    {/* Hero Section */}
+                    <div className={`bg-gradient-to-br ${product.id === 'sector-assistant' ? 'from-gray-900 to-gray-700' : 'from-brand-400 to-brand-600'} text-white py-20 pt-32`}>
+                        <div className="max-w-7xl mx-auto px-4 text-center animate-fade-in">
+                            <div className="text-6xl mb-6">{product.icon}</div>
+                            <h1 className="text-4xl md:text-5xl font-bold mb-4">{product.name}</h1>
+                            <p className="text-xl md:text-2xl mb-6 opacity-90">{product.desc}</p>
+                            <div className="inline-block bg-white/20 backdrop-blur-sm px-6 py-3 rounded-full">
+                                <p className="text-2xl font-bold">{product.price}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Feature List */}
+                    <div className="max-w-4xl mx-auto px-4 py-12">
+                        {/* 视频链接（仅情绪表格） */}
+                        {productDetails.videoUrl && (
+                            <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-3xl p-6 shadow-lg mb-8 animate-fade-in border border-blue-200">
+                                <div className="flex items-center justify-between flex-wrap gap-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center text-white text-2xl">
+                                            🎬
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-gray-900 text-lg">视频教程</h3>
+                                            <p className="text-gray-600 text-sm">{productDetails.videoTitle}</p>
+                                        </div>
+                                    </div>
+                                    <a
+                                        href={productDetails.videoUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="bg-blue-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-600 transition shadow-lg inline-flex items-center gap-2"
+                                    >
+                                        <span>观看视频</span>
+                                        <span>→</span>
+                                    </a>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="bg-white rounded-3xl p-8 shadow-lg mb-8 animate-fade-in">
+                            <h2 className="text-3xl font-bold mb-8 text-center">核心功能</h2>
+                            <div className="space-y-8">
+                                {productDetails.features.map((feature, index) => (
+                                    <div key={index} className="border-b border-gray-100 pb-8 last:border-b-0 last:pb-0">
+                                        <div className="flex items-start gap-4 mb-4">
+                                            <div className="text-4xl flex-shrink-0">{feature.icon}</div>
+                                            <div className="flex-1">
+                                                <h3 className="font-bold text-xl text-gray-900 mb-2">{feature.title}</h3>
+                                                <p className="text-gray-600 leading-relaxed">{feature.desc}</p>
+                                            </div>
+                                        </div>
+                                        {/* 显示图片（如果有） */}
+                                        {feature.image && (
+                                            <div className="mt-4 ml-14 rounded-xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-md transition">
+                                                <img
+                                                    src={feature.image}
+                                                    alt={feature.title}
+                                                    className="w-full h-auto cursor-pointer hover:scale-105 transition-transform duration-300"
+                                                    onClick={() => window.open(feature.image, '_blank')}
+                                                    loading="lazy"
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* CTA Section */}
+                        <div className="bg-white rounded-3xl p-8 shadow-lg text-center animate-fade-in">
+                            {hasAccess ? (
+                                <div>
+                                    <div className="mb-6">
+                                        <span className="bg-green-100 text-green-600 px-4 py-2 rounded-full font-semibold inline-block">
+                                            ✓ 您已拥有此产品
+                                        </span>
+                                    </div>
+                                    <button
+                                        onClick={handleCTA}
+                                        className="bg-green-500 text-white px-12 py-4 rounded-full text-xl font-bold hover:bg-green-600 transition shadow-lg transform hover:-translate-y-1"
+                                    >
+                                        立即使用
+                                    </button>
+                                    <p className="text-gray-500 text-sm mt-4">点击启动产品功能</p>
+                                </div>
+                            ) : (
+                                <div>
+                                    <p className="text-gray-600 mb-6 text-lg">您暂无权限访问此产品</p>
+                                    {user ? (
+                                        <>
+                                            <button
+                                                onClick={handleCTA}
+                                                className="bg-brand-500 text-white px-12 py-4 rounded-full text-xl font-bold hover:bg-brand-600 transition shadow-lg transform hover:-translate-y-1"
+                                            >
+                                                激活会员
+                                            </button>
+                                            <p className="text-gray-500 text-sm mt-4">
+                                                前往个人中心激活会员码或升级套餐
+                                            </p>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <button
+                                                onClick={handleCTA}
+                                                className="bg-brand-500 text-white px-12 py-4 rounded-full text-xl font-bold hover:bg-brand-600 transition shadow-lg transform hover:-translate-y-1"
+                                            >
+                                                登录后使用
+                                            </button>
+                                            <p className="text-gray-500 text-sm mt-4">
+                                                登录后即可激活会员使用此产品
+                                            </p>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+
+                            <div className="mt-8 pt-8 border-t border-gray-200">
+                                <button
+                                    onClick={() => navigate('home')}
+                                    className="text-gray-600 hover:text-brand-500 transition"
+                                >
+                                    ← 返回首页
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // AdminDashboard 组件 - 后台管理系统
+        const AdminDashboard = ({ user, showToast }) => {
+            const [activeTab, setActiveTab] = useState('codes');
+            const [codeType, setCodeType] = useState('monthly');
+            const [quantity, setQuantity] = useState(10);
+            const [users, setUsers] = useState([]);
+            const [codes, setCodes] = useState([]);
+
+            useEffect(() => {
+                loadData();
+            }, []);
+
+            const loadData = () => {
+                const storedUsers = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS));
+                const storedCodes = JSON.parse(localStorage.getItem(STORAGE_KEYS.ACTIVATION_CODES));
+                setUsers(storedUsers || []);
+                setCodes(storedCodes || []);
+            };
+
+            const handleGenerateCodes = () => {
+                const typeConfig = {
+                    monthly: { prefix: 'M', duration: 30, products: ['learning-circle', 'sector-assistant'] },
+                    quarterly: { prefix: 'Q', duration: 90, products: ['learning-circle', 'sector-assistant', 'sector-rhythm'] },
+                    yearly: { prefix: 'Y', duration: 365, products: ['learning-circle', 'sector-assistant', 'sector-rhythm', 'review-system', 'psychology-test'] },
+                    'buyout-emotion': { prefix: 'T', duration: null, products: ['emotion-table'] }
+                };
+
+                const config = typeConfig[codeType];
+                const batchId = `BATCH-${Date.now()}`;
+                const newCodes = [];
+                const allCodes = [...codes];
+
+                for (let i = 0; i < quantity; i++) {
+                    const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase();
+                    const code = {
+                        code: `YS-${config.prefix}-${randomStr}`,
+                        type: codeType,
+                        duration: config.duration,
+                        products: config.products,
+                        isUsed: false,
+                        usedBy: null,
+                        usedAt: null,
+                        createdAt: new Date().toISOString(),
+                        batchId: batchId
+                    };
+                    newCodes.push(code);
+                    allCodes.push(code);
+                }
+
+                localStorage.setItem(STORAGE_KEYS.ACTIVATION_CODES, JSON.stringify(allCodes));
+                setCodes(allCodes);
+                showToast(`成功生成 ${quantity} 个激活码`, 'success');
+
+                // 下载激活码
+                const text = newCodes.map(c => c.code).join('\n');
+                const blob = new Blob([text], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `activation-codes-${batchId}.txt`;
+                a.click();
+            };
+
+            const handleToggleUserStatus = (userId) => {
+                const updatedUsers = users.map(u => {
+                    if (u.id === userId) {
+                        return { ...u, status: u.status === 'active' ? 'paused' : 'active' };
+                    }
+                    return u;
+                });
+
+                localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(updatedUsers));
+                setUsers(updatedUsers);
+                showToast('用户状态已更新', 'success');
+            };
+
+            const handleExtendMembership = (userId, days) => {
+                const updatedUsers = users.map(u => {
+                    if (u.id === userId) {
+                        let newExpiry;
+                        if (u.expiry && new Date(u.expiry) > new Date()) {
+                            newExpiry = new Date(u.expiry);
+                        } else {
+                            newExpiry = new Date();
+                        }
+                        newExpiry.setDate(newExpiry.getDate() + days);
+                        return { ...u, expiry: newExpiry.toISOString() };
+                    }
+                    return u;
+                });
+
+                localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(updatedUsers));
+                setUsers(updatedUsers);
+                showToast(`已为用户延长 ${days} 天会员`, 'success');
+            };
+
+            // 统计数据
+            const stats = {
+                totalUsers: users.length,
+                activeUsers: users.filter(u => u.status === 'active').length,
+                monthlyMembers: users.filter(u => u.tier === 'monthly').length,
+                quarterlyMembers: users.filter(u => u.tier === 'quarterly').length,
+                yearlyMembers: users.filter(u => u.tier === 'yearly').length,
+                totalCodes: codes.length,
+                usedCodes: codes.filter(c => c.isUsed).length,
+                unusedCodes: codes.filter(c => !c.isUsed).length
+            };
+
+            return (
+                <div className="min-h-screen bg-gray-50 pt-24 pb-12 px-4">
+                    <div className="max-w-6xl mx-auto">
+                        <div className="mb-8 animate-fade-in">
+                            <h1 className="text-4xl font-bold mb-2">管理后台</h1>
+                            <p className="text-gray-600">欢迎回来，{user.username}</p>
+                        </div>
+
+                        {/* Tab Navigation */}
+                        <div className="bg-white rounded-3xl p-2 shadow-lg mb-8 flex gap-2 overflow-x-auto animate-fade-in">
+                            <button
+                                onClick={() => setActiveTab('codes')}
+                                className={`flex-1 py-3 px-6 rounded-xl font-semibold transition whitespace-nowrap ${activeTab === 'codes' ? 'bg-brand-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                            >
+                                激活码管理
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('users')}
+                                className={`flex-1 py-3 px-6 rounded-xl font-semibold transition whitespace-nowrap ${activeTab === 'users' ? 'bg-brand-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                            >
+                                会员管理
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('stats')}
+                                className={`flex-1 py-3 px-6 rounded-xl font-semibold transition whitespace-nowrap ${activeTab === 'stats' ? 'bg-brand-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}
+                            >
+                                数据统计
+                            </button>
+                        </div>
+
+                        {/* Tab Content */}
+                        {activeTab === 'codes' && (
+                            <div className="space-y-6 animate-fade-in">
+                                {/* 生成激活码 */}
+                                <div className="bg-white rounded-3xl p-8 shadow-lg">
+                                    <h2 className="text-2xl font-bold mb-6">生成激活码</h2>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="block text-gray-700 font-medium mb-2">激活码类型</label>
+                                            <select
+                                                value={codeType}
+                                                onChange={(e) => setCodeType(e.target.value)}
+                                                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
+                                            >
+                                                <option value="monthly">月费会员（30天）</option>
+                                                <option value="quarterly">季度会员（90天）</option>
+                                                <option value="yearly">年费会员（365天）</option>
+                                                <option value="buyout-emotion">情绪表格（买断）</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-gray-700 font-medium mb-2">生成数量</label>
+                                            <input
+                                                type="number"
+                                                value={quantity}
+                                                onChange={(e) => setQuantity(Math.max(1, Math.min(100, parseInt(e.target.value) || 1)))}
+                                                min="1"
+                                                max="100"
+                                                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
+                                            />
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={handleGenerateCodes}
+                                        className="w-full mt-6 bg-brand-500 text-white py-3 rounded-xl font-semibold hover:bg-brand-600 transition shadow-lg"
+                                    >
+                                        生成并下载激活码
+                                    </button>
+                                </div>
+
+                                {/* 激活码列表 */}
+                                <div className="bg-white rounded-3xl p-8 shadow-lg">
+                                    <h3 className="text-xl font-bold mb-4">最近生成的激活码</h3>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full">
+                                            <thead className="bg-gray-50">
+                                                <tr>
+                                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">激活码</th>
+                                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">类型</th>
+                                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">状态</th>
+                                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">生成时间</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-200">
+                                                {codes.slice(-10).reverse().map((code, index) => (
+                                                    <tr key={index} className="hover:bg-gray-50">
+                                                        <td className="px-4 py-3 font-mono text-sm">{code.code}</td>
+                                                        <td className="px-4 py-3 text-sm">
+                                                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                                                code.type === 'monthly' ? 'bg-blue-100 text-blue-600' :
+                                                                code.type === 'quarterly' ? 'bg-purple-100 text-purple-600' :
+                                                                code.type === 'yearly' ? 'bg-orange-100 text-orange-600' :
+                                                                'bg-green-100 text-green-600'
+                                                            }`}>
+                                                                {code.type === 'monthly' ? '月费' :
+                                                                 code.type === 'quarterly' ? '季度' :
+                                                                 code.type === 'yearly' ? '年费' :
+                                                                 '买断'}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-sm">
+                                                            {code.isUsed ? (
+                                                                <span className="text-gray-500">已使用</span>
+                                                            ) : (
+                                                                <span className="text-green-600 font-semibold">未使用</span>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-sm text-gray-600">
+                                                            {new Date(code.createdAt).toLocaleString('zh-CN')}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'users' && (
+                            <div className="bg-white rounded-3xl p-8 shadow-lg animate-fade-in">
+                                <h2 className="text-2xl font-bold mb-6">会员管理</h2>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead className="bg-gray-50">
+                                            <tr>
+                                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">用户名</th>
+                                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">等级</th>
+                                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">到期时间</th>
+                                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">状态</th>
+                                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-200">
+                                            {users.map((u) => (
+                                                <tr key={u.id} className="hover:bg-gray-50">
+                                                    <td className="px-4 py-3">
+                                                        <div>
+                                                            <p className="font-semibold text-gray-900">{u.username}</p>
+                                                            <p className="text-xs text-gray-500">{u.email || '无邮箱'}</p>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getTierBadgeColor(u.tier)}`}>
+                                                            {getTierDisplayName(u.tier)}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-sm text-gray-600">
+                                                        {u.expiry ? new Date(u.expiry).toLocaleDateString('zh-CN') : '无期限'}
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                                            u.status === 'active' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+                                                        }`}>
+                                                            {u.status === 'active' ? '正常' : '冻结'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                onClick={() => handleToggleUserStatus(u.id)}
+                                                                className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
+                                                                    u.status === 'active'
+                                                                        ? 'bg-red-100 text-red-600 hover:bg-red-200'
+                                                                        : 'bg-green-100 text-green-600 hover:bg-green-200'
+                                                                }`}
+                                                            >
+                                                                {u.status === 'active' ? '冻结' : '解冻'}
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleExtendMembership(u.id, 30)}
+                                                                className="px-3 py-1 rounded-lg text-xs font-semibold bg-blue-100 text-blue-600 hover:bg-blue-200 transition"
+                                                            >
+                                                                +30天
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'stats' && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
+                                <div className="bg-white rounded-3xl p-6 shadow-lg">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-gray-600 font-medium">总用户数</h3>
+                                        <div className="text-3xl">👥</div>
+                                    </div>
+                                    <p className="text-4xl font-bold text-gray-900">{stats.totalUsers}</p>
+                                    <p className="text-sm text-gray-500 mt-2">活跃: {stats.activeUsers}</p>
+                                </div>
+
+                                <div className="bg-white rounded-3xl p-6 shadow-lg">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-gray-600 font-medium">月费会员</h3>
+                                        <div className="text-3xl">📅</div>
+                                    </div>
+                                    <p className="text-4xl font-bold text-blue-600">{stats.monthlyMembers}</p>
+                                </div>
+
+                                <div className="bg-white rounded-3xl p-6 shadow-lg">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-gray-600 font-medium">季度会员</h3>
+                                        <div className="text-3xl">🎯</div>
+                                    </div>
+                                    <p className="text-4xl font-bold text-purple-600">{stats.quarterlyMembers}</p>
+                                </div>
+
+                                <div className="bg-white rounded-3xl p-6 shadow-lg">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-gray-600 font-medium">年费会员</h3>
+                                        <div className="text-3xl">⭐</div>
+                                    </div>
+                                    <p className="text-4xl font-bold text-orange-600">{stats.yearlyMembers}</p>
+                                </div>
+
+                                <div className="bg-white rounded-3xl p-6 shadow-lg">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-gray-600 font-medium">总激活码</h3>
+                                        <div className="text-3xl">🎫</div>
+                                    </div>
+                                    <p className="text-4xl font-bold text-gray-900">{stats.totalCodes}</p>
+                                    <p className="text-sm text-gray-500 mt-2">已使用: {stats.usedCodes}</p>
+                                </div>
+
+                                <div className="bg-white rounded-3xl p-6 shadow-lg">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-gray-600 font-medium">使用率</h3>
+                                        <div className="text-3xl">📊</div>
+                                    </div>
+                                    <p className="text-4xl font-bold text-green-600">
+                                        {stats.totalCodes > 0 ? Math.round((stats.usedCodes / stats.totalCodes) * 100) : 0}%
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // ==================== 渲染 ====================
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>

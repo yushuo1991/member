@@ -27,7 +27,8 @@ function tryEnvAdminLogin(identifier: string, password: string) {
   const username = adminUsername || 'admin';
   const email = adminEmail || `${username}@admin.local`;
 
-  return { id: 0, username, email, role: 'super_admin' };
+  // Use ID 1 (default admin) instead of 0 to match database
+  return { id: 1, username, email, role: 'super_admin' };
 }
 
 export async function POST(request: NextRequest) {

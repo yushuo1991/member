@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(start \"\" \"C:\\\\Users\\\\yushu\\\\Desktop\\\\我的会员体系\\\\index.html\")",
+      "Bash(gh run list:*)",
+      "Bash(ssh:*)",
+      "Bash(curl:*)",
+      "Bash(gh api:*)",
+      "Bash(gh run cancel:*)",
+      "Bash(gh workflow run:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push)",
+      "Bash(gh run view:*)",
+      "Bash(ping:*)",
+      "Bash(ls:*)",
+      "Bash(node generate-admin-hash.js)",
+      "Bash(npm run dev)",
+      "Bash(timeout 10 tail:*)",
+      "Bash(git push:*)",
+      "Bash(npm run type-check:*)"
+    ]
+  }
+}

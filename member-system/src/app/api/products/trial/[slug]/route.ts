@@ -73,12 +73,11 @@ export async function POST(
     const ipAddress = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
                       request.headers.get('x-real-ip') ||
                       'unknown';
-    const userAgent = request.headers.get('user-agent') || 'unknown';
 
     await db.execute(
-      `INSERT INTO trial_logs (user_id, product_slug, ip_address, user_agent)
-       VALUES (?, ?, ?, ?)`,
-      [user.userId, slug, ipAddress, userAgent]
+      `INSERT INTO trial_logs (user_id, product_slug, ip_address)
+       VALUES (?, ?, ?)`,
+      [user.userId, slug, ipAddress]
     );
 
     const newTrialCount = currentTrialCount - 1;

@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 const menuItems = [
   {
     name: '控制台',
-    href: '/admin',
+    href: '/admin/dashboard',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path
@@ -70,7 +70,7 @@ export default function AdminSidebar() {
     try {
       await fetch('/api/admin/auth/logout', { method: 'POST', credentials: 'include' });
     } finally {
-      router.replace('/admin/login');
+      router.replace('/admin');
     }
   };
 

@@ -55,21 +55,26 @@ export async function PATCH(
       [newStatus, userId]
     );
 
-    // 记录审计日志
-    await db.execute(
-      `INSERT INTO admin_audit_logs
-        (admin_id, action, target_type, target_id, old_value, new_value, description, ip_address)
-       VALUES (?, ?, 'user', ?, ?, ?, ?, ?)`,
-      [
-        admin.userId,
-        isFrozen ? 'freeze_user' : 'unfreeze_user',
-        userId,
-        JSON.stringify({ status: user.status }),
-        JSON.stringify({ status: newStatus }),
-        `${isFrozen ? '冻结' : '解冻'}用户: ${user.username}`,
-        request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown'
-      ]
-    );
+    // 记录审计日志（失败不影响主操作）
+    try {
+      await db.execute(
+        `INSERT INTO admin_audit_logs
+          (admin_id, action, target_type, target_id, old_value, new_value, description, ip_address)
+         VALUES (?, ?, 'user', ?, ?, ?, ?, ?)`,
+        [
+          admin.userId,
+          isFrozen ? 'freeze_user' : 'unfreeze_user',
+          userId,
+          JSON.stringify({ status: user.status }),
+          JSON.stringify({ status: newStatus }),
+          `${isFrozen ? '冻结' : '解冻'}用户: ${user.username}`,
+          request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown'
+        ]
+      );
+    } catch (auditError) {
+      console.warn('[冻结/解冻会员API] 审计日志记录失败:', auditError);
+      // 继续执行，不影响主操作
+    }
 
     return successResponse(
       {

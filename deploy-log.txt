@@ -1,0 +1,248 @@
+==========================================
+  紧急部署 - 修复会员列表500错误
+==========================================
+
+[1/6] 本地构建...
+
+> member-system@1.0.0 build
+> next build
+
+  ▲ Next.js 14.2.35
+  - Environments: .env
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/28) ...
+[GET /api/auth/me] failed: B [Error]: Dynamic server usage: Route /api/auth/me couldn't be rendered statically because it used `request.cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V (C:\Users\yushu\Desktop\我的会员体系\member-system\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21778)
+    at Object.get (C:\Users\yushu\Desktop\我的会员体系\member-system\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29465)
+    at s (C:\Users\yushu\Desktop\我的会员体系\member-system\.next\server\app\api\admin\auth\logout\route.js:1:1662)
+    at l (C:\Users\yushu\Desktop\我的会员体系\member-system\.next\server\app\api\admin\auth\logout\route.js:1:1807)
+    at l (C:\Users\yushu\Desktop\我的会员体系\member-system\.next\server\app\api\auth\me\route.js:1:1037)
+    at C:\Users\yushu\Desktop\我的会员体系\member-system\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:38417
+    at C:\Users\yushu\Desktop\我的会员体系\member-system\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with (C:\Users\yushu\Desktop\我的会员体系\member-system\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:7062)
+    at ContextAPI.with (C:\Users\yushu\Desktop\我的会员体系\member-system\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:518)
+    at NoopTracer.startActiveSpan (C:\Users\yushu\Desktop\我的会员体系\member-system\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18093) {
+  description: "Route /api/auth/me couldn't be rendered statically because it used `request.cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+[获取激活码列表] 失败: B [Error]: Dynamic server usage: Route /api/admin/codes/list couldn't be rendered statically because it used `request.cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V (C:\Users\yushu\Desktop\我的会员体系\member-system\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21778)
+    at Object.get (C:\Users\yushu\Desktop\我的会员体系\member-system\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29465)
+    at o (C:\Users\yushu\Desktop\我的会员体系\member-system\.next\server\app\api\admin\members\route.js:11:1297)
+    at p (C:\Users\yushu\Desktop\我的会员体系\member-system\.next\server\app\api\admin\members\route.js:11:1674)
+    at l (C:\Users\yushu\Desktop\我的会员体系\member-system\.next\server\app\api\admin\codes\list\route.js:1:1038)
+    at C:\Users\yushu\Desktop\我的会员体系\member-system\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:38417
+    at C:\Users\yushu\Desktop\我的会员体系\member-system\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with (C:\Users\yushu\Desktop\我的会员体系\member-system\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:7062)
+    at ContextAPI.with (C:\Users\yushu\Desktop\我的会员体系\member-system\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:518)
+    at NoopTracer.startActiveSpan (C:\Users\yushu\Desktop\我的会员体系\member-system\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18093) {
+  description: "Route /api/admin/codes/list couldn't be rendered statically because it used `request.cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+[会员列表API] 查询失败: B [Error]: Dynamic server usage: Route /api/admin/members couldn't be rendered statically because it used `request.cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V (C:\Users\yushu\Desktop\我的会员体系\member-system\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21778)
+    at Object.get (C:\Users\yushu\Desktop\我的会员体系\member-system\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29465)
+    at a (C:\Users\yushu\Desktop\我的会员体系\member-system\.next\server\app\api\auth\logout\route.js:1:1753)
+    at c (C:\Users\yushu\Desktop\我的会员体系\member-system\.next\server\app\api\auth\logout\route.js:1:2130)
+    at p (C:\Users\yushu\Desktop\我的会员体系\member-system\.next\server\app\api\admin\members\route.js:1:1038)
+    at C:\Users\yushu\Desktop\我的会员体系\member-system\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:38417
+    at C:\Users\yushu\Desktop\我的会员体系\member-system\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with (C:\Users\yushu\Desktop\我的会员体系\member-system\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:7062)
+    at ContextAPI.with (C:\Users\yushu\Desktop\我的会员体系\member-system\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:518)
+    at NoopTracer.startActiveSpan (C:\Users\yushu\Desktop\我的会员体系\member-system\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18093) {
+  description: "Route /api/admin/members couldn't be rendered statically because it used `request.cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+[统计API] 查询失败: B [Error]: Dynamic server usage: Route /api/admin/dashboard/stats couldn't be rendered statically because it used `request.cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error
+    at V (C:\Users\yushu\Desktop\我的会员体系\member-system\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:21778)
+    at Object.get (C:\Users\yushu\Desktop\我的会员体系\member-system\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:29465)
+    at o (C:\Users\yushu\Desktop\我的会员体系\member-system\.next\server\app\api\admin\members\[id]\route.js:45:1267)
+    at d (C:\Users\yushu\Desktop\我的会员体系\member-system\.next\server\app\api\admin\members\[id]\route.js:45:1644)
+    at c (C:\Users\yushu\Desktop\我的会员体系\member-system\.next\server\app\api\admin\dashboard\stats\route.js:1:1038)
+    at C:\Users\yushu\Desktop\我的会员体系\member-system\node_modules\next\dist\compiled\next-server\app-route.runtime.prod.js:6:38417
+    at C:\Users\yushu\Desktop\我的会员体系\member-system\node_modules\next\dist\server\lib\trace\tracer.js:140:36
+    at NoopContextManager.with (C:\Users\yushu\Desktop\我的会员体系\member-system\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:7062)
+    at ContextAPI.with (C:\Users\yushu\Desktop\我的会员体系\member-system\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:518)
+    at NoopTracer.startActiveSpan (C:\Users\yushu\Desktop\我的会员体系\member-system\node_modules\next\dist\compiled\@opentelemetry\api\index.js:1:18093) {
+  description: "Route /api/admin/dashboard/stats couldn't be rendered statically because it used `request.cookies`. See more info here: https://nextjs.org/docs/messages/dynamic-server-error",
+  digest: 'DYNAMIC_SERVER_USAGE'
+}
+   Generating static pages (7/28) 
+ ⚠ Unsupported metadata viewport is configured in metadata export in /admin/codes. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/codes. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /admin/codes. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/codes. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /_not-found. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /_not-found. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /_not-found. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /_not-found. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /membership. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /membership. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /membership. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /membership. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /admin/stats. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/stats. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /admin/stats. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/stats. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /admin/login. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/login. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /admin/login. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/login. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+   Generating static pages (14/28) 
+ ⚠ Unsupported metadata viewport is configured in metadata export in /admin/members. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/members. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /admin/members. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin/members. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /register. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /register. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /register. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /register. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /login. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /login. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /login. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /login. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /fuplan. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /fuplan. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /fuplan. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /fuplan. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /member. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /member. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /member. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /member. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /admin. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /admin. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /admin. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /upgrade. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /upgrade. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /upgrade. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /upgrade. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /bk. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /bk. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /bk. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /bk. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+   Generating static pages (21/28) 
+ ✓ Generating static pages (28/28)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                              Size     First Load JS
+┌ ○ /                                    6.59 kB         103 kB
+├ ○ /_not-found                          873 B          88.1 kB
+├ ○ /admin                               4.77 kB          92 kB
+├ ○ /admin/codes                         2.91 kB        90.2 kB
+├ ○ /admin/login                         1.3 kB         97.4 kB
+├ ○ /admin/members                       7.21 kB        94.5 kB
+├ ○ /admin/stats                         1.64 kB        88.9 kB
+├ ƒ /api/activation/activate             0 B                0 B
+├ ƒ /api/activation/generate             0 B                0 B
+├ ƒ /api/admin/auth/login                0 B                0 B
+├ ƒ /api/admin/auth/logout               0 B                0 B
+├ ƒ /api/admin/codes/list                0 B                0 B
+├ ƒ /api/admin/dashboard/stats           0 B                0 B
+├ ƒ /api/admin/members                   0 B                0 B
+├ ƒ /api/admin/members/[id]              0 B                0 B
+├ ƒ /api/admin/members/[id]/adjust       0 B                0 B
+├ ƒ /api/admin/members/[id]/status       0 B                0 B
+├ ƒ /api/auth/login                      0 B                0 B
+├ ƒ /api/auth/logout                     0 B                0 B
+├ ƒ /api/auth/me                         0 B                0 B
+├ ƒ /api/auth/register                   0 B                0 B
+├ ƒ /api/gate/[slug]                     0 B                0 B
+├ ○ /api/products                        0 B                0 B
+├ ƒ /api/products/access/[slug]          0 B                0 B
+├ ƒ /api/products/trial/[slug]           0 B                0 B
+├ ○ /bk                                  138 B          99.3 kB
+├ ○ /fuplan                              138 B          99.3 kB
+├ ○ /login                               1.78 kB        97.8 kB
+├ ○ /member                              7.98 kB         104 kB
+├ ○ /membership                          1.87 kB        97.9 kB
+├ ƒ /products/[slug]                     13.1 kB         109 kB
+├ ○ /register                            1.76 kB        97.8 kB
+└ ○ /upgrade                             2.89 kB        98.9 kB
++ First Load JS shared by all            87.3 kB
+  ├ chunks/117-44f313f5c3c7978a.js       31.7 kB
+  ├ chunks/fd9d1056-53a5bfafda6f8790.js  53.6 kB
+  └ other shared chunks (total)          1.89 kB
+
+
+ƒ Middleware                             26.5 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+> member-system@1.0.0 postbuild
+> node scripts/copy-standalone-assets.mjs
+
+Prepared standalone assets (.next/static + public).
+
+[2/6] 创建部署包...
+
+[3/6] 上传到服务器...
+ssh_dispatch_run_fatal: Connection to 8.153.110.212 port 22: Broken pipe
+scp: Connection closed

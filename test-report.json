@@ -1,0 +1,140 @@
+{
+  "total": 12,
+  "passed": 6,
+  "failed": 6,
+  "details": [
+    {
+      "category": "用户功能",
+      "testName": "用户注册",
+      "passed": true,
+      "details": {
+        "status": 200,
+        "responseTime": 461,
+        "data": {
+          "success": true,
+          "data": {
+            "id": 20,
+            "username": "test_1769194063898",
+            "email": "test_1769194063898@test.com",
+            "membershipLevel": "none"
+          },
+          "message": "注册成功",
+          "timestamp": "2026-01-23T18:47:42.304Z"
+        }
+      },
+      "timestamp": "2026-01-23T18:47:44.363Z"
+    },
+    {
+      "category": "用户功能",
+      "testName": "用户登录",
+      "passed": true,
+      "details": {
+        "status": 200,
+        "responseTime": 343,
+        "hasCookie": true
+      },
+      "timestamp": "2026-01-23T18:47:44.708Z"
+    },
+    {
+      "category": "用户功能",
+      "testName": "获取用户信息",
+      "passed": false,
+      "details": {
+        "status": 500,
+        "responseTime": 79
+      },
+      "timestamp": "2026-01-23T18:47:44.787Z"
+    },
+    {
+      "category": "用户功能",
+      "testName": "产品访问门控 - 学习圈",
+      "passed": false,
+      "details": {
+        "status": 403,
+        "responseTime": 385
+      },
+      "timestamp": "2026-01-23T18:47:45.173Z"
+    },
+    {
+      "category": "用户功能",
+      "testName": "产品访问门控 - 板块节奏系统",
+      "passed": false,
+      "details": {
+        "status": 403,
+        "responseTime": 47
+      },
+      "timestamp": "2026-01-23T18:47:45.220Z"
+    },
+    {
+      "category": "管理员功能",
+      "testName": "管理员登录",
+      "passed": false,
+      "details": {
+        "status": 401,
+        "responseTime": 354,
+        "hasCookie": false
+      },
+      "timestamp": "2026-01-23T18:47:45.574Z"
+    },
+    {
+      "category": "管理员功能",
+      "testName": "获取会员列表",
+      "passed": false,
+      "details": {
+        "status": 401,
+        "responseTime": 31
+      },
+      "timestamp": "2026-01-23T18:47:45.606Z"
+    },
+    {
+      "category": "管理员功能",
+      "testName": "获取统计数据",
+      "passed": false,
+      "details": {
+        "status": 401,
+        "responseTime": 21
+      },
+      "timestamp": "2026-01-23T18:47:45.627Z"
+    },
+    {
+      "category": "前端页面",
+      "testName": "访问首页",
+      "passed": true,
+      "details": {
+        "status": 200,
+        "responseTime": 31
+      },
+      "timestamp": "2026-01-23T18:47:45.670Z"
+    },
+    {
+      "category": "前端页面",
+      "testName": "访问会员页",
+      "passed": true,
+      "details": {
+        "status": 200,
+        "responseTime": 27
+      },
+      "timestamp": "2026-01-23T18:47:45.706Z"
+    },
+    {
+      "category": "前端页面",
+      "testName": "访问管理后台",
+      "passed": true,
+      "details": {
+        "status": 200,
+        "responseTime": 119
+      },
+      "timestamp": "2026-01-23T18:47:45.835Z"
+    },
+    {
+      "category": "前端页面",
+      "testName": "访问会员管理页",
+      "passed": true,
+      "details": {
+        "status": 200,
+        "responseTime": 38
+      },
+      "timestamp": "2026-01-23T18:47:45.883Z"
+    }
+  ]
+}
