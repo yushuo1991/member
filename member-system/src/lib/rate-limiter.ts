@@ -22,20 +22,20 @@ const DEFAULT_CONFIG: RateLimitConfig = {
 // 不同操作的限流配置
 const RATE_LIMIT_CONFIGS: Record<string, RateLimitConfig> = {
   login: {
-    maxAttempts: 5,
+    maxAttempts: 100, // 增加到100次，方便测试
     windowMinutes: 15,
-    blockDurationMinutes: 30
+    blockDurationMinutes: 5 // 减少封禁时间到5分钟
   },
   register: {
     // Allow more signups from the same IP (e.g. testing).
-    maxAttempts: 10,
+    maxAttempts: 50,
     windowMinutes: 30,
-    blockDurationMinutes: 10
+    blockDurationMinutes: 5
   },
   activate: {
-    maxAttempts: 10,
+    maxAttempts: 50,
     windowMinutes: 15,
-    blockDurationMinutes: 15
+    blockDurationMinutes: 5
   }
 };
 
