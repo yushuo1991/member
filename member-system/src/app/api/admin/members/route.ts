@@ -62,8 +62,8 @@ export async function GET(request: NextRequest) {
        LEFT JOIN memberships m ON u.id = m.user_id
        ${whereClause}
        ORDER BY u.created_at DESC
-       LIMIT ? OFFSET ?`,
-      [...queryParams, parseInt(String(limit)), parseInt(String(offset))]
+       LIMIT ${limit} OFFSET ${offset}`,
+      queryParams
     );
 
     return successResponse(
