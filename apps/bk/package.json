@@ -4,10 +4,10 @@
   "private": true,
   "description": "宇硕板块节奏系统 - 涨停板追踪分析",
   "scripts": {
-    "dev": "next dev -p 3002",
+    "dev": "next dev -p 3001",
     "build": "next build",
     "postbuild": "node scripts/copy-standalone-assets.mjs",
-    "start": "next start -p 3002",
+    "start": "next start -p 3001",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "clean": "rm -rf .next node_modules"

@@ -4,10 +4,10 @@
   "private": true,
   "description": "心理测评系统 - 龙头与跟风交易心理问卷",
   "scripts": {
-    "dev": "next dev -p 3004",
+    "dev": "next dev -p 3003",
     "build": "next build",
     "postbuild": "node scripts/copy-standalone-assets.mjs",
-    "start": "next start -p 3004",
+    "start": "next start -p 3003",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "clean": "rm -rf .next node_modules"
