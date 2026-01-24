@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
        ${whereClause}
        ORDER BY u.created_at DESC
        LIMIT ? OFFSET ?`,
-      [...queryParams, limit, offset]
+      [...queryParams, parseInt(String(limit)), parseInt(String(offset))]
     );
 
     return successResponse(
