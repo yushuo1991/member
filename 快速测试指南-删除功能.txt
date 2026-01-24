@@ -1,0 +1,83 @@
+会员管理删除功能 - 快速测试指南
+========================================
+
+测试地址: http://yushuofupan.com/admin/members
+
+步骤1: 登录管理后台
+------------------
+访问: http://yushuofupan.com/admin
+使用管理员账号登录
+
+
+步骤2: 进入会员管理
+------------------
+点击左侧菜单 "会员管理" 或直接访问:
+http://yushuofupan.com/admin/members
+
+
+步骤3: 测试删除功能
+------------------
+1. 在会员列表中找到一个测试用户
+2. 点击该用户右侧的红色删除按钮（垃圾桶图标）
+3. 在弹出的确认对话框中点击"确认删除"
+4. 观察以下内容：
+   ✅ 是否显示"会员 XXX 已删除"的成功提示
+   ✅ 列表是否自动刷新
+   ✅ 已删除的会员是否从列表中消失
+   ✅ 会员总数是否减少
+
+
+步骤4: 验证持久性
+----------------
+1. 刷新整个页面（F5）
+2. 确认已删除的会员仍然不在列表中
+3. 尝试搜索被删除会员的用户名或邮箱
+4. 确认搜索结果中不包含已删除的会员
+
+
+预期结果
+--------
+✅ 删除操作成功，显示成功提示
+✅ 列表立即刷新，已删除会员消失
+✅ 刷新页面后仍然不显示
+✅ 搜索不到已删除的会员
+
+
+如果出现问题
+-----------
+请检查：
+1. 浏览器控制台是否有错误（F12 -> Console）
+2. Network标签中DELETE请求是否返回success: true
+3. 列表刷新的GET请求是否正确返回数据
+
+
+数据库验证（可选）
+-----------------
+连接到MySQL数据库，执行：
+
+-- 查看软删除的用户
+SELECT id, username, email, deleted_at, status
+FROM users
+WHERE deleted_at IS NOT NULL
+ORDER BY deleted_at DESC
+LIMIT 5;
+
+-- 查看正常用户数量
+SELECT COUNT(*) as active_users
+FROM users
+WHERE deleted_at IS NULL;
+
+
+修复内容
+--------
+问题：删除后刷新列表仍显示已删除会员
+原因：列表API未过滤软删除（deleted_at IS NOT NULL）的用户
+修复：添加 WHERE u.deleted_at IS NULL 过滤条件
+部署：已于 2026-01-24 04:10 部署到生产环境
+
+
+相关文件
+--------
+- API: member-system/src/app/api/admin/members/route.ts (已修复)
+- 删除API: member-system/src/app/api/admin/members/[id]/route.ts (正常)
+- 前端: member-system/src/app/admin/members/page.tsx (正常)
