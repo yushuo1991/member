@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
         ac.id, ac.code, ac.level, ac.duration_days,
         ac.used, ac.used_by, ac.used_at, ac.created_at,
         ac.expires_at, ac.batch_id,
+        u.username as used_by_username,
         u.email as used_by_email
       FROM activation_codes ac
       LEFT JOIN users u ON ac.used_by = u.id

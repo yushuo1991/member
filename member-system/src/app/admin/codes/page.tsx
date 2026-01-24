@@ -9,6 +9,7 @@ interface ActivationCode {
   duration_days: number;
   used: boolean;
   used_by: number | null;
+  used_by_username: string | null;
   used_by_email: string | null;
   used_at: string | null;
   created_at: string;
@@ -292,15 +293,15 @@ export default function CodesPage() {
                       {new Date(code.created_at).toLocaleDateString('zh-CN')}
                     </td>
                     <td className="px-6 py-4">
-                      {code.used_by_email ? (
+                      {code.used_by_username ? (
                         <div className="text-sm">
-                          <div className="text-gray-900">{code.used_by_email}</div>
-                          <div className="text-gray-500">
+                          <div className="text-gray-900 font-medium">{code.used_by_username}</div>
+                          <div className="text-gray-500 text-xs">
                             {code.used_at ? new Date(code.used_at).toLocaleDateString('zh-CN') : '-'}
                           </div>
                         </div>
                       ) : (
-                        <span className="text-gray-400">-</span>
+                        <span className="text-gray-400">未使用</span>
                       )}
                     </td>
                     <td className="px-6 py-4 text-right">

@@ -27,8 +27,8 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * limit;
     const db = memberDatabase.getPool();
 
-    // 构建查询条件
-    let whereClause = 'WHERE 1=1';
+    // 构建查询条件（排除软删除的用户）
+    let whereClause = 'WHERE u.deleted_at IS NULL';
     const queryParams: any[] = [];
 
     if (membershipLevel) {
