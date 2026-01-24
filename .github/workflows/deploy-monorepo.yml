@@ -96,13 +96,35 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build all apps with Turbo
-        run: pnpm turbo run build --filter="./apps/*"
+        run: |
+          # 只构建需要部署的应用
+          if [ "${{ needs.detect-changes.outputs.web }}" == "true" ] || [ "${{ github.event.inputs.apps }}" == "all" ] || [[ "${{ github.event.inputs.apps }}" == *"web"* ]]; then
+            echo "🔨 Building web app..."
+            pnpm turbo run build --filter=web
+          fi
+
+          if [ "${{ needs.detect-changes.outputs.bk }}" == "true" ] || [ "${{ github.event.inputs.apps }}" == "all" ] || [[ "${{ github.event.inputs.apps }}" == *"bk"* ]]; then
+            echo "🔨 Building bk app..."
+            pnpm turbo run build --filter=bk
+          fi
+
+          if [ "${{ needs.detect-changes.outputs.fuplan }}" == "true" ] || [ "${{ github.event.inputs.apps }}" == "all" ] || [[ "${{ github.event.inputs.apps }}" == *"fuplan"* ]]; then
+            echo "🔨 Building fuplan app..."
+            pnpm turbo run build --filter=fuplan
+          fi
+
+          if [ "${{ needs.detect-changes.outputs.xinli }}" == "true" ] || [ "${{ github.event.inputs.apps }}" == "all" ] || [[ "${{ github.event.inputs.apps }}" == *"xinli"* ]]; then
+            echo "🔨 Building xinli app..."
+            pnpm turbo run build --filter=xinli
+          fi
         env:
           NODE_ENV: production
 
       - name: Prepare deployment artifacts
         run: |
           mkdir -p deployment-artifacts
+
+          echo "📦 Packaging deployment artifacts..."
 
           # 打包每个应用的构建产物
           cd apps
@@ -112,12 +134,14 @@ jobs:
             echo "📦 Packaging web app..."
             cd web
             tar -czf ../../deployment-artifacts/web-build.tar.gz \
-              .next \
+              .next/standalone \
+              .next/static \
               public \
               package.json \
               next.config.js \
               ecosystem.config.js \
-              database-init-v3.sql
+              database-init-v3.sql \
+              scripts 2>/dev/null || true
             cd ..
           fi
 
@@ -126,10 +150,12 @@ jobs:
             echo "📦 Packaging bk app..."
             cd bk
             tar -czf ../../deployment-artifacts/bk-build.tar.gz \
-              .next \
+              .next/standalone \
+              .next/static \
               public \
               package.json \
-              next.config.js
+              next.config.js \
+              scripts 2>/dev/null || true
             cd ..
           fi
 
@@ -138,10 +164,12 @@ jobs:
             echo "📦 Packaging fuplan app..."
             cd fuplan
             tar -czf ../../deployment-artifacts/fuplan-build.tar.gz \
-              .next \
+              .next/standalone \
+              .next/static \
               public \
               package.json \
-              next.config.js
+              next.config.js \
+              scripts 2>/dev/null || true
             cd ..
           fi
 
@@ -150,15 +178,18 @@ jobs:
             echo "📦 Packaging xinli app..."
             cd xinli
             tar -czf ../../deployment-artifacts/xinli-build.tar.gz \
-              .next \
+              .next/standalone \
+              .next/static \
               public \
               package.json \
-              next.config.js
+              next.config.js \
+              scripts 2>/dev/null || true
             cd ..
           fi
 
-          echo "✅ All artifacts packaged"
-          ls -lh ../deployment-artifacts/
+          cd ..
+          echo "✅ Packaging complete"
+          ls -lh deployment-artifacts/
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4

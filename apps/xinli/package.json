@@ -1,12 +1,13 @@
 {
-  "name": "web",
+  "name": "xinli",
   "version": "1.0.0",
   "private": true,
+  "description": "心理测评系统 - 龙头与跟风交易心理问卷",
   "scripts": {
-    "dev": "next dev -p 3000",
+    "dev": "next dev -p 3004",
     "build": "next build",
     "postbuild": "node scripts/copy-standalone-assets.mjs",
-    "start": "next start -p 3000",
+    "start": "next start -p 3004",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "clean": "rm -rf .next node_modules"
@@ -18,7 +19,8 @@
     "zod": "^3.23.8",
     "@repo/ui": "workspace:*",
     "@repo/auth": "workspace:*",
-    "@repo/database": "workspace:*"
+    "@repo/database": "workspace:*",
+    "@repo/utils": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.9.0",

@@ -8,10 +8,20 @@
   ],
   "scripts": {
     "dev": "turbo run dev",
+    "dev:web": "turbo run dev --filter=web",
+    "dev:bk": "turbo run dev --filter=bk",
+    "dev:fuplan": "turbo run dev --filter=fuplan",
+    "dev:xinli": "turbo run dev --filter=xinli",
+    "dev:all": "turbo run dev --parallel",
     "build": "turbo run build",
+    "build:web": "turbo run build --filter=web",
+    "build:bk": "turbo run build --filter=bk",
+    "build:fuplan": "turbo run build --filter=fuplan",
+    "build:xinli": "turbo run build --filter=xinli",
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
-    "clean": "turbo run clean && rm -rf node_modules"
+    "clean": "turbo run clean && rm -rf node_modules",
+    "clean:all": "rm -rf node_modules apps/*/node_modules packages/*/node_modules apps/*/.next"
   },
   "devDependencies": {
     "turbo": "^2.3.3"

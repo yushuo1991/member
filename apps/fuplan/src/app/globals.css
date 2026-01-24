@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Apple-inspired color palette */
+  --color-primary: #007AFF;
+  --color-primary-hover: #0051D5;
+  --color-primary-rgb: 0, 122, 255;
+  --color-secondary: #f97316;
+  --color-secondary-soft: rgba(249, 115, 22, 0.1);
+  --color-gray-50: #fafafa;
+  --color-gray-100: #f5f5f7;
+  --color-gray-200: #e8e8ed;
+  --color-gray-300: #d2d2d7;
+  --color-gray-400: #aeaeb2;
+  --color-gray-500: #8e8e93;
+  --color-gray-600: #636366;
+  --color-gray-700: #48484a;
+  --color-gray-800: #3a3a3c;
+  --color-gray-900: #1c1c1e;
+  --color-danger: #FF3B30;
+  --color-success: #34C759;
+  --color-warning: #FF9500;
+  --color-info: #007AFF;
+
+  /* 季节主题色 */
+  --spring-primary: #f97316; /* 混沌期 - 橙色 */
+  --summer-primary: #ef4444; /* 主升期 - 红色 */
+  --autumn-primary: #3b82f6; /* 盘顶期 - 蓝色 */
+  --winter-primary: #10b981; /* 退潮期 - 绿色 */
+
+  --sidebar-width: 220px;
+  --header-height: 72px;
+  --transition-default: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body {
+  background-color: var(--color-gray-50);
+  color: var(--color-gray-900);
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-gray-300);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gray-400);
+}
+
+/* 工具类 */
+.card-shadow {
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06), 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+.transition-default {
+  transition: var(--transition-default);
+}
+
+/* 情绪阶段主题样式 */
+.theme-chaos {
+  --theme-primary: var(--spring-primary);
+  --theme-bg: #fffbf7;
+  --theme-card: #fefaf6;
+}
+
+.theme-rising {
+  --theme-primary: var(--summer-primary);
+  --theme-bg: #fff9f9;
+  --theme-card: #fff5f5;
+}
+
+.theme-peak {
+  --theme-primary: var(--autumn-primary);
+  --theme-bg: #f5f8ff;
+  --theme-card: #f0f5ff;
+}
+
+.theme-retreat {
+  --theme-primary: var(--winter-primary);
+  --theme-bg: #f0fbf8;
+  --theme-card: #edfcf7;
+}

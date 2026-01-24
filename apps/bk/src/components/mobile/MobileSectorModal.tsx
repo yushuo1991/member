@@ -1,0 +1,256 @@
+'use client';
+
+import { useState, useMemo } from 'react';
+import MobileModal from './MobileModal';
+import MobileStockCard from './MobileStockCard';
+import StockPremiumChart, { StockPremiumData } from '@/components/StockPremiumChart';
+import { StockPerformance } from '@/types/stock';
+import { getPerformanceColorClass } from '@/lib/utils';
+
+/**
+ * 移动端板块详情弹窗
+ *
+ * 功能：
+ * - 显示板块内所有个股
+ * - 支持按涨幅筛选（>10%）
+ * - 支持按板位或涨幅排序
+ * - 显示板块统计信息
+ * - 点击个股查看K线/分时图
+ */
+
+interface MobileSectorModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  sectorName: string;
+  date: string;
+  stocks: StockPerformance[];
+  followUpDates: string[];
+  onStockClick?: (stock: StockPerformance, date: string) => void;
+  onViewKline?: () => void;
+  onViewMinute?: (mode: 'realtime' | 'snapshot') => void;
+}
+
+export default function MobileSectorModal({
+  isOpen,
+  onClose,
+  sectorName,
+  date,
+  stocks,
+  followUpDates,
+  onStockClick,
+  onViewKline,
+  onViewMinute,
+}: MobileSectorModalProps) {
+  const [filterOver10, setFilterOver10] = useState(false);
+  const [sortMode, setSortMode] = useState<'board' | 'return'>('board');
+  const [showChart, setShowChart] = useState(false); // 控制曲线图显示
+
+  // 筛选和排序
+  const processedStocks = stocks
+    .filter(stock => {
+      if (!filterOver10) return true;
+      return (stock.total_return || 0) > 10;
+    })
+    .sort((a, b) => {
+      if (sortMode === 'board') {
+        // 按板位排序（首板 -> 十板+）
+        const boardA = parseInt(a.td_type?.replace(/[^\d]/g, '') || '0') || 0;
+        const boardB = parseInt(b.td_type?.replace(/[^\d]/g, '') || '0') || 0;
+        if (boardA !== boardB) return boardB - boardA;
+        // 相同板位按涨停时间排序
+        return (a.limitUpTime || '').localeCompare(b.limitUpTime || '');
+      } else {
+        // 按5日累计涨幅排序
+        return (b.total_return || 0) - (a.total_return || 0);
+      }
+    });
+
+  // 计算统计数据
+  const stats = {
+    totalStocks: stocks.length,
+    filteredStocks: processedStocks.length,
+    avgReturn: stocks.length > 0
+      ? stocks.reduce((sum, s) => sum + (s.total_return || 0), 0) / stocks.length
+      : 0,
+    totalAmount: stocks.reduce((sum, s) => sum + (s.amount || 0), 0),
+  };
+
+  // 准备个股溢价曲线图数据（和PC端一致）
+  const stockChartData = useMemo((): StockPremiumData[] => {
+    // 为每个股票准备溢价数据
+    return stocks.map(stock => {
+      const premiums = followUpDates.map(followDate => ({
+        date: followDate,
+        premium: stock.performance?.[followDate] || 0,
+      }));
+
+      return {
+        stockCode: stock.code,
+        stockName: stock.name,
+        premiums,
+        totalReturn: stock.total_return || 0,
+      };
+    }).sort((a, b) => b.totalReturn - a.totalReturn); // 按总涨幅降序排列
+  }, [stocks, followUpDates]);
+
+  return (
+    <MobileModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={`${sectorName} (${date})`}
+      size="large"
+      headerActions={
+        <>
+          {/* 查看K线按钮 */}
+          {onViewKline && (
+            <button
+              onClick={onViewKline}
+              className="px-2 py-1 text-xs font-medium bg-blue-500 text-white rounded hover:bg-blue-600 active:bg-blue-700"
+            >
+              📈 K线
+            </button>
+          )}
+          {/* 查看分时图按钮 */}
+          {onViewMinute && (
+            <>
+              <button
+                onClick={() => onViewMinute('realtime')}
+                className="px-2 py-1 text-xs font-medium bg-green-500 text-white rounded hover:bg-green-600 active:bg-green-700"
+              >
+                📊 今日
+              </button>
+              <button
+                onClick={() => onViewMinute('snapshot')}
+                className="px-2 py-1 text-xs font-medium bg-purple-500 text-white rounded hover:bg-purple-600 active:bg-purple-700"
+              >
+                📷 当日
+              </button>
+            </>
+          )}
+        </>
+      }
+    >
+      <div className="p-4">
+        {/* 统计信息卡片（可点击显示/隐藏曲线图） */}
+        <div
+          onClick={() => setShowChart(!showChart)}
+          className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4 mb-4 cursor-pointer active:bg-blue-200 transition-colors"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs font-semibold text-gray-700">📊 板块统计</div>
+            <div className="text-xs text-blue-600">
+              {showChart ? '▼ 收起曲线' : '► 查看曲线'}
+            </div>
+          </div>
+          <div className="grid grid-cols-4 gap-3 text-center">
+            <div>
+              <div className="text-2xs text-gray-600 mb-1">个股</div>
+              <div className="text-lg font-bold text-blue-600">
+                {stats.filteredStocks}
+                {filterOver10 && <span className="text-xs text-gray-500">/{stats.totalStocks}</span>}
+              </div>
+            </div>
+            <div>
+              <div className="text-2xs text-gray-600 mb-1">平均溢价</div>
+              <div className={`text-lg font-bold ${getPerformanceColorClass(stats.avgReturn)}`}>
+                {stats.avgReturn.toFixed(1)}%
+              </div>
+            </div>
+            <div>
+              <div className="text-2xs text-gray-600 mb-1">总金额</div>
+              <div className="text-lg font-bold text-orange-600">
+                {(stats.totalAmount / 100000000).toFixed(0)}亿
+              </div>
+            </div>
+            <div>
+              <div className="text-2xs text-gray-600 mb-1">后续</div>
+              <div className="text-lg font-bold text-gray-700">
+                {followUpDates.length}天
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 个股溢价趋势曲线图（点击统计卡片显示） */}
+        {showChart && stockChartData.length > 0 && (
+          <div className="bg-white rounded-lg border border-gray-200 p-3 mb-4">
+            <div className="text-xs font-semibold text-gray-700 mb-2">📈 个股后续溢价趋势</div>
+            <StockPremiumChart
+              data={stockChartData}
+              config={{
+                height: 250,
+                showGrid: true,
+                showLegend: true,
+                maxStocks: 10,
+                showDailyMax: true,
+              }}
+            />
+          </div>
+        )}
+
+        {/* 筛选和排序工具栏 */}
+        <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-200">
+          {/* 排序模式 */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setSortMode('board')}
+              className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+                sortMode === 'board'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              连板排序
+            </button>
+            <button
+              onClick={() => setSortMode('return')}
+              className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+                sortMode === 'return'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              涨幅排序
+            </button>
+          </div>
+
+          {/* 筛选按钮 */}
+          <button
+            onClick={() => setFilterOver10(!filterOver10)}
+            className={`px-3 py-1.5 text-xs font-medium rounded border transition-colors ${
+              filterOver10
+                ? 'bg-orange-100 text-orange-700 border-orange-300'
+                : 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200'
+            }`}
+          >
+            {filterOver10 ? '显示全部' : '>10%'}
+          </button>
+        </div>
+
+        {/* 个股列表 */}
+        <div className="space-y-3">
+          {processedStocks.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-4xl mb-3">📊</div>
+              <div className="text-gray-500">
+                {filterOver10 ? '暂无涨幅>10%的个股' : '暂无数据'}
+              </div>
+            </div>
+          ) : (
+            processedStocks.map((stock, index) => (
+              <MobileStockCard
+                key={stock.code}
+                stock={stock}
+                date={date}
+                followUpDates={followUpDates}
+                showRanking={true}
+                ranking={index + 1}
+                onStockClick={onStockClick}
+              />
+            ))
+          )}
+        </div>
+      </div>
+    </MobileModal>
+  );
+}

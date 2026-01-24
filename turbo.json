@@ -4,20 +4,39 @@
   "pipeline": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
+      "env": [
+        "NODE_ENV",
+        "DB_HOST",
+        "DB_PORT",
+        "DB_USER",
+        "DB_NAME",
+        "JWT_SECRET",
+        "NEXT_PUBLIC_APP_URL"
+      ]
     },
     "lint": {
-      "dependsOn": ["^lint"]
+      "dependsOn": ["^lint"],
+      "outputs": []
     },
     "dev": {
       "cache": false,
       "persistent": true
     },
     "type-check": {
-      "dependsOn": ["^type-check"]
+      "dependsOn": ["^type-check"],
+      "outputs": []
     },
     "clean": {
       "cache": false
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"],
+      "cache": true
     }
-  }
+  },
+  "globalEnv": [
+    "NODE_ENV"
+  ]
 }
