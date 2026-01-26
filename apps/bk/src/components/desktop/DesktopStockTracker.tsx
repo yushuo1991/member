@@ -184,8 +184,11 @@ export default function Home() {
     return rank !== -1 ? rank + 1 : null;
   };
 
-  const fetch7DaysData = async (range: number = 7) => {
-    setLoading(true);
+  const fetch7DaysData = async (range: number = 7, silentMode: boolean = false) => {
+    // silentMode为true时，不显示全局loading（用于后台加载15天数据）
+    if (!silentMode) {
+      setLoading(true);
+    }
     setError(null);
 
     // 前端缓存检查（localStorage）
@@ -252,7 +255,9 @@ export default function Home() {
       setError('网络请求失败');
       console.error('Fetch error:', err);
     } finally {
-      setLoading(false);
+      if (!silentMode) {
+        setLoading(false);
+      }
     }
   };
 
@@ -673,25 +678,28 @@ export default function Home() {
   };
 
   // 打开15天板块高度弹窗
-  const handleOpenSectorHeightModal = async () => {
-    // 立即打开弹窗，显示Loading状态
+  const handleOpenSectorHeightModal = () => {
+    // 立即打开弹窗，使用当前已有数据
     setShowSectorHeightModal(true);
 
-    // 如果数据不足15天，异步加载更多数据
+    // 如果数据不足15天，后台异步加载更多数据（不阻塞UI）
     if (dates.length < 15 && !has15DaysDataLoaded.current) {
-      console.log(`[15天板块高度] 当前有${dates.length}天数据，开始加载至15天`);
+      console.log(`[15天板块高度] 当前有${dates.length}天数据，后台加载至15天`);
       has15DaysDataLoaded.current = true;
       setSectorHeightLoading(true);
 
-      try {
-        await fetch7DaysData(15);
-        console.log('[15天板块高度] 数据加载完成');
-      } catch (err) {
-        console.error('[15天板块高度] 加载失败:', err);
-        has15DaysDataLoaded.current = false;
-      } finally {
-        setSectorHeightLoading(false);
-      }
+      // 使用silentMode=true，不触发全局loading（避免页面刷新）
+      fetch7DaysData(15, true)
+        .then(() => {
+          console.log('[15天板块高度] 数据加载完成');
+        })
+        .catch((err) => {
+          console.error('[15天板块高度] 加载失败:', err);
+          has15DaysDataLoaded.current = false;
+        })
+        .finally(() => {
+          setSectorHeightLoading(false);
+        });
     }
   };
 
