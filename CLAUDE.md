@@ -4,424 +4,189 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A **membership SaaS ecosystem** for stock trading education and tools (宇硕短线). The main application is a Next.js-based membership management system with multiple supporting products including stock analysis tools, trading review systems, and educational resources.
+A **membership SaaS ecosystem** for stock trading education (宇硕短线). This is a **pnpm Monorepo** with 4 Next.js applications and shared packages.
 
-**Primary Stack:** Next.js 14 (App Router), TypeScript, React 18, MySQL 8.0, Tailwind CSS, JWT authentication
+**Stack:** Next.js 14 (App Router), TypeScript, React 18, MySQL 8.0, Tailwind CSS, JWT authentication, Turborepo
 
 ## Repository Structure
 
-This is a **multi-project workspace** organized as follows:
-
-- **`member-system/`** - Main production application (Next.js membership system)
-- **`index.html`** - Single-file HTML demo/prototype (1700+ lines, React + LocalStorage)
-- **`temp_*` repos** - Historical snapshots and related systems (fuplan, bk, xinli)
-- **`ops/`** - Nginx configuration and deployment scripts
-- **`AGENTS.md`** - Repository development guidelines
-- **`DEPLOYMENT.md`** - Deployment workflow documentation
-
-**Active Development:** Focus on `member-system/` for production changes.
+```
+├── apps/
+│   ├── web/          # Main membership site (port 3000) - yushuofupan.com
+│   ├── bk/           # Stock tracker system (port 3001) - bk.yushuofupan.com
+│   ├── fuplan/       # Review system (port 3002) - fupan.yushuofupan.com (静态HTML)
+│   └── xinli/        # Psychology assessment (port 3003) - xinli.yushuofupan.com
+├── packages/
+│   ├── auth/         # JWT authentication, password hashing, cookies
+│   ├── database/     # MySQL connection pool, shared database utilities
+│   ├── ui/           # Shared React components
+│   └── utils/        # Common utilities
+├── turbo.json        # Turborepo configuration
+├── pnpm-workspace.yaml
+└── ecosystem.config.monorepo.js  # PM2 configuration for all apps
+```
 
 ## Common Commands
 
-All commands run from `member-system/` directory:
-
-### Development
 ```bash
-npm install              # Install dependencies
-npm run dev              # Start dev server (http://localhost:3000)
-npm run build            # Production build (standalone output + postbuild asset copy)
-npm run start            # Run production build locally
-npm run lint             # ESLint checks
-npm run type-check       # TypeScript validation (tsc --noEmit)
+# Install all dependencies
+pnpm install
+
+# Development (all apps)
+pnpm dev
+
+# Development (single app)
+pnpm dev --filter=web
+pnpm dev --filter=bk
+
+# Build all apps
+pnpm build
+
+# Build single app
+pnpm build --filter=web
+pnpm build --filter=bk
+
+# Type check
+pnpm type-check
+
+# Lint
+pnpm lint
 ```
 
-**Note:** `npm run build` automatically runs a postbuild script (`scripts/copy-standalone-assets.mjs`) that copies `.next/static`, `public`, and `.env` files to the standalone output directory.
+## Deployment
 
-### Database Management
+**Server:** 8.153.110.212
+**Path:** /www/wwwroot/member-monorepo
+
 ```bash
-# Initialize database (choose one schema version)
-mysql -u root -p member_system < member-system/database-init-v3.sql
+# Build locally and deploy
+pnpm build --filter=<app>
+tar -czf <app>-update.tar.gz apps/<app>/.next
+scp <app>-update.tar.gz root@8.153.110.212:/tmp/
+ssh root@8.153.110.212 'cd /www/wwwroot/member-monorepo && pm2 stop member-<app> && rm -rf apps/<app>/.next && tar -xzf /tmp/<app>-update.tar.gz && pm2 start member-<app>'
 
-# Latest schema is database-init-v3.sql (includes trial system)
+# PM2 commands on server
+pm2 list
+pm2 logs member-web
+pm2 restart member-bk
 ```
 
-### Deployment
-```bash
-# Automated deployment via GitHub Actions on push to main branch
-git push origin main
+## Architecture
 
-# Manual deployment on server
-pm2 startOrReload ecosystem.config.js --env production
-pm2 logs member-system
-pm2 restart member-system
-```
+### Authentication (packages/auth)
 
-### Demo/Prototype
-```bash
-# Run single-file demo from root directory
-python -m http.server 8000
-# Then open http://localhost:8000/index.html
-```
+- JWT tokens with httpOnly cookies
+- `COOKIE_DOMAIN=.yushuofupan.com` for cross-subdomain sharing
+- `SameSite=Lax` to allow subdomain navigation
+- Functions: `verifyUserToken()`, `createAuthCookie()`, `hashPassword()`, `verifyPassword()`
 
-## Architecture & Core Systems
+### Database (packages/database)
 
-### 1. Authentication & Authorization
+- MySQL connection pool singleton: `MemberDatabase.getInstance()`
+- BK app has separate `StockDatabase` class for stock data
+- Tables: `users`, `memberships`, `activation_codes`, `user_products`, `user_product_trials`
 
-**JWT-based authentication** with httpOnly cookies:
+### Membership Levels (apps/web/src/lib/membership-levels.ts)
 
-- **Login Flow:** Username/email + password → bcrypt verification → JWT token (7-day expiry)
-- **Middleware:** `src/lib/auth-middleware.ts` handles token verification
-- **Cookie Settings:** httpOnly, sameSite=strict, secure in production
-- **Rate Limiting:** IP-based rate limiting in `src/lib/rate-limiter.ts`
+| Level | Price | Duration | Access |
+|-------|-------|----------|--------|
+| none | Free | - | 5 trials per product |
+| monthly | ¥300 | 30 days | 学习圈, 板块助手 |
+| quarterly | ¥799 | 90 days | + BK板块节奏系统 |
+| yearly | ¥2999 | 365 days | + 心理测评系统 |
+| lifetime | 陪伴营 | Forever | + 复盘系统 |
 
-**Key API Routes:**
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User login (returns JWT cookie)
-- `GET /api/auth/me` - Get current user info
-- `POST /api/auth/logout` - Clear auth cookie
-- `POST /api/admin/auth/login` - Admin login (separate from user login)
+### Product Access Control
 
-### 2. Membership System
+- Gate API: `/api/gate/[slug]` - Nginx auth_request checks this before serving protected content
+- `canAccessProductByMembership(userLevel, productSlug, expiry)` - Permission check
+- Products: bk (quarterly+), xinli (yearly+), fuplan (lifetime)
 
-**Five-tier membership model** defined in `src/lib/membership-levels.ts`:
+### BK System (apps/bk)
 
-1. **none** (Free) - View products, 5 trials for trial-enabled products
-2. **monthly** (¥99/30 days) - Learning circle + board assistant
-3. **quarterly** (¥249/90 days) - Monthly features + board rhythm system
-4. **yearly** (¥899/365 days) - Quarterly features + psychology + review system
-5. **lifetime** (¥2999/永久) - All features forever
+- Stock limit-up tracker with 7/15 day analysis
+- Data source: Tushare API + longhuvip.com proxy
+- Cron API: `/api/cron?date=YYYY-MM-DD` - Fetches and caches stock data
+- Cache: Memory cache + MySQL `stock_performance` table
+- Key fix: Tushare date format YYYYMMDD → YYYY-MM-DD conversion
 
-**Permission Logic:**
-- Membership levels are hierarchical (yearly users get monthly benefits)
-- Expiry checking happens on every protected API call
-- `hasAccess()` in membership-levels.ts compares level weights
-- Trial system allows 5 uses per product per user
+### Fuplan System (apps/fuplan → /www/wwwroot/fuplan-static)
 
-**Key Functions:**
-- `hasAccess(userLevel, requiredLevel, expiry)` - Check membership permission
-- `calculateExpiry(level, startDate)` - Calculate expiry date
-- `canAccessProductByMembership(userLevel, slug, expiry)` - Product access check
-
-### 3. Product & Access Control
-
-**Product Types:**
-- **membership** - Requires membership tier (e.g., 学习圈, 板块节奏系统)
-- **standalone** - Purchase separately (e.g., 情绪表格 buyout products)
-- **both** - Can be accessed via membership OR standalone purchase
-
-**Access Gate System:**
-- `/api/gate/[slug]` - Universal product access check endpoint
-- Returns: `{ hasAccess: boolean, reason: string, trialRemaining?: number }`
-- Checks: membership level, expiry, standalone purchases, trial count
-
-**Trial System:**
-- Implemented in `src/lib/trial-service.ts`
-- Tracks trial usage per user per product in `user_product_trials` table
-- Free users get 5 trials for: 板块节奏系统, 心理测评系统, 复盘系统
-
-### 4. Activation Code System
-
-**Format:** `YS-M-XXXX` (monthly), `YS-Q-XXXX` (quarterly), `YS-Y-XXXX` (yearly), `YS-L-XXXX` (lifetime)
-
-**Admin Operations:**
-- Generate codes: `POST /api/activation/generate` (admin only)
-- View codes: `GET /api/admin/codes/list`
-- Activate code: `POST /api/activation/activate` (authenticated users)
-
-**Activation Rules:**
-- Codes can only be used once
-- Membership duration extends from current expiry (or now if expired)
-- Lifetime codes set membership_expiry to NULL
-
-### 5. Database Architecture
-
-**Connection Management:**
-- Singleton pattern: `MemberDatabase.getInstance()` in `src/lib/database.ts`
-- Connection pool: 20 max connections, 60s timeout
-- Timezone: +08:00 (Beijing Time)
-- Auto-initialization on first access
-
-**Core Tables:**
-- `users` - User accounts (username, email, password_hash, membership_level, membership_expiry)
-- `admins` - Admin accounts (separate from users)
-- `activation_codes` - Activation codes with usage tracking
-- `products` - Product catalog (synchronized from membership-levels.ts)
-- `user_products` - Standalone product purchases
-- `user_product_trials` - Trial usage tracking
-- `login_logs` - Audit trail for login attempts
-- `rate_limits` - IP-based rate limiting
-
-**Important:** The database schema includes an auto-upgrade pattern. When adding new columns, follow the pattern in `database.ts:initializeTables()` to check and add columns without breaking startup.
-
-### 6. Security Features
-
-**Implemented Protections:**
-- **Password Security:** bcrypt with 12 rounds (configurable via BCRYPT_ROUNDS)
-- **SQL Injection:** Parameterized queries throughout (mysql2 prepared statements)
-- **XSS:** Content-Security-Policy headers in next.config.js
-- **CSRF:** Origin verification + SameSite cookies
-- **Rate Limiting:** IP-based with configurable thresholds
-- **Audit Logging:** All login attempts logged to `login_logs` table
-
-**Security Headers** (configured in next.config.js):
-- Strict-Transport-Security (HSTS)
-- X-Frame-Options: SAMEORIGIN
-- X-Content-Type-Options: nosniff
-- Content-Security-Policy (strict, relaxed for legacy routes)
-
-### 7. Page Structure (App Router)
-
-**Public Pages:**
-- `/` - Landing page with product showcase
-- `/login` - User login page
-- `/register` - User registration
-- `/membership` - Membership pricing page
-
-**Protected Pages (require login):**
-- `/member` - User dashboard with membership info
-- `/upgrade` - Membership upgrade flow
-- `/bk` - Board rhythm system (requires quarterly+)
-- `/fuplan` - Review system (requires yearly+)
-- `/xinli` - Psychology assessment (requires yearly+)
-
-**Admin Pages:**
-- `/admin` - Admin dashboard with stats
-- `/admin/codes` - Activation code management
-- `/admin/members` - User management (freeze/unfreeze, extend membership)
+- Pure static HTML deployment (not Next.js)
+- Files: index.html + MP3 audio files
+- Nginx serves static files with auth_request to main site
 
 ## Environment Variables
 
-Required in `.env` (use `.env.example` as template):
-
+**apps/web/.env:**
 ```env
-# Database
 DB_HOST=localhost
 DB_PORT=3306
 DB_USER=root
-DB_PASSWORD=your_password
+DB_PASSWORD=ChangeMe2026!Secure
 DB_NAME=member_system
-
-# JWT
-JWT_SECRET=your_secret_key_here_change_in_production
-JWT_EXPIRES_IN=7d
-
-# Security
-BCRYPT_ROUNDS=12
-SESSION_SECRET=your_session_secret
-
-# App
-NODE_ENV=development
-APP_URL=http://localhost:3000
-PORT=3000
+JWT_SECRET=yushuo_member_system_jwt_secret_key_2026
+COOKIE_DOMAIN=.yushuofupan.com
 ```
 
-**CRITICAL:** Never commit `.env` files. The deployment workflow excludes `.env` from rsync/scp and preserves the server's existing `.env` file during deployment.
-
-**Production Deployment Path:** `/www/wwwroot/member-system` (configured in deploy-optimized.yml)
-
-## Deployment System
-
-### Automated GitHub Actions Deployment
-
-**Workflows:**
-- **Optimized (recommended):** `.github/workflows/deploy-optimized.yml` - Builds on GitHub, deploys artifacts
-- **Legacy:** `.github/workflows/deploy-member-system.yml` - rsync source code, build on server
-
-**Trigger:** Push to `main` branch (only when `member-system/**` changes)
-
-**Optimized Workflow Steps:**
-1. Checkout code
-2. Setup Node.js and install dependencies
-3. Build application on GitHub Actions runner
-4. Prepare deployment files (`.next`, `public`, config files)
-5. SCP artifacts to server `/tmp` directory
-6. SSH to server and:
-   ```bash
-   rsync -av --delete --exclude='.env' /tmp/member-system-deploy/ /www/wwwroot/member-system/
-   npm ci --only=production --prefer-offline
-   pm2 startOrReload ecosystem.config.js --env production
-   ```
-
-**Benefits:** Faster deployment (no build on server), reduced server load, build artifacts cached.
-
-**Required GitHub Secrets:**
-- `DEPLOY_HOST` - Server IP/hostname
-- `DEPLOY_SSH_KEY` - Private key for SSH auth (for root user)
-
-**Note:** The optimized workflow uses root user for deployment to avoid permission issues. Server path is `/www/wwwroot/member-system`.
-
-### PM2 Configuration
-
-**File:** `member-system/ecosystem.config.js`
-
-**Settings:**
-- App name: `member-system`
-- Port: 3000
-- Max memory: 1G
-- Auto-restart on crash
-- Error/out logs: `./logs/`
-
-**Server Setup:**
-1. Create deploy user with sudo access
-2. Install Node.js 18+, npm, PM2, MySQL, Nginx
-3. Create `/www/wwwroot/member-system` directory (ensure `deploy` user has write access)
-4. Copy `.env` from `.env.example` (DO NOT commit secrets)
-5. Run database init script
-6. Configure Nginx reverse proxy (use `ops/nginx-member-system.conf`)
-
-### Nginx Configuration
-
-**Template:** `ops/nginx-member-system.conf`
-
-**Setup:**
-- Reverse proxy: Port 80 → 3000
-- Static file serving
-- Gzip compression
-- Security headers
-
-```bash
-sudo cp ops/nginx-member-system.conf /etc/nginx/sites-available/member-system
-sudo ln -s /etc/nginx/sites-available/member-system /etc/nginx/sites-enabled/
-sudo nginx -t && sudo systemctl reload nginx
+**apps/bk/.env:**
+```env
+DB_HOST=localhost
+DB_NAME=stock_tracker
+TUSHARE_TOKEN=<token>
 ```
 
-## Design System
+## Key Files
 
-**Apple-inspired minimalist aesthetic:**
+- `apps/web/src/lib/membership-levels.ts` - Product definitions, access control
+- `apps/web/src/app/api/gate/[slug]/route.ts` - Product access gate
+- `apps/web/src/middleware.ts` - Admin route protection
+- `apps/bk/src/app/api/stocks/route.ts` - Stock data API
+- `apps/bk/src/app/api/cron/route.ts` - Data fetching cron
+- `apps/bk/src/components/desktop/DesktopStockTracker.tsx` - Main BK UI
+- `packages/auth/src/auth-middleware.ts` - JWT and cookie handling
 
-- **Colors:** Blue primary (#0ea5e9), gradient backgrounds
-- **Typography:** System font stack (SF Pro, Segoe UI, Roboto)
-- **Border Radius:** Large (16-24px for cards)
-- **Shadows:** Soft, multi-layer shadows
-- **Animations:** Smooth transitions, fade-in effects
+## Common Issues
 
-**Tailwind Configuration:** `member-system/tailwind.config.js`
+### Cross-domain cookie not working
+- Ensure `COOKIE_DOMAIN=.yushuofupan.com` in web app .env
+- User must re-login to get new cookie with Domain attribute
+- Check `SameSite=Lax` in auth-middleware.ts
 
-**Global Styles:** `member-system/src/app/globals.css`
+### BK data shows 0% for all prices
+- Check Tushare date format conversion (YYYYMMDD → YYYY-MM-DD)
+- Verify `stock_performance` table has non-zero `pct_change` values
+- Re-run cron: `curl http://localhost:3001/api/cron?date=YYYY-MM-DD`
 
-## Key Development Patterns
+### 15-day modal causes page refresh
+- `fetch7DaysData()` must use `silentMode=true` to avoid triggering global loading state
+- Global `loading` state causes component to return `<SkeletonScreen />`
 
-### Standalone Build Output
+### Admin page 404
+- Admin login is at `/admin` (not `/admin/login`)
+- Middleware redirects to `/admin` for unauthenticated requests
 
-Next.js is configured with `output: 'standalone'` for optimized production deployment. The postbuild script (`scripts/copy-standalone-assets.mjs`) automatically:
+## Server Nginx Configuration
 
-1. Copies `.next/static` to `.next/standalone/.next/static`
-2. Copies `public/` to `.next/standalone/public`
-3. Copies `.env` to `.next/standalone/.env`
+Each subdomain uses auth_request to check permissions:
 
-This ensures the standalone build has all necessary assets. The GitHub Actions workflow deploys this complete standalone directory.
+```nginx
+location = /_auth {
+  internal;
+  proxy_pass http://127.0.0.1:3000/api/gate/<product>;
+  proxy_set_header Cookie $http_cookie;
+  proxy_set_header Host yushuofupan.com;
+}
 
-### When Adding New Products
-
-1. Add product definition to `PRODUCTS` array in `src/lib/membership-levels.ts`
-2. Set `requiredLevel`, `priceType`, `trialEnabled`, `trialCount`
-3. Add product entry to database via admin panel or SQL
-4. Create product route if needed (e.g., `/xinli`)
-5. Implement access gate check using `/api/gate/[slug]`
-
-### When Adding New API Routes
-
-Follow Next.js 14 App Router conventions:
-
-1. Create `route.ts` file in `src/app/api/[endpoint]/`
-2. Export named functions: `GET`, `POST`, `PUT`, `DELETE`
-3. Use `verifyAuth()` from auth-middleware for protected routes
-4. Use `requireAdmin()` for admin-only routes
-5. Return `NextResponse.json()` with proper status codes
-6. Handle errors with try-catch and return error responses
-
-**Example:**
-```typescript
-import { NextRequest, NextResponse } from 'next/server';
-import { verifyAuth } from '@/lib/auth-middleware';
-
-export async function GET(request: NextRequest) {
-  const authResult = await verifyAuth(request);
-  if (!authResult.authenticated) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  // Your logic here
-  return NextResponse.json({ data: 'success' });
+location / {
+  auth_request /_auth;
+  error_page 401 = @auth_redirect;
+  # ... proxy or static file serving
 }
 ```
 
-### When Modifying Database Schema
+## Admin Access
 
-1. Update table creation in `src/lib/database.ts`
-2. Add migration logic in `initializeTables()` using `SHOW COLUMNS` check
-3. Update corresponding SQL file (database-init-v3.sql)
-4. Document breaking changes in commit message
-5. Test locally before deploying
-
-**Pattern for adding columns:**
-```typescript
-// Check if column exists
-const [columns] = await this.pool.execute(
-  "SHOW COLUMNS FROM users LIKE 'new_column'"
-);
-if ((columns as any[]).length === 0) {
-  await this.pool.execute(
-    "ALTER TABLE users ADD COLUMN new_column VARCHAR(255)"
-  );
-}
-```
-
-### When Working with Authentication
-
-- **Never** store passwords in plain text (use bcrypt)
-- **Always** use parameterized queries to prevent SQL injection
-- **Validate** all user inputs on both client and server
-- **Check** membership expiry on every protected route
-- **Log** authentication attempts for security auditing
-- **Rate limit** login endpoints to prevent brute force
-
-## Common Issues & Solutions
-
-### "Database connection failed"
-- Check MySQL is running: `sudo systemctl status mysql`
-- Verify `.env` database credentials
-- Ensure database exists: `CREATE DATABASE member_system;`
-- Check connection pool settings in database.ts
-
-### "JWT token invalid or expired"
-- Check JWT_SECRET in `.env` matches between client/server
-- Verify JWT_EXPIRES_IN is set correctly
-- Clear cookies and re-login
-- Check system time (JWT uses timestamps)
-
-### "Membership access denied despite valid membership"
-- Verify membership_expiry is in the future
-- Check timezone settings (database uses +08:00)
-- Confirm membership_level enum matches expected values
-- Check hasAccess() logic in membership-levels.ts
-
-### Build fails with "Module not found"
-- Run `npm install` to ensure all dependencies are installed
-- Check import paths use `@/` alias (configured in tsconfig.json)
-- Verify file names match import statements (case-sensitive)
-- Clear `.next` folder and rebuild
-
-### PM2 process crashes after deployment
-- Check PM2 logs: `pm2 logs member-system --lines 50`
-- Verify environment variables on server
-- Ensure database is accessible from server
-- Check port 3000 is available: `lsof -i :3000`
-
-## Related Systems
-
-This workspace includes several supporting systems documented separately:
-
-- **BK System** (Stock Tracker) - See `temp_bk_repo/CLAUDE.md` for details
-- **Fuplan System** (Review System) - React + Vite + Supabase
-- **Xinli System** (Psychology Assessment) - Integrated in member-system
-- **Single-file Demo** (`index.html`) - Prototype with LocalStorage
-
-## Important Notes
-
-- **Conventional Commits:** Use `feat:`, `fix:`, `chore:` prefixes
-- **Type Safety:** Run `npm run type-check` before committing
-- **No Console Logs in Production:** Currently disabled in next.config.js (debugging deployments)
-- **Secrets Management:** Never commit `.env`, use `.env.example` as template
-- **Database Timezone:** All dates use Beijing Time (+08:00)
-- **Membership Expiry:** NULL means lifetime/no expiry
+- URL: https://yushuofupan.com/admin
+- Username: admin
+- Password: 7287843Wu
