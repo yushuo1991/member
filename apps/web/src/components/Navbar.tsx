@@ -5,6 +5,24 @@ import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 
+// 会员等级显示名称
+const LEVEL_NAMES: Record<string, string> = {
+  none: '',
+  monthly: '月费',
+  quarterly: '季度',
+  yearly: '年度',
+  lifetime: '终身'
+};
+
+// 会员等级颜色
+const LEVEL_COLORS: Record<string, string> = {
+  none: 'bg-gray-100 text-gray-500',
+  monthly: 'bg-blue-100 text-blue-600',
+  quarterly: 'bg-purple-100 text-purple-600',
+  yearly: 'bg-orange-100 text-orange-600',
+  lifetime: 'bg-gradient-to-r from-amber-400 to-orange-500 text-white'
+};
+
 export default function Navbar() {
   const { user, isAuthenticated, logout, loading } = useAuth();
   const router = useRouter();
@@ -14,6 +32,10 @@ export default function Navbar() {
     await logout();
     router.push('/');
   };
+
+  const memberLevel = user?.membershipLevel || 'none';
+  const levelName = LEVEL_NAMES[memberLevel] || '';
+  const levelColor = LEVEL_COLORS[memberLevel] || LEVEL_COLORS.none;
 
   return (
     <nav className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-b border-gray-100 z-50">
@@ -55,9 +77,16 @@ export default function Navbar() {
                     >
                       会员中心
                     </Link>
-                    <span className="text-gray-600 text-sm">
-                      {user?.username}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-700 text-sm font-medium">
+                        {user?.username}
+                      </span>
+                      {levelName && (
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${levelColor}`}>
+                          {levelName}
+                        </span>
+                      )}
+                    </div>
                     <button
                       onClick={handleLogout}
                       className="px-4 sm:px-6 py-2 bg-gray-100 text-gray-900 rounded-full hover:bg-gray-200 transition-all duration-300 font-medium text-sm"
@@ -152,8 +181,13 @@ export default function Navbar() {
                     >
                       会员中心
                     </Link>
-                    <div className="py-2 text-gray-600 font-medium text-sm">
-                      当前用户：{user?.username}
+                    <div className="py-2 flex items-center gap-2">
+                      <span className="text-gray-700 font-medium text-sm">{user?.username}</span>
+                      {levelName && (
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${levelColor}`}>
+                          {levelName}
+                        </span>
+                      )}
                     </div>
                     <button
                       onClick={() => {

@@ -161,8 +161,9 @@ export function createAuthCookie(token: string, name: string = 'auth_token'): st
       ? 'Secure; '
       : '';
 
+  // 使用Lax允许跨子域名导航时携带Cookie
   const domain = process.env.COOKIE_DOMAIN ? `Domain=${process.env.COOKIE_DOMAIN}; ` : '';
-  return `${name}=${token}; HttpOnly; ${secure}SameSite=Strict; Path=/; ${domain}Max-Age=${maxAge}`;
+  return `${name}=${token}; HttpOnly; ${secure}SameSite=Lax; Path=/; ${domain}Max-Age=${maxAge}`;
 }
 
 /**
@@ -172,7 +173,7 @@ export function createAuthCookie(token: string, name: string = 'auth_token'): st
  */
 export function createDeleteCookie(name: string = 'auth_token'): string {
   const domain = process.env.COOKIE_DOMAIN ? `Domain=${process.env.COOKIE_DOMAIN}; ` : '';
-  return `${name}=; HttpOnly; SameSite=Strict; Path=/; ${domain}Max-Age=0`;
+  return `${name}=; HttpOnly; SameSite=Lax; Path=/; ${domain}Max-Age=0`;
 }
 
 /**

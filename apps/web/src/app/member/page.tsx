@@ -259,44 +259,57 @@ export default function MemberPage() {
             )}
           </div>
 
-          {/* Trial Status */}
-          <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 mb-5 sm:mb-6">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">试用额度</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {TRIAL_PRODUCTS.map((slug) => {
-                const product = PRODUCTS.find(p => p.slug === slug);
-                const count = getTrialCount(slug);
-                if (!product) return null;
+          {/* Trial Status - 只显示没有会员权限的产品的试用额度 */}
+          {(() => {
+            // 过滤出没有会员权限但支持试用的产品
+            const trialOnlyProducts = TRIAL_PRODUCTS.filter(slug => {
+              const status = getProductAccessStatus(slug);
+              // 只有当用户没有会员权限时才显示试用
+              return status.accessType === 'trial' || !status.hasAccess;
+            });
 
-                return (
-                  <div
-                    key={slug}
-                    className={`flex items-center justify-between p-3 rounded-xl border ${
-                      count > 0 ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-gray-50'
-                    }`}
-                  >
-                    <div className="flex items-center">
-                      <span className="text-xl mr-2">{product.icon}</span>
-                      <div>
-                        <h4 className="font-medium text-gray-900 text-sm">{product.name}</h4>
-                        <p className={`text-xs ${count > 0 ? 'text-green-600' : 'text-gray-500'}`}>
-                          {count > 0 ? `剩余${count}次` : '已用完'}
-                        </p>
-                      </div>
-                    </div>
-                    {count > 0 && (
-                      <Link
-                        href={`/products/${slug}`}
-                        className="px-3 py-1.5 bg-green-500 text-white rounded-full text-xs font-medium hover:bg-green-600 transition-colors"
+            if (trialOnlyProducts.length === 0) return null;
+
+            return (
+              <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 mb-5 sm:mb-6">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">试用额度</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {trialOnlyProducts.map((slug) => {
+                    const product = PRODUCTS.find(p => p.slug === slug);
+                    const count = getTrialCount(slug);
+                    if (!product) return null;
+
+                    return (
+                      <div
+                        key={slug}
+                        className={`flex items-center justify-between p-3 rounded-xl border ${
+                          count > 0 ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-gray-50'
+                        }`}
                       >
-                        试用
-                      </Link>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+                        <div className="flex items-center">
+                          <span className="text-xl mr-2">{product.icon}</span>
+                          <div>
+                            <h4 className="font-medium text-gray-900 text-sm">{product.name}</h4>
+                            <p className={`text-xs ${count > 0 ? 'text-green-600' : 'text-gray-500'}`}>
+                              {count > 0 ? `剩余${count}次` : '已用完'}
+                            </p>
+                          </div>
+                        </div>
+                        {count > 0 && (
+                          <Link
+                            href={`/products/${slug}`}
+                            className="px-3 py-1.5 bg-green-500 text-white rounded-full text-xs font-medium hover:bg-green-600 transition-colors"
+                          >
+                            试用
+                          </Link>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
 
           <div className="grid lg:grid-cols-2 gap-5 sm:gap-6">
             {/* Products Access */}
