@@ -202,7 +202,7 @@ export const PRODUCTS: Product[] = [
     openInNewWindow: true,
     icon: '📈',
     imageUrl: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=300&fit=crop',
-    requiredLevel: 'yearly',
+    requiredLevel: 'lifetime',
     priceType: 'membership',
     trialEnabled: true,
     trialCount: 5,
