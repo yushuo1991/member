@@ -247,6 +247,8 @@ export default function MemberPage() {
                     </div>
                     <Link
                       href={product.url || `/products/${product.slug}`}
+                      target={product.openInNewWindow ? '_blank' : undefined}
+                      rel={product.openInNewWindow ? 'noopener noreferrer' : undefined}
                       className="px-3 py-1.5 bg-[#ff8c42] text-white rounded-full text-xs font-medium hover:bg-[#e67d3a] transition-all whitespace-nowrap"
                     >
                       访问

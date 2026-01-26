@@ -34,6 +34,7 @@ export interface Product {
   description: string;
   detailDescription?: string;
   url?: string;
+  openInNewWindow?: boolean;
   icon: string;
   imageUrl?: string;
   requiredLevel: MembershipLevel;
@@ -68,7 +69,7 @@ export const MEMBERSHIP_LEVELS: Record<MembershipLevel, MembershipConfig> = {
     level: 'monthly',
     name: '月费会员',
     duration: 30,
-    price: 99,
+    price: 300,
     color: 'blue',
     description: '适合初次体验的用户',
     features: [
@@ -83,7 +84,7 @@ export const MEMBERSHIP_LEVELS: Record<MembershipLevel, MembershipConfig> = {
     level: 'quarterly',
     name: '季度会员',
     duration: 90,
-    price: 249,
+    price: 799,
     color: 'green',
     description: '性价比之选，深度学习',
     features: [
@@ -98,7 +99,7 @@ export const MEMBERSHIP_LEVELS: Record<MembershipLevel, MembershipConfig> = {
     level: 'yearly',
     name: '年费会员',
     duration: 365,
-    price: 899,
+    price: 2999,
     color: 'purple',
     description: '全年学习，系统提升',
     features: [
@@ -111,11 +112,11 @@ export const MEMBERSHIP_LEVELS: Record<MembershipLevel, MembershipConfig> = {
   },
   lifetime: {
     level: 'lifetime',
-    name: '终身会员',
+    name: '陪伴营',
     duration: null,
-    price: 2999,
+    price: 0,
     color: 'gold',
-    description: '一次购买，终身受益',
+    description: '不定期开放',
     features: [
       '✅ 学习圈（永久）',
       '✅ 板块助手使用权',
@@ -167,7 +168,7 @@ export const PRODUCTS: Product[] = [
     name: '板块节奏系统',
     description: '涨停板追踪分析系统，实时追踪市场热点',
     detailDescription: '专业的涨停板追踪系统，实时监控市场热点，提供7日涨停数据分析，帮助您把握板块轮动节奏。',
-    url: '/bk',
+    url: 'https://bk.yushuofupan.com',
     icon: '📊',
     imageUrl: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=400&h=300&fit=crop',
     requiredLevel: 'quarterly',
@@ -182,7 +183,7 @@ export const PRODUCTS: Product[] = [
     name: '心理测评系统',
     description: '交易心理问卷评估，80个场景深度分析',
     detailDescription: '通过80个交易场景的心理问卷，全面评估您的交易心理状态，发现潜在的心理盲点。',
-    url: '/xinli',
+    url: 'https://xinli.yushuofupan.com',
     icon: '🧠',
     imageUrl: 'https://images.unsplash.com/photo-1559757175-5700dde675bc?w=400&h=300&fit=crop',
     requiredLevel: 'yearly',
@@ -197,7 +198,8 @@ export const PRODUCTS: Product[] = [
     name: '复盘系统',
     description: '交易复盘图鉴，系统化复盘工具',
     detailDescription: '专业的交易复盘平台，记录每日交易，分析市场情绪，帮助您系统化总结交易经验。',
-    url: '/fuplan',
+    url: 'https://fupan.yushuofupan.com',
+    openInNewWindow: true,
     icon: '📈',
     imageUrl: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=300&fit=crop',
     requiredLevel: 'yearly',

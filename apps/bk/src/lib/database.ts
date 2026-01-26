@@ -123,6 +123,141 @@ export class StockDatabase {
     }
   }
 
+  // 获取缓存的股票数据
+  async getCachedStockData(date: string): Promise<any[] | null> {
+    if (isDatabaseDisabled) return null;
+
+    try {
+      const formattedDate = formatDateToISO(date);
+      const [rows] = await this.pool.execute(
+        `SELECT stock_code as StockCode, stock_name as StockName,
+                sector_name as ZSName, td_type as TDType,
+                limit_up_time as LimitUpTime, amount as Amount
+         FROM stock_data
+         WHERE trade_date = ?
+         ORDER BY sector_name, td_type DESC`,
+        [formattedDate]
+      );
+
+      const data = rows as any[];
+      if (data.length > 0) {
+        console.log(`[BK数据库] 从缓存获取 ${formattedDate} 的 ${data.length} 只股票`);
+        return data;
+      }
+      return null;
+    } catch (error) {
+      console.error('[BK数据库] 获取缓存数据失败:', error);
+      return null;
+    }
+  }
+
+  // 缓存股票数据到数据库
+  async cacheStockData(date: string, stocks: any[]): Promise<void> {
+    if (isDatabaseDisabled) return;
+    if (!stocks || stocks.length === 0) return;
+
+    try {
+      const formattedDate = formatDateToISO(date);
+
+      // 使用批量插入
+      const values = stocks.map(stock => [
+        stock.StockCode,
+        stock.StockName,
+        stock.ZSName || '未分类',
+        stock.TDType || '首板',
+        formattedDate,
+        stock.LimitUpTime || null,
+        stock.Amount || null
+      ]);
+
+      // 使用INSERT IGNORE避免重复
+      for (const value of values) {
+        await this.pool.execute(
+          `INSERT IGNORE INTO stock_data
+           (stock_code, stock_name, sector_name, td_type, trade_date, limit_up_time, amount)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          value
+        );
+      }
+
+      console.log(`[BK数据库] 缓存 ${formattedDate} 的 ${stocks.length} 只股票`);
+    } catch (error) {
+      console.error('[BK数据库] 缓存股票数据失败:', error);
+    }
+  }
+
+  // 获取缓存的股票表现数据（溢价数据）
+  async getCachedStockPerformance(stockCode: string, baseDate: string, tradingDays: string[]): Promise<Record<string, number> | null> {
+    if (isDatabaseDisabled) return null;
+
+    try {
+      const formattedBaseDate = formatDateToISO(baseDate);
+      const [rows] = await this.pool.execute(
+        `SELECT performance_date, pct_change
+         FROM stock_performance
+         WHERE stock_code = ? AND base_date = ?
+         ORDER BY performance_date`,
+        [stockCode, formattedBaseDate]
+      );
+
+      const data = rows as any[];
+      if (data.length > 0) {
+        const result: Record<string, number> = {};
+        data.forEach(row => {
+          // 将日期格式化为YYYY-MM-DD
+          const perfDate = row.performance_date instanceof Date
+            ? formatDateToISO(row.performance_date)
+            : formatDateToISO(row.performance_date);
+          result[perfDate] = parseFloat(row.pct_change) || 0;
+        });
+        console.log(`[BK数据库] 从缓存获取 ${stockCode} 在 ${formattedBaseDate} 的 ${data.length} 条表现数据`);
+        return result;
+      }
+      return null;
+    } catch (error) {
+      console.error('[BK数据库] 获取股票表现缓存失败:', error);
+      return null;
+    }
+  }
+
+  // 批量获取多只股票的表现数据
+  async getBatchStockPerformance(stockCodes: string[], baseDate: string): Promise<Map<string, Record<string, number>>> {
+    const result = new Map<string, Record<string, number>>();
+    if (isDatabaseDisabled || stockCodes.length === 0) return result;
+
+    try {
+      const formattedBaseDate = formatDateToISO(baseDate);
+      const placeholders = stockCodes.map(() => '?').join(',');
+      const [rows] = await this.pool.execute(
+        `SELECT stock_code, performance_date, pct_change
+         FROM stock_performance
+         WHERE stock_code IN (${placeholders}) AND base_date = ?
+         ORDER BY stock_code, performance_date`,
+        [...stockCodes, formattedBaseDate]
+      );
+
+      const data = rows as any[];
+      data.forEach(row => {
+        const stockCode = row.stock_code;
+        const perfDate = row.performance_date instanceof Date
+          ? formatDateToISO(row.performance_date)
+          : formatDateToISO(row.performance_date);
+        const pctChange = parseFloat(row.pct_change) || 0;
+
+        if (!result.has(stockCode)) {
+          result.set(stockCode, {});
+        }
+        result.get(stockCode)![perfDate] = pctChange;
+      });
+
+      console.log(`[BK数据库] 批量获取 ${result.size} 只股票在 ${formattedBaseDate} 的表现数据`);
+      return result;
+    } catch (error) {
+      console.error('[BK数据库] 批量获取股票表现失败:', error);
+      return result;
+    }
+  }
+
   // 升级数据库（检查并添加新字段）
   async upgradeDatabase(): Promise<void> {
     if (isDatabaseDisabled) return;

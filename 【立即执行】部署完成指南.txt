@@ -1,0 +1,202 @@
+================================================================================
+                 🎯 Monorepo部署 - 最终执行指南
+================================================================================
+
+部署进度: ████████████████░░░░ 80% 完成
+
+✅ 我已自动完成:
+  - 备份旧系统（90MB代码 + 29KB数据库）
+  - 停止旧服务（member-system已停止）
+  - 上传代码（795个文件已部署）
+  - 配置环境变量（4个应用的.env全部配置）
+  - 安装依赖（336个包 + pnpm + turbo）
+
+⏳ 您需要手动完成（仅3步，10分钟）:
+  1. 构建应用
+  2. 启动PM2
+  3. 验证访问
+
+================================================================================
+                      🚀 立即执行（推荐方法）
+================================================================================
+
+方法: 复制一条命令，SSH登录后粘贴执行
+
+1. SSH登录:
+   ssh root@8.153.110.212
+
+2. 复制粘贴执行（一条完整命令）:
+
+cd /www/wwwroot/member-monorepo && pnpm build && cat > ecosystem.config.js << 'EOF'
+module.exports = {
+  apps: [
+    { name: 'member-web', cwd: '/www/wwwroot/member-monorepo/apps/web', script: './node_modules/next/dist/bin/next', args: 'start -p 3000', instances: 1, autorestart: true, max_memory_restart: '1G', env: { NODE_ENV: 'production', PORT: 3000 } },
+    { name: 'member-bk', cwd: '/www/wwwroot/member-monorepo/apps/bk', script: './node_modules/next/dist/bin/next', args: 'start -p 3001', instances: 1, autorestart: true, max_memory_restart: '512M', env: { NODE_ENV: 'production', PORT: 3001 } },
+    { name: 'member-fuplan', cwd: '/www/wwwroot/member-monorepo/apps/fuplan', script: './node_modules/next/dist/bin/next', args: 'start -p 3002', instances: 1, autorestart: true, max_memory_restart: '512M', env: { NODE_ENV: 'production', PORT: 3002 } },
+    { name: 'member-xinli', cwd: '/www/wwwroot/member-monorepo/apps/xinli', script: './node_modules/next/dist/bin/next', args: 'start -p 3003', instances: 1, autorestart: true, max_memory_restart: '512M', env: { NODE_ENV: 'production', PORT: 3003 } }
+  ]
+};
+EOF
+pm2 delete all && sleep 2 && pm2 start ecosystem.config.js && pm2 save && pm2 list
+
+3. 完成！访问测试:
+   http://8.153.110.212:3000
+
+================================================================================
+                        📋 详细分步说明
+================================================================================
+
+如果上面的一条命令不行，逐步执行：
+
+步骤1: 进入目录
+-----------------
+cd /www/wwwroot/member-monorepo
+pwd
+
+步骤2: 构建应用（5-8分钟）
+-----------------
+pnpm build
+
+等待完成后检查:
+ls -la apps/web/.next
+ls -la apps/bk/.next
+ls -la apps/fuplan/.next
+ls -la apps/xinli/.next
+
+步骤3: 创建PM2配置
+-----------------
+cat > ecosystem.config.js << 'EOF'
+module.exports = {
+  apps: [
+    {
+      name: 'member-web',
+      cwd: '/www/wwwroot/member-monorepo/apps/web',
+      script: './node_modules/next/dist/bin/next',
+      args: 'start -p 3000',
+      instances: 1,
+      autorestart: true,
+      max_memory_restart: '1G',
+      env: { NODE_ENV: 'production', PORT: 3000 }
+    },
+    {
+      name: 'member-bk',
+      cwd: '/www/wwwroot/member-monorepo/apps/bk',
+      script: './node_modules/next/dist/bin/next',
+      args: 'start -p 3001',
+      instances: 1,
+      autorestart: true,
+      max_memory_restart: '512M',
+      env: { NODE_ENV: 'production', PORT: 3001 }
+    },
+    {
+      name: 'member-fuplan',
+      cwd: '/www/wwwroot/member-monorepo/apps/fuplan',
+      script: './node_modules/next/dist/bin/next',
+      args: 'start -p 3002',
+      instances: 1,
+      autorestart: true,
+      max_memory_restart: '512M',
+      env: { NODE_ENV: 'production', PORT: 3002 }
+    },
+    {
+      name: 'member-xinli',
+      cwd: '/www/wwwroot/member-monorepo/apps/xinli',
+      script: './node_modules/next/dist/bin/next',
+      args: 'start -p 3003',
+      instances: 1,
+      autorestart: true,
+      max_memory_restart: '512M',
+      env: { NODE_ENV: 'production', PORT: 3003 }
+    }
+  ]
+};
+EOF
+
+步骤4: 启动服务
+-----------------
+pm2 delete all
+pm2 start ecosystem.config.js
+pm2 save
+pm2 list
+
+步骤5: 验证
+-----------------
+netstat -tlnp | grep -E ":(3000|3001|3002|3003)"
+pm2 logs --lines 10
+
+================================================================================
+                          ✅ 部署完成验证
+================================================================================
+
+访问以下地址测试:
+
+  http://8.153.110.212:3000  →  Web应用（会员管理系统）
+  http://8.153.110.212:3001  →  BK应用（板块节奏系统）
+  http://8.153.110.212:3002  →  Fuplan应用（复盘系统）
+  http://8.153.110.212:3003  →  Xinli应用（心理测评系统）
+
+检查清单:
+  □ 所有4个URL都能正常访问
+  □ pm2 list 显示所有进程状态为 "online"
+  □ pm2 logs 没有严重错误
+  □ 测试注册一个新用户
+  □ 测试登录功能
+
+================================================================================
+                          🔧 常用管理命令
+================================================================================
+
+查看状态:      pm2 list
+查看日志:      pm2 logs
+查看单个日志:  pm2 logs member-web
+重启所有:      pm2 restart all
+停止所有:      pm2 stop all
+删除所有:      pm2 delete all
+
+================================================================================
+                          🔙 回滚方案（如需要）
+================================================================================
+
+如果新系统有问题，立即回滚到旧系统:
+
+pm2 stop all
+pm2 delete all
+cd /www/wwwroot/backups
+tar -xzf member-system-backup-20260124-184840.tar.gz -C /www/wwwroot/
+cd /www/wwwroot/member-system
+pm2 start ecosystem.config.js
+pm2 save
+
+================================================================================
+                          📁 相关文件
+================================================================================
+
+本地已创建的文件:
+  - deploy-finish.sh           完整自动化脚本
+  - 直接执行脚本.sh            简化版脚本
+  - 完成部署-3种方法.md        详细方法说明
+  - 完成部署指南.md            完整指南
+  - 一键完成部署.bat           Windows批处理
+
+服务器上的位置:
+  - 项目: /www/wwwroot/member-monorepo
+  - 备份: /www/wwwroot/backups/
+  - 日志: /www/wwwroot/member-monorepo/logs/
+
+================================================================================
+                          ❓ 需要帮助？
+================================================================================
+
+如遇到问题，告诉我:
+  1. 执行到第几步了？
+  2. 遇到什么错误信息？
+  3. pm2 logs 的输出是什么？
+
+我会立即协助您解决！
+
+================================================================================
+部署时间: 2026-01-24
+服务器: 8.153.110.212
+项目路径: /www/wwwroot/member-monorepo
+备份时间: 18:48
+================================================================================

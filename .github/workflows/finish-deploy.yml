@@ -1,0 +1,110 @@
+name: 完成Monorepo部署
+
+on:
+  workflow_dispatch:  # 手动触发
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 部署到生产环境
+        uses: appleboy/ssh-action@master
+        with:
+          host: 8.153.110.212
+          username: root
+          password: ${{ secrets.SERVER_PASSWORD }}
+          script: |
+            set -e
+
+            cd /www/wwwroot/member-monorepo
+
+            echo "=== 步骤1: 检查并构建应用 ==="
+
+            # 检查每个应用是否需要构建
+            for app in web bk fuplan xinli; do
+              if [ ! -d "apps/$app/.next" ]; then
+                echo "构建 apps/$app..."
+                cd apps/$app
+                pnpm build
+                cd ../..
+              else
+                echo "apps/$app 已构建"
+              fi
+            done
+
+            echo ""
+            echo "=== 步骤2: 创建PM2配置 ==="
+
+            cat > ecosystem.config.js << 'EOF'
+            module.exports = {
+              apps: [
+                {
+                  name: 'member-web',
+                  cwd: '/www/wwwroot/member-monorepo/apps/web',
+                  script: './node_modules/next/dist/bin/next',
+                  args: 'start -p 3000',
+                  instances: 1,
+                  autorestart: true,
+                  max_memory_restart: '1G',
+                  env: { NODE_ENV: 'production', PORT: 3000 }
+                },
+                {
+                  name: 'member-bk',
+                  cwd: '/www/wwwroot/member-monorepo/apps/bk',
+                  script: './node_modules/next/dist/bin/next',
+                  args: 'start -p 3001',
+                  instances: 1,
+                  autorestart: true,
+                  max_memory_restart: '512M',
+                  env: { NODE_ENV: 'production', PORT: 3001 }
+                },
+                {
+                  name: 'member-fuplan',
+                  cwd: '/www/wwwroot/member-monorepo/apps/fuplan',
+                  script: './node_modules/next/dist/bin/next',
+                  args: 'start -p 3002',
+                  instances: 1,
+                  autorestart: true,
+                  max_memory_restart: '512M',
+                  env: { NODE_ENV: 'production', PORT: 3002 }
+                },
+                {
+                  name: 'member-xinli',
+                  cwd: '/www/wwwroot/member-monorepo/apps/xinli',
+                  script: './node_modules/next/dist/bin/next',
+                  args: 'start -p 3003',
+                  instances: 1,
+                  autorestart: true,
+                  max_memory_restart: '512M',
+                  env: { NODE_ENV: 'production', PORT: 3003 }
+                }
+              ]
+            };
+            EOF
+
+            mkdir -p logs
+
+            echo ""
+            echo "=== 步骤3: 启动服务 ==="
+
+            pm2 delete all 2>/dev/null || true
+            sleep 2
+            pm2 start ecosystem.config.js
+            pm2 save
+
+            echo ""
+            echo "=== 步骤4: 健康检查 ==="
+
+            sleep 5
+            pm2 list
+
+            echo ""
+            netstat -tlnp | grep -E ":(3000|3001|3002|3003)" | grep LISTEN
+
+            echo ""
+            echo "=== 部署完成 ==="
+            echo "Web:    http://8.153.110.212:3000"
+            echo "BK:     http://8.153.110.212:3001"
+            echo "Fuplan: http://8.153.110.212:3002"
+            echo "Xinli:  http://8.153.110.212:3003"

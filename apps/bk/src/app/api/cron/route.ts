@@ -182,15 +182,18 @@ async function getBatchStockPerformance(stockCodes: string[], tradingDays: strin
     if (data.code === 0 && data.data && data.data.items) {
       data.data.items.forEach((item: any[]) => {
         const tsCode = item[0];
-        const tradeDate = item[1];
+        const tradeDate = item[1]; // 格式: YYYYMMDD
         const pctChg = parseFloat(item[2]) || 0;
+
+        // 将YYYYMMDD转换为YYYY-MM-DD格式以匹配tradingDays
+        const formattedDate = `${tradeDate.slice(0,4)}-${tradeDate.slice(4,6)}-${tradeDate.slice(6,8)}`;
 
         const originalCode = stockCodes.find(code =>
           convertStockCodeForTushare(code) === tsCode
         );
 
-        if (originalCode && tradingDays.includes(tradeDate)) {
-          result.get(originalCode)![tradeDate] = pctChg;
+        if (originalCode && tradingDays.includes(formattedDate)) {
+          result.get(originalCode)![formattedDate] = pctChg;
         }
       });
 

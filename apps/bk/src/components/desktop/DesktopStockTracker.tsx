@@ -112,6 +112,9 @@ export default function Home() {
   // 新增：7天板块高度弹窗状态
   const [showSectorHeightModal, setShowSectorHeightModal] = useState(false);
 
+  // 新增：15天板块高度弹窗加载状态
+  const [sectorHeightLoading, setSectorHeightLoading] = useState(false);
+
   // v4.8.31新增：15天数据加载标志（避免重复加载）
   const has15DaysDataLoaded = useRef(false);
 
@@ -670,19 +673,25 @@ export default function Home() {
   };
 
   // 打开15天板块高度弹窗
-  const handleOpenSectorHeightModal = () => {
-    // 直接打开弹窗，使用当前已有数据
+  const handleOpenSectorHeightModal = async () => {
+    // 立即打开弹窗，显示Loading状态
     setShowSectorHeightModal(true);
 
-    // v4.8.31优化：只在首次打开且数据不足15天时加载，避免重复刷新
+    // 如果数据不足15天，异步加载更多数据
     if (dates.length < 15 && !has15DaysDataLoaded.current) {
-      console.log(`[15天板块高度] 当前有${dates.length}天数据，首次加载至15天`);
-      has15DaysDataLoaded.current = true; // 标记为已加载
-      // 不等待加载完成，让用户先看到现有数据
-      fetch7DaysData(15).catch(err => {
-        console.error('[15天板块高度] 后台加载失败:', err);
-        has15DaysDataLoaded.current = false; // 加载失败，重置标志
-      });
+      console.log(`[15天板块高度] 当前有${dates.length}天数据，开始加载至15天`);
+      has15DaysDataLoaded.current = true;
+      setSectorHeightLoading(true);
+
+      try {
+        await fetch7DaysData(15);
+        console.log('[15天板块高度] 数据加载完成');
+      } catch (err) {
+        console.error('[15天板块高度] 加载失败:', err);
+        has15DaysDataLoaded.current = false;
+      } finally {
+        setSectorHeightLoading(false);
+      }
     }
   };
 
@@ -1439,7 +1448,17 @@ export default function Home() {
 
             {/* v4.8.31优化：图表区域 - 使用flex-1自动填充剩余空间，无需手动设置高度 */}
             <div className="flex-1 overflow-hidden">
-              {displayTrackers.length > 0 ? (
+              {/* 加载中状态 */}
+              {sectorHeightLoading && (
+                <div className="h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto mb-4"></div>
+                    <p className="text-sm text-gray-600">正在加载15天数据...</p>
+                    <p className="text-xs text-gray-400 mt-1">当前已有 {dates.length} 天数据</p>
+                  </div>
+                </div>
+              )}
+              {!sectorHeightLoading && displayTrackers.length > 0 ? (
                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-3 h-full flex flex-col">
                   {/* v4.8.31优化：图表使用100%高度自适应 */}
                   <div className="flex-1">
@@ -1885,13 +1904,13 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
-              ) : (
+              ) : !sectorHeightLoading && displayTrackers.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <div className="text-4xl mb-3">📊</div>
                   <p className="text-base font-semibold">暂无数据</p>
                   <p className="text-xs mt-1">15天内没有符合过滤条件的高板股</p>
                 </div>
-              )}
+              ) : null}
             </div>
           </div>
         </div>
