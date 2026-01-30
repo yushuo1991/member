@@ -11,6 +11,7 @@ import LearningCircleIntro from '@/components/products/LearningCircleIntro';
 import EmotionTablesIntro from '@/components/products/EmotionTablesIntro';
 import EmotionLayoutIntro from '@/components/products/EmotionLayoutIntro';
 import BoardAssistantIntro from '@/components/products/BoardAssistantIntro';
+import BKSystemIntro from '@/components/products/BKSystemIntro';
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -22,7 +23,9 @@ export default function ProductDetailPage() {
     slug === 'bankuaizhushou' ||
     slug === 'qingxubiaoge_2018' ||
     slug === 'qingxubiaoge_2022' ||
-    slug === 'fupanbanmian';
+    slug === 'qingxubiaoge' ||
+    slug === 'fupanbanmian' ||
+    slug === 'bk';
 
   const [product, setProduct] = useState<Product | null>(null);
 
@@ -150,10 +153,11 @@ export default function ProductDetailPage() {
             <div className="lg:col-span-2 space-y-6">
               {slug === 'xuexiquan' && <LearningCircleIntro />}
               {slug === 'bankuaizhushou' && <BoardAssistantIntro />}
-              {(slug === 'qingxubiaoge_2018' || slug === 'qingxubiaoge_2022') && (
+              {(slug === 'qingxubiaoge_2018' || slug === 'qingxubiaoge_2022' || slug === 'qingxubiaoge') && (
                 <EmotionTablesIntro />
               )}
               {slug === 'fupanbanmian' && <EmotionLayoutIntro />}
+              {slug === 'bk' && <BKSystemIntro />}
 
               {!isCustomIntroSlug && (
                 <>
@@ -214,7 +218,7 @@ export default function ProductDetailPage() {
 
                 {/* 单独购买价格 */}
                 {(product.priceType === 'standalone' || product.priceType === 'both') &&
-                  product.standalonePrices && (
+                  product.standalonePrices && slug !== 'qingxubiaoge' && (
                     <div className="space-y-3 mb-4">
                       {product.standalonePrices.monthly && (
                         <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
@@ -249,6 +253,27 @@ export default function ProductDetailPage() {
                       )}
                     </div>
                   )}
+
+                {/* 情绪表格特殊价格 */}
+                {slug === 'qingxubiaoge' && (
+                  <div className="space-y-3 mb-4">
+                    <div className="flex justify-between items-center p-3 bg-green-50 rounded-xl border border-green-200">
+                      <div>
+                        <div className="font-medium text-gray-900">自2022年数据</div>
+                        <div className="text-xs text-gray-600">永久更新</div>
+                      </div>
+                      <div className="text-lg font-bold text-[#ff8c42]">限时 ¥600</div>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-purple-50 rounded-xl border border-purple-200">
+                      <div>
+                        <div className="font-medium text-gray-900">自2018年数据</div>
+                        <div className="text-xs text-gray-600">永久更新</div>
+                      </div>
+                      <div className="text-lg font-bold text-[#ff8c42]">限时 ¥999</div>
+                    </div>
+                    <p className="text-xs text-gray-500 text-center">随数据量积累，价格逐年上涨</p>
+                  </div>
+                )}
 
                 {/* Action Buttons */}
                 <div className="space-y-3">
@@ -286,14 +311,23 @@ export default function ProductDetailPage() {
                     </button>
                   )}
 
-                  {/* 开通会员按钮 */}
+                  {/* 开通会员/领取权益按钮 */}
                   {product.priceType === 'membership' && (
-                    <Link
-                      href="/register"
-                      className="block w-full py-3 px-6 bg-[#ff8c42] text-white rounded-full hover:bg-[#e67d3a] transition-all duration-300 font-medium text-center shadow-md hover:shadow-lg"
-                    >
-                      开通会员
-                    </Link>
+                    slug === 'circle' ? (
+                      <Link
+                        href="/products/circle/guide"
+                        className="block w-full py-3 px-6 bg-[#ff8c42] text-white rounded-full hover:bg-[#e67d3a] transition-all duration-300 font-medium text-center shadow-md hover:shadow-lg"
+                      >
+                        领取权益
+                      </Link>
+                    ) : (
+                      <Link
+                        href="/register"
+                        className="block w-full py-3 px-6 bg-[#ff8c42] text-white rounded-full hover:bg-[#e67d3a] transition-all duration-300 font-medium text-center shadow-md hover:shadow-lg"
+                      >
+                        开通会员
+                      </Link>
+                    )
                   )}
 
                   {/* 外部链接（如果有） */}

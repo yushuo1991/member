@@ -2,6 +2,8 @@
 
 import { useMemo } from 'react'
 
+const VIDEO_LINK = 'https://mp.weixin.qq.com/s/68M2Rtno3Trh5r02WrUH4A?mpshare=1&scene=1&srcid=0105Q7RSoJ3442wRRZdQk0dk&sharer_shareinfo=9db4f54af9d43d53928ff086b44ff914&sharer_shareinfo_first=9db4f54af9d43d53928ff086b44ff914&from=industrynews&color_scheme=light#rd'
+
 type LinkItem = { label: string; href: string }
 
 export default function EmotionLayoutIntro() {
@@ -52,9 +54,20 @@ export default function EmotionLayoutIntro() {
 
         <h2 className="text-lg sm:text-xl font-semibold text-gray-900">全面信息捕捉：让复盘与看盘更高效</h2>
         <p className="mt-3 text-gray-700 leading-relaxed">
-          版面只是交易体系与交易思路的“可视化呈现”。它的目标不是增加信息，而是把你真正需要的关键信息固定在最顺手的位置，
+          版面只是交易体系与交易思路的"可视化呈现"。它的目标不是增加信息，而是把你真正需要的关键信息固定在最顺手的位置，
           让你在复盘/看盘过程中快速捕捉重点，把节省下来的精力用于理解市场与执行。
         </p>
+
+        <div className="mt-4">
+          <a
+            href={VIDEO_LINK}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-[#ff8c42] text-white hover:bg-[#e67d3a] transition-colors font-medium"
+          >
+            点击查看，如何高效复盘看盘
+          </a>
+        </div>
       </div>
 
       <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm">
@@ -131,6 +144,37 @@ export default function EmotionLayoutIntro() {
               <span className="text-sm font-medium text-gray-900">{l.label}</span>
               <span className="text-xs text-[#ff8c42]">打开</span>
             </a>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm">
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3">用户评价</h2>
+        <div className="grid grid-cols-1 gap-4">
+          {[
+            {
+              name: '通达信老用户',
+              duration: '使用8个月',
+              content: '之前自己也折腾过版面，但总是东一块西一块的。用了这套版面后才发现，原来信息可以这样组织。现在复盘效率提高了不少，关键信息一眼就能看到。',
+            },
+            {
+              name: '职业炒手',
+              duration: '使用1年',
+              content: '版面设计得很合理，特别是按情绪阶段组合的第三版，不同阶段切换不同版面，省去了临时加指标的麻烦。推荐给做短线的朋友。',
+            },
+            {
+              name: '兼职交易者',
+              duration: '使用4个月',
+              content: '白天上班没时间盯盘，晚上复盘用这套版面很方便。核心精简版对我这种时间不多的人很友好，重点信息都在，不用到处翻。',
+            },
+          ].map((review) => (
+            <div key={review.name} className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="font-medium text-gray-900">{review.name}</span>
+                <span className="text-xs text-gray-500">{review.duration}</span>
+              </div>
+              <p className="text-sm text-gray-700 leading-relaxed">{review.content}</p>
+            </div>
           ))}
         </div>
       </div>

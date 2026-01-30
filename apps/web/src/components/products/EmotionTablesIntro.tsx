@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 
-const VIDEO_LINK = 'https://www.taoguba.com.cn/Article/5384760/1'
+const VIDEO_LINK = 'https://mp.weixin.qq.com/s/J4ixYxRY7FN4DWaVaSlPyg?mpshare=1&scene=1&srcid=0105jUXKSWzDt0pRUkQdwsWL&sharer_shareinfo=498a87bde624da3a9d0343925e914ba0&sharer_shareinfo_first=498a87bde624da3a9d0343925e914ba0&from=industrynews&color_scheme=light#rd'
 
 type TableItem = {
   key: string
@@ -20,7 +20,7 @@ export default function EmotionTablesIntro() {
         image:
           'https://wuqq-obsidian.oss-cn-shanghai.aliyuncs.com/obsidian%E5%9B%BE%E7%89%87/20231120155629.png',
         points: [
-          '左侧看“势能”，右侧看“动能”，共振提示机会/风险。',
+          '左侧看"势能"，右侧看"动能"，共振提示机会/风险。',
           '自动底色表达历史极值区间，用于预判次日分歧。',
           '板块栏记录涨停>4的板块，配合后续表格建立板块印象。',
         ],
@@ -32,7 +32,7 @@ export default function EmotionTablesIntro() {
           'https://wuqq-obsidian.oss-cn-shanghai.aliyuncs.com/obsidian%E5%9B%BE%E7%89%87/72cfe5ac5510436e9c28366a78ca2ee.png',
         points: [
           '记录2板以上与20cm首板溢价，直观看多空强弱。',
-          '出现“黑色块跌停”可能是吹哨信号，用于风险识别。',
+          '出现"黑色块跌停"可能是吹哨信号，用于风险识别。',
           '支持纵向筛选亏钱效应、横向筛选板块节奏。',
         ],
       },
@@ -103,30 +103,27 @@ export default function EmotionTablesIntro() {
           </span>
         </div>
 
-        <h2 className="text-lg sm:text-xl font-semibold text-gray-900">把情绪“看得见”：从数据到节奏，一套表格打通</h2>
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-900">把情绪"看得见"：从数据到节奏，一套表格打通</h2>
         <p className="mt-3 text-gray-700 leading-relaxed">
           这套表格是我长期复盘与实战中不断优化的记录体系，用于快速捕捉市场整体势能/动能、连板溢价、情绪阶段、
           高度演化与板块节奏。照着设计思路，你也可以复刻出属于自己的版本。
         </p>
 
-        <div className="mt-4 flex flex-wrap gap-3">
+        <div className="mt-4">
           <a
             href={VIDEO_LINK}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-white text-gray-900 hover:bg-gray-100 transition-colors font-medium border border-gray-200"
+            className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-[#ff8c42] text-white hover:bg-[#e67d3a] transition-colors font-medium"
           >
-            观看表格录入与解读视频（30分钟）
+            点击观看表格解读，精准判断情绪
           </a>
-          <div className="text-xs text-gray-600 flex items-center">
-            提示：外链视频在淘股吧打开。
-          </div>
         </div>
       </div>
 
       <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm">
         <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">8 张核心表格（逐表说明）</h2>
-        <p className="text-sm text-gray-600 mb-4">按“看整体 → 看溢价 → 看高度 → 看板块节奏”的顺序组织。</p>
+        <p className="text-sm text-gray-600 mb-4">按"看整体 → 看溢价 → 看高度 → 看板块节奏"的顺序组织。</p>
 
         <div className="grid grid-cols-1 gap-5">
           {tables.map((t) => (
@@ -166,13 +163,44 @@ export default function EmotionTablesIntro() {
         <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3">适合谁</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
-            { title: '想系统复盘', desc: '用结构化数据沉淀盘感，复盘不再“凭感觉”。' },
+            { title: '想系统复盘', desc: '用结构化数据沉淀盘感，复盘不再"凭感觉"。' },
             { title: '想看懂情绪', desc: '从溢价、连板、高度与板块节奏理解周期变化。' },
             { title: '想提升效率', desc: '减少信息筛选与记忆负担，把精力留给决策。' },
           ].map((c) => (
             <div key={c.title} className="rounded-2xl border border-gray-100 p-5 bg-gradient-to-br from-white to-gray-50">
               <div className="font-semibold text-gray-900">{c.title}</div>
               <div className="mt-2 text-sm text-gray-700 leading-relaxed">{c.desc}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm">
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3">用户评价</h2>
+        <div className="grid grid-cols-1 gap-4">
+          {[
+            {
+              name: '复盘达人',
+              duration: '使用6个月',
+              content: '以前复盘就是随便看看涨停板，现在有了这套表格，每天花20分钟就能把市场情绪摸清楚。特别是连板溢价那张表，对判断次日该不该追高帮助很大。',
+            },
+            {
+              name: '情绪周期研究者',
+              duration: '使用1年',
+              content: '表格设计得很用心，从势能到动能，从高度到板块节奏，逻辑很清晰。我现在基本每天都会看A1和A2表，已经成习惯了。',
+            },
+            {
+              name: '短线新手',
+              duration: '使用3个月',
+              content: '刚开始看不太懂，后来看了宇硕的解读视频才明白每张表的用法。现在慢慢能看出一些规律了，比如黑色块出现确实要小心。',
+            },
+          ].map((review) => (
+            <div key={review.name} className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="font-medium text-gray-900">{review.name}</span>
+                <span className="text-xs text-gray-500">{review.duration}</span>
+              </div>
+              <p className="text-sm text-gray-700 leading-relaxed">{review.content}</p>
             </div>
           ))}
         </div>

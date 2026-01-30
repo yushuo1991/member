@@ -147,6 +147,37 @@ export default function BoardAssistantIntro() {
         </div>
       </section>
 
+      <section className="mt-8 bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+        <h3 className="text-lg font-semibold text-gray-900">用户评价</h3>
+        <div className="mt-4 grid gap-4">
+          {[
+            {
+              name: '效率控',
+              duration: '使用5个月',
+              content: '以前每天手动整理板块要花一个多小时，现在用板块助手几分钟就搞定了。自动生成的自定义板块列表很实用，省去了大量重复劳动。',
+            },
+            {
+              name: '通达信深度用户',
+              duration: '使用8个月',
+              content: '强弱信号标记这个功能很贴心，当日强势和历史强势用颜色区分，复盘的时候一眼就能看出哪些票值得关注。',
+            },
+            {
+              name: '盘前准备党',
+              duration: '使用3个月',
+              content: '每天开盘前运行一下，板块核心清单就出来了，盘前准备变得很轻松。自动清理功能也不错，不用担心板块越积越多。',
+            },
+          ].map((review) => (
+            <div key={review.name} className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="font-medium text-gray-900">{review.name}</span>
+                <span className="text-xs text-gray-500">{review.duration}</span>
+              </div>
+              <p className="text-sm text-gray-700 leading-relaxed">{review.content}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <section className="mt-8 bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 text-white">
         <h3 className="text-lg font-semibold">适用人群</h3>
         <p className="mt-2 text-sm text-white/80 leading-relaxed">

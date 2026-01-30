@@ -183,6 +183,42 @@ export default function LearningCircleIntro() {
 
       <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm">
         <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3">他们怎么评价学习圈</h2>
+
+        {/* 文字评价 */}
+        <div className="grid grid-cols-1 gap-4 mb-5">
+          {[
+            {
+              name: '股海老韭',
+              duration: '加入8个月',
+              content: '之前自己瞎摸索了两年，走了很多弯路。加入学习圈后才发现，原来有这么清晰的学习路线。现在每天跟着早报和复盘走，慢慢有了自己的节奏感。',
+            },
+            {
+              name: '小散逆袭',
+              duration: '加入1年',
+              content: '最有价值的是情绪节点的讨论，以前总是追高被套，现在学会了等分歧、看确认。虽然还在学习阶段，但至少知道自己在做什么了。',
+            },
+            {
+              name: '稳健求财',
+              duration: '加入5个月',
+              content: '知识库真的很强，遇到不懂的概念直接搜，基本都能找到答案。宇硕的复盘视频也很实在，不吹不黑，讲的都是干货。',
+            },
+            {
+              name: '龙头猎手',
+              duration: '加入1年半',
+              content: '从月费升级到年费了，主要是觉得值。学习路径帮我省了很多时间，不用再到处找资料。板块助手也很好用，每天复盘效率提高了不少。',
+            },
+          ].map((review) => (
+            <div key={review.name} className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="font-medium text-gray-900">{review.name}</span>
+                <span className="text-xs text-gray-500">{review.duration}</span>
+              </div>
+              <p className="text-sm text-gray-700 leading-relaxed">{review.content}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* 截图评价 */}
         <div className="grid grid-cols-1 gap-4">
           {[reviewImage1, reviewImage2].map((src) => (
             <img
