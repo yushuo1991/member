@@ -324,6 +324,88 @@ function convertStockCodeForTushare(stockCode: string): string {
   return toTushareCode(stockCode);
 }
 
+  // 新浪财经API获取单只股票成交额
+  async function getSinaStockAmount(stockCode: string, tradeDate: string): Promise<number> {
+    try {
+      const sinaCode = stockCode.startsWith('6') ? `sh${stockCode}` : `sz${stockCode}`;
+      const url = `https://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData?symbol=${sinaCode}&scale=240&ma=no&datalen=30`;
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const response = await fetch(url, {
+        signal: controller.signal,
+        headers: {
+          'Referer': 'https://finance.sina.com.cn',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) return 0;
+
+      const text = await response.text();
+      const data = JSON.parse(text);
+
+      if (!Array.isArray(data)) return 0;
+
+      // 查找目标日期的数据
+      for (const item of data) {
+        if (item.day === tradeDate) {
+          // volume是成交量（股），close是收盘价
+          // 成交额 ≈ 成交量 * 收盘价 / 100000000 (转换为亿元)
+          const volume = parseFloat(item.volume) || 0;
+          const close = parseFloat(item.close) || 0;
+          const amount = (volume * close) / 100000000;
+          return Math.round(amount * 100) / 100;
+        }
+      }
+
+      return 0;
+    } catch (error) {
+      return 0;
+    }
+  }
+
+  // 使用新浪API批量获取成交额（作为Tushare的备用）
+  async function getBatchStockAmountFromSina(
+    stockCodes: string[],
+    tradeDate: string
+  ): Promise<Map<string, number>> {
+    const result = new Map<string, number>();
+    stockCodes.forEach(code => result.set(code, 0));
+
+    console.log(`[新浪成交额] 开始批量获取 ${stockCodes.length} 只股票在 ${tradeDate} 的成交额`);
+
+    const BATCH_SIZE = 10;
+    let totalSuccess = 0;
+
+    for (let i = 0; i < stockCodes.length; i += BATCH_SIZE) {
+      const batch = stockCodes.slice(i, i + BATCH_SIZE);
+
+      const promises = batch.map(async (stockCode) => {
+        const amount = await getSinaStockAmount(stockCode, tradeDate);
+        if (amount > 0) {
+          result.set(stockCode, amount);
+          return true;
+        }
+        return false;
+      });
+
+      const batchResults = await Promise.all(promises);
+      const successCount = batchResults.filter(r => r).length;
+      totalSuccess += successCount;
+
+      if (i + BATCH_SIZE < stockCodes.length) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+    }
+
+    console.log(`[新浪成交额] 批量获取完成, ${totalSuccess}/${stockCodes.length} 只股票有成交额数据`);
+    return result;
+  }
+
   // v4.8.18新增：使用Tushare API批量获取个股真实成交额
   async function getBatchStockAmount(stockCodes: string[], tradeDate: string): Promise<Map<string, number>> {
     const result = new Map<string, number>();
@@ -406,10 +488,196 @@ function convertStockCodeForTushare(stockCode: string): string {
       }
     }
 
+    // 检查是否大部分数据为0，如果是则使用新浪API补充
+    const nonZeroCount = Array.from(result.values()).filter(v => v > 0).length;
+    if (nonZeroCount < stockCodes.length * 0.5) {
+      console.log(`[成交额API] Tushare数据不足(${nonZeroCount}/${stockCodes.length})，将使用原始数据源`);
+      // 注意：新浪API在服务器上被封禁，这里返回空结果，让调用方使用原始数据
+    }
+
+    return result;
+  }
+
+  // 东方财富API备用数据源 - 获取单只股票K线数据
+  async function getEastMoneyStockKline(stockCode: string, days: number = 30): Promise<Array<{date: string; pctChg: number}>> {
+    try {
+      // 转换股票代码为东方财富格式 (1.600000 上海, 0.000001 深圳)
+      const market = stockCode.startsWith('6') ? '1' : '0';
+      const secid = `${market}.${stockCode}`;
+
+      const url = `https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=${secid}&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61&klt=101&fqt=1&end=20500101&lmt=${days}`;
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const response = await fetch(url, {
+        signal: controller.signal,
+        headers: {
+          'Referer': 'https://quote.eastmoney.com',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (!data.data || !data.data.klines || !Array.isArray(data.data.klines)) {
+        return [];
+      }
+
+      // 解析K线数据
+      // 格式: "2026-01-20,10.50,10.80,10.90,10.40,100000,1000000.00,5.00,2.86,0.30,0.50"
+      // 字段: 日期,开盘,收盘,最高,最低,成交量,成交额,振幅,涨跌幅,涨跌额,换手率
+      const result: Array<{date: string; pctChg: number}> = [];
+
+      data.data.klines.forEach((line: string) => {
+        const parts = line.split(',');
+        if (parts.length >= 9) {
+          const date = parts[0]; // YYYY-MM-DD
+          const pctChg = parseFloat(parts[8]) || 0; // 涨跌幅
+
+          result.push({ date, pctChg });
+        }
+      });
+
+      if (result.length > 0) {
+        console.log(`[东方财富API] ${stockCode} 获取到 ${result.length} 条K线数据`);
+      }
+
+      return result;
+    } catch (error) {
+      console.log(`[东方财富API] ${stockCode} 获取失败: ${error}`);
+      return [];
+    }
+  }
+
+  // 新浪财经API备用数据源 - 获取单只股票K线数据
+  async function getSinaStockKline(stockCode: string, days: number = 30): Promise<Array<{date: string; pctChg: number}>> {
+    try {
+      // 转换股票代码为新浪格式 (sh600000 或 sz000001)
+      const sinaCode = stockCode.startsWith('6') ? `sh${stockCode}` : `sz${stockCode}`;
+
+      const url = `https://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData?symbol=${sinaCode}&scale=240&ma=no&datalen=${days}`;
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const response = await fetch(url, {
+        signal: controller.signal,
+        headers: {
+          'Referer': 'https://finance.sina.com.cn',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const text = await response.text();
+      const data = JSON.parse(text);
+
+      if (!Array.isArray(data) || data.length === 0) {
+        return [];
+      }
+
+      // 解析K线数据，计算涨跌幅
+      const result: Array<{date: string; pctChg: number}> = [];
+
+      for (let i = 1; i < data.length; i++) {
+        const current = data[i];
+        const prev = data[i - 1];
+
+        const closePrice = parseFloat(current.close);
+        const prevClose = parseFloat(prev.close);
+
+        if (prevClose > 0) {
+          const pctChg = ((closePrice - prevClose) / prevClose) * 100;
+          result.push({
+            date: current.day, // 格式: YYYY-MM-DD
+            pctChg: Math.round(pctChg * 100) / 100
+          });
+        }
+      }
+
+      return result;
+    } catch (error) {
+      console.log(`[新浪API] ${stockCode} 获取失败: ${error}`);
+      return [];
+    }
+  }
+
+  // 使用新浪API批量获取股票数据（作为Tushare的备用）
+  async function getBatchStockDailyFromSina(
+    stockCodes: string[],
+    tradeDates: string[]
+  ): Promise<Map<string, Record<string, number>>> {
+    const result = new Map<string, Record<string, number>>();
+
+    // 初始化
+    stockCodes.forEach(code => {
+      result.set(code, {});
+      tradeDates.forEach(date => {
+        result.get(code)![date] = 0;
+      });
+    });
+
+    console.log(`[新浪API] 开始批量获取 ${stockCodes.length} 只股票数据`);
+    console.log(`[新浪API] 目标日期: ${tradeDates.join(', ')}`);
+
+    // 分批处理，每批10只股票
+    const BATCH_SIZE = 10;
+    let totalMatched = 0;
+
+    for (let i = 0; i < stockCodes.length; i += BATCH_SIZE) {
+      const batch = stockCodes.slice(i, i + BATCH_SIZE);
+
+      // 并行获取这批股票的数据
+      const promises = batch.map(async (stockCode) => {
+        const klineData = await getSinaStockKline(stockCode, 30);
+        let matchedCount = 0;
+
+        // 将K线数据映射到目标日期
+        klineData.forEach(item => {
+          if (tradeDates.includes(item.date) && result.has(stockCode)) {
+            result.get(stockCode)![item.date] = item.pctChg;
+            matchedCount++;
+          }
+        });
+
+        if (matchedCount > 0) {
+          console.log(`[新浪API] ${stockCode} 匹配到 ${matchedCount} 个日期的数据`);
+        }
+
+        return { stockCode, count: klineData.length, matched: matchedCount };
+      });
+
+      const batchResults = await Promise.all(promises);
+      const successCount = batchResults.filter(r => r.count > 0).length;
+      const matchedInBatch = batchResults.reduce((sum, r) => sum + r.matched, 0);
+      totalMatched += matchedInBatch;
+
+      console.log(`[新浪API] 批次 ${Math.floor(i/BATCH_SIZE) + 1}: ${successCount}/${batch.length} 只股票成功, 匹配 ${matchedInBatch} 条数据`);
+
+      // 批次间延迟
+      if (i + BATCH_SIZE < stockCodes.length) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
+
+    console.log(`[新浪API] 批量获取完成, 总共匹配 ${totalMatched} 条数据`);
     return result;
   }
 
   // v4.8.35修复：批量获取多只股票多个日期的数据（修复Tushare API调用方式）
+  // v4.8.36新增：Tushare失败时自动切换到新浪API
   async function getBatchStockDaily(stockCodes: string[], tradeDates: string[]): Promise<Map<string, Record<string,
   number>>> {
     const result = new Map<string, Record<string, number>>();
@@ -421,6 +689,8 @@ function convertStockCodeForTushare(stockCode: string): string {
         result.get(code)![date] = 0;
       });
     });
+
+    let useSinaFallback = false;
 
     try {
       console.log(`[批量API] 请求数据: ${stockCodes.length}只股票 × ${tradeDates.length}个交易日`);
@@ -468,10 +738,18 @@ function convertStockCodeForTushare(stockCode: string): string {
 
           const data = await response.json();
 
-          // 检查频率限制
-          if (data.msg && data.msg.includes('每分钟最多访问该接口')) {
-            console.log(`[批量API] Tushare频率限制: ${data.msg}`);
-            throw new Error('RATE_LIMIT');
+          // 检查频率限制或每日调用次数限制
+          if (data.msg && (data.msg.includes('每分钟最多访问该接口') || data.msg.includes('每天最多访问该接口'))) {
+            console.log(`[批量API] Tushare限制: ${data.msg}`);
+            useSinaFallback = true;
+            break; // 跳出循环，使用新浪API
+          }
+
+          // 检查API返回错误码
+          if (data.code && data.code !== 0) {
+            console.log(`[批量API] Tushare错误码 ${data.code}: ${data.msg}`);
+            useSinaFallback = true;
+            break;
           }
 
           if (data.code === 0 && data.data && data.data.items) {
@@ -500,13 +778,17 @@ function convertStockCodeForTushare(stockCode: string): string {
             console.log(`[批量API] ${tradeDate} 匹配到${matchedCount}/${stockCodes.length}只目标股票`);
           } else {
             console.log(`[批量API] ${tradeDate} API返回无效数据:`, data);
+            // 如果连续返回无效数据，切换到新浪
+            useSinaFallback = true;
+            break;
           }
         } catch (dateError) {
           const err = dateError as any;
           if (err.name === 'AbortError') {
             console.log(`[批量API] ${tradeDate} 请求超时`);
           } else if (err.message === 'RATE_LIMIT') {
-            throw dateError;
+            useSinaFallback = true;
+            break;
           } else {
             console.log(`[批量API] ${tradeDate} 请求失败: ${dateError}`);
           }
@@ -518,15 +800,37 @@ function convertStockCodeForTushare(stockCode: string): string {
         }
       }
 
-      console.log(`[批量API] 批量查询完成`);
+      console.log(`[批量API] Tushare批量查询完成`);
 
     } catch (error) {
       const err = error as any;
       if (err.message === 'RATE_LIMIT') {
-        console.log(`[批量API] 遇到频率限制`);
-        throw error;
+        console.log(`[批量API] 遇到频率限制，切换到新浪API`);
+        useSinaFallback = true;
       } else {
         console.log(`[批量API] 整体请求失败: ${error}`);
+        useSinaFallback = true;
+      }
+    }
+
+    // 如果Tushare失败，使用新浪API作为备用
+    if (useSinaFallback) {
+      console.log(`[批量API] 切换到新浪财经API获取数据`);
+      try {
+        const sinaResult = await getBatchStockDailyFromSina(stockCodes, tradeDates);
+
+        // 合并新浪数据到结果中（只覆盖值为0的数据）
+        sinaResult.forEach((performance, stockCode) => {
+          Object.entries(performance).forEach(([date, pctChg]) => {
+            if (result.has(stockCode) && result.get(stockCode)![date] === 0 && pctChg !== 0) {
+              result.get(stockCode)![date] = pctChg;
+            }
+          });
+        });
+
+        console.log(`[批量API] 新浪API数据合并完成`);
+      } catch (sinaError) {
+        console.log(`[批量API] 新浪API也失败: ${sinaError}`);
       }
     }
 
@@ -681,6 +985,61 @@ function convertStockCodeForTushare(stockCode: string): string {
       }
 
       console.log(`[数据获取] 成功获取${stockCode}的完整Tushare数据`);
+
+      // v4.8.40: 检查是否大部分数据是0，如果是则使用新浪API补充
+      const zeroCount = Object.values(performance).filter(v => v === 0).length;
+      const totalCount = Object.values(performance).length;
+
+      if (zeroCount > totalCount * 0.5 && totalCount > 0) {
+        console.log(`[数据获取] ${stockCode} Tushare数据${zeroCount}/${totalCount}为0，尝试备用API补充`);
+
+        // 先尝试东方财富API
+        try {
+          const eastMoneyData = await getEastMoneyStockKline(stockCode, 30);
+          if (eastMoneyData && eastMoneyData.length > 0) {
+            let filled = 0;
+            tradingDays.forEach(day => {
+              if (performance[day] === 0) {
+                const item = eastMoneyData.find(d => d.date === day);
+                if (item && item.pctChg !== 0) {
+                  performance[day] = item.pctChg;
+                  filled++;
+                }
+              }
+            });
+            if (filled > 0) {
+              console.log(`[数据获取] ${stockCode}使用东方财富API补充了${filled}个日期的数据`);
+            }
+          }
+        } catch (eastMoneyError) {
+          console.log(`[数据获取] ${stockCode}东方财富API失败: ${eastMoneyError}`);
+        }
+
+        // 如果东方财富也没数据，再尝试新浪API
+        const stillZeroCount = Object.values(performance).filter(v => v === 0).length;
+        if (stillZeroCount > totalCount * 0.5) {
+          try {
+            const sinaData = await getSinaStockKline(stockCode, 30);
+            if (sinaData && sinaData.length > 0) {
+              let filled = 0;
+              tradingDays.forEach(day => {
+                if (performance[day] === 0) {
+                  const sinaItem = sinaData.find(item => item.date === day);
+                  if (sinaItem && sinaItem.pctChg !== 0) {
+                    performance[day] = sinaItem.pctChg;
+                    filled++;
+                  }
+                }
+              });
+              if (filled > 0) {
+                console.log(`[数据获取] ${stockCode}使用新浪API补充了${filled}个日期的数据`);
+              }
+            }
+          } catch (sinaError) {
+            console.log(`[数据获取] ${stockCode}新浪API补充失败: ${sinaError}`);
+          }
+        }
+      }
 
       // 缓存真实数据到内存
       stockCache.set(stockCode, tradingDays, performance);
@@ -1028,7 +1387,9 @@ function convertStockCodeForTushare(stockCode: string): string {
           const totalReturn = Object.values(followUpPerformance).reduce((sum, val) => sum + val, 0);
 
           // v4.8.18修改：使用Tushare真实成交额替代API假数据
-          const realAmount = realAmounts.get(stock.StockCode) || 0;
+          // v4.8.37修复：当API失败时，使用原始数据源的成交额
+          // v4.8.38修复：确保amount是数字类型（MySQL DECIMAL返回字符串）
+          const realAmount = realAmounts.get(stock.StockCode) || parseFloat(stock.Amount) || 0;
 
           // v4.8.34修复：合并当天和后续5天的performance数据
           const stockPerformance: StockPerformance = {

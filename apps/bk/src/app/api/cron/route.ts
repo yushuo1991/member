@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateTradingDays } from '@/lib/utils';
 
-// 数据库配置
+// 数据库配置 - 从环境变量读取
 const dbConfig = {
-  host: 'localhost',
-  user: 'stock_user',
-  password: 'StockPass123!',
-  database: 'stock_db',
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || 'ChangeMe2026!Secure',
+  database: process.env.DB_NAME || 'stock_tracker',
   charset: 'utf8mb4'
 };
 
@@ -18,6 +18,8 @@ interface Stock {
   StockCode: string;
   ZSName: string;
   TDType: string;
+  Amount: number;
+  LimitUpTime: string;
 }
 
 interface LimitUpApiResponse {
@@ -106,12 +108,33 @@ async function getLimitUpStocks(date: string): Promise<Stock[]> {
         if (category.StockList && Array.isArray(category.StockList)) {
           const reversedStockList = [...category.StockList].reverse();
           reversedStockList.forEach((stockData: any[]) => {
-            stocks.push({
-              StockName: stockData[1],
-              StockCode: stockData[0],
-              ZSName: zsName,
-              TDType: stockData[9] || '首板'
-            });
+            const stockCode = stockData[0];
+            const stockName = stockData[1];
+            const tdType = stockData[9] || '首板';
+            // stockData[13] 是成交额（单位：元）
+            const amountInYuan = parseFloat(stockData[13]) || 0;
+            const amountInYi = Math.round((amountInYuan / 100000000) * 100) / 100;
+            // stockData[6] 是涨停时间戳，需要转换
+            const limitUpTimestamp = parseInt(stockData[6]) || 0;
+            let limitUpTime = '09:30';
+            if (limitUpTimestamp > 0) {
+              const date = new Date(limitUpTimestamp * 1000);
+              const hours = date.getHours().toString().padStart(2, '0');
+              const minutes = date.getMinutes().toString().padStart(2, '0');
+              limitUpTime = `${hours}:${minutes}`;
+            }
+
+            // 过滤无效数据
+            if (stockCode && stockName && !stockName.includes('退市') && !stockCode.startsWith('4') && !stockCode.startsWith('8')) {
+              stocks.push({
+                StockName: stockName,
+                StockCode: stockCode,
+                ZSName: zsName,
+                TDType: tdType,
+                Amount: amountInYi,
+                LimitUpTime: limitUpTime
+              });
+            }
           });
         }
       });
@@ -138,6 +161,103 @@ function convertStockCodeForTushare(stockCode: string): string {
   return `${stockCode}.SZ`;
 }
 
+// 新浪财经API获取单只股票K线数据
+async function getSinaStockKline(stockCode: string, days: number = 30): Promise<Array<{date: string; pctChg: number}>> {
+  try {
+    const sinaCode = stockCode.startsWith('6') ? `sh${stockCode}` : `sz${stockCode}`;
+    const url = `https://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData?symbol=${sinaCode}&scale=240&ma=no&datalen=${days}`;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        'Referer': 'https://finance.sina.com.cn',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) return [];
+
+    const text = await response.text();
+    const data = JSON.parse(text);
+
+    if (!Array.isArray(data) || data.length === 0) return [];
+
+    const result: Array<{date: string; pctChg: number}> = [];
+
+    for (let i = 1; i < data.length; i++) {
+      const current = data[i];
+      const prev = data[i - 1];
+      const closePrice = parseFloat(current.close);
+      const prevClose = parseFloat(prev.close);
+
+      if (prevClose > 0) {
+        const pctChg = ((closePrice - prevClose) / prevClose) * 100;
+        result.push({
+          date: current.day,
+          pctChg: Math.round(pctChg * 100) / 100
+        });
+      }
+    }
+
+    return result;
+  } catch (error) {
+    return [];
+  }
+}
+
+// 使用新浪API批量获取股票数据
+async function getBatchStockDailyFromSina(
+  stockCodes: string[],
+  tradeDates: string[]
+): Promise<Map<string, Record<string, number>>> {
+  const result = new Map<string, Record<string, number>>();
+
+  stockCodes.forEach(code => {
+    result.set(code, {});
+    tradeDates.forEach(date => {
+      result.get(code)![date] = 0;
+    });
+  });
+
+  console.log(`[新浪API] 开始批量获取 ${stockCodes.length} 只股票数据`);
+
+  const BATCH_SIZE = 10;
+  let totalMatched = 0;
+
+  for (let i = 0; i < stockCodes.length; i += BATCH_SIZE) {
+    const batch = stockCodes.slice(i, i + BATCH_SIZE);
+
+    const promises = batch.map(async (stockCode) => {
+      const klineData = await getSinaStockKline(stockCode, 30);
+      let matchedCount = 0;
+
+      klineData.forEach(item => {
+        if (tradeDates.includes(item.date) && result.has(stockCode)) {
+          result.get(stockCode)![item.date] = item.pctChg;
+          matchedCount++;
+        }
+      });
+
+      return matchedCount;
+    });
+
+    const batchResults = await Promise.all(promises);
+    totalMatched += batchResults.reduce((sum, count) => sum + count, 0);
+
+    if (i + BATCH_SIZE < stockCodes.length) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+  }
+
+  console.log(`[新浪API] 批量获取完成, 总共匹配 ${totalMatched} 条数据`);
+  return result;
+}
+
 // 批量获取股票表现数据
 async function getBatchStockPerformance(stockCodes: string[], tradingDays: string[]): Promise<Map<string, Record<string, number>>> {
   const result = new Map<string, Record<string, number>>();
@@ -149,6 +269,8 @@ async function getBatchStockPerformance(stockCodes: string[], tradingDays: strin
       result.get(code)![date] = 0;
     });
   });
+
+  let useSinaFallback = false;
 
   try {
     await logToDatabase('info', `开始批量获取股票表现数据`, {
@@ -179,13 +301,22 @@ async function getBatchStockPerformance(stockCodes: string[], tradingDays: strin
 
     const data = await response.json();
 
-    if (data.code === 0 && data.data && data.data.items) {
+    console.log('[Tushare] API响应:', JSON.stringify({
+      code: data.code,
+      msg: data.msg,
+      itemsCount: data.data?.items?.length || 0
+    }));
+
+    // 检查是否遇到频率限制
+    if (data.code && data.code !== 0) {
+      console.log(`[Tushare] API错误: ${data.msg}`);
+      useSinaFallback = true;
+    } else if (data.code === 0 && data.data && data.data.items) {
       data.data.items.forEach((item: any[]) => {
         const tsCode = item[0];
-        const tradeDate = item[1]; // 格式: YYYYMMDD
+        const tradeDate = item[1];
         const pctChg = parseFloat(item[2]) || 0;
 
-        // 将YYYYMMDD转换为YYYY-MM-DD格式以匹配tradingDays
         const formattedDate = `${tradeDate.slice(0,4)}-${tradeDate.slice(4,6)}-${tradeDate.slice(6,8)}`;
 
         const originalCode = stockCodes.find(code =>
@@ -198,10 +329,33 @@ async function getBatchStockPerformance(stockCodes: string[], tradingDays: strin
       });
 
       await logToDatabase('success', `成功获取${data.data.items.length}条股票表现数据`);
+    } else {
+      useSinaFallback = true;
     }
 
   } catch (error) {
     await logToDatabase('error', `获取股票表现数据失败: ${error}`);
+    useSinaFallback = true;
+  }
+
+  // 如果Tushare失败或数据为空，使用新浪API
+  if (useSinaFallback) {
+    console.log(`[Cron] 切换到新浪财经API获取数据`);
+    try {
+      const sinaResult = await getBatchStockDailyFromSina(stockCodes, tradingDays);
+
+      sinaResult.forEach((performance, stockCode) => {
+        Object.entries(performance).forEach(([date, pctChg]) => {
+          if (result.has(stockCode) && pctChg !== 0) {
+            result.get(stockCode)![date] = pctChg;
+          }
+        });
+      });
+
+      await logToDatabase('success', `新浪API数据获取完成`);
+    } catch (sinaError) {
+      await logToDatabase('error', `新浪API也失败: ${sinaError}`);
+    }
   }
 
   return result;
@@ -227,12 +381,14 @@ async function saveStocksToDatabase(stocks: Stock[], date: string) {
       stock.StockName,
       stock.ZSName,
       stock.TDType,
+      stock.Amount,
+      stock.LimitUpTime,
       date
     ]);
 
     if (stockValues.length > 0) {
       await connection.query(
-        'INSERT INTO stocks (stock_code, stock_name, category, td_type, date) VALUES ?',
+        'INSERT INTO stocks (stock_code, stock_name, category, td_type, amount, limit_up_time, date) VALUES ?',
         [stockValues]
       );
     }
@@ -274,8 +430,7 @@ async function savePerformanceToDatabase(performanceData: Map<string, Record<str
             stockCode,
             baseDate,
             tradingDate,
-            pctChange,
-            'tushare'
+            pctChange
           ]);
         }
       });
@@ -283,7 +438,7 @@ async function savePerformanceToDatabase(performanceData: Map<string, Record<str
 
     if (performanceValues.length > 0) {
       await connection.query(
-        'INSERT INTO stock_performance (stock_code, base_date, trading_date, pct_change, data_source) VALUES ?',
+        'INSERT INTO stock_performance (stock_code, base_date, performance_date, pct_change) VALUES ?',
         [performanceValues]
       );
     }

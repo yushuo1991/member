@@ -170,12 +170,16 @@ export class StockDatabase {
         stock.Amount || null
       ]);
 
-      // 使用INSERT IGNORE避免重复
+      // 使用INSERT ... ON DUPLICATE KEY UPDATE 更新成交额等字段
       for (const value of values) {
         await this.pool.execute(
-          `INSERT IGNORE INTO stock_data
+          `INSERT INTO stock_data
            (stock_code, stock_name, sector_name, td_type, trade_date, limit_up_time, amount)
-           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+           VALUES (?, ?, ?, ?, ?, ?, ?)
+           ON DUPLICATE KEY UPDATE
+             amount = COALESCE(VALUES(amount), amount),
+             limit_up_time = COALESCE(VALUES(limit_up_time), limit_up_time),
+             updated_at = CURRENT_TIMESTAMP`,
           value
         );
       }
@@ -288,6 +292,98 @@ export class StockDatabase {
       }
     } catch (error) {
       console.error('[BK数据库] 升级失败:', error);
+    }
+  }
+
+  // 缓存股票表现数据到数据库
+  async cacheStockPerformance(stockCode: string, baseDate: string, performance: Record<string, number>): Promise<void> {
+    if (isDatabaseDisabled) return;
+
+    try {
+      const formattedBaseDate = formatDateToISO(baseDate);
+
+      for (const [perfDate, pctChange] of Object.entries(performance)) {
+        const formattedPerfDate = formatDateToISO(perfDate);
+        await this.pool.execute(
+          `INSERT INTO stock_performance (stock_code, base_date, performance_date, pct_change)
+           VALUES (?, ?, ?, ?)
+           ON DUPLICATE KEY UPDATE pct_change = VALUES(pct_change), updated_at = CURRENT_TIMESTAMP`,
+          [stockCode, formattedBaseDate, formattedPerfDate, pctChange]
+        );
+      }
+
+      console.log(`[BK数据库] 缓存 ${stockCode} 在 ${formattedBaseDate} 的 ${Object.keys(performance).length} 条表现数据`);
+    } catch (error) {
+      console.error('[BK数据库] 缓存股票表现数据失败:', error);
+    }
+  }
+
+  // 获取7天数据缓存
+  async get7DaysCache(cacheKey: string): Promise<{ data: Record<string, any>; dates: string[] } | null> {
+    if (isDatabaseDisabled) return null;
+
+    try {
+      const [rows] = await this.pool.execute(
+        `SELECT cache_data FROM seven_days_cache
+         WHERE cache_key = ? AND expires_at > NOW()`,
+        [cacheKey]
+      );
+
+      const data = rows as any[];
+      if (data.length > 0) {
+        const cacheData = typeof data[0].cache_data === 'string'
+          ? JSON.parse(data[0].cache_data)
+          : data[0].cache_data;
+
+        console.log(`[BK数据库] 从缓存获取7天数据: ${cacheKey}`);
+        return {
+          data: cacheData.data || cacheData,
+          dates: cacheData.dates || Object.keys(cacheData.data || cacheData)
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('[BK数据库] 获取7天缓存失败:', error);
+      return null;
+    }
+  }
+
+  // 缓存7天数据到数据库
+  async cache7DaysData(cacheKey: string, data: Record<string, any>, dates: string[]): Promise<void> {
+    if (isDatabaseDisabled) return;
+
+    try {
+      // 计算过期时间：如果包含今天则30分钟，否则24小时
+      const today = new Date().toISOString().split('T')[0];
+      const hasToday = dates.includes(today);
+      const ttlMinutes = hasToday ? 30 : 1440; // 30分钟或24小时
+
+      const cacheData = JSON.stringify({ data, dates });
+
+      await this.pool.execute(
+        `INSERT INTO seven_days_cache (cache_key, cache_data, expires_at)
+         VALUES (?, ?, DATE_ADD(NOW(), INTERVAL ? MINUTE))
+         ON DUPLICATE KEY UPDATE cache_data = VALUES(cache_data), expires_at = DATE_ADD(NOW(), INTERVAL ? MINUTE)`,
+        [cacheKey, cacheData, ttlMinutes, ttlMinutes]
+      );
+
+      console.log(`[BK数据库] 缓存7天数据: ${cacheKey}, TTL: ${ttlMinutes}分钟`);
+    } catch (error) {
+      console.error('[BK数据库] 缓存7天数据失败:', error);
+    }
+  }
+
+  // 清理过期缓存
+  async cleanExpiredCache(): Promise<void> {
+    if (isDatabaseDisabled) return;
+
+    try {
+      const [result] = await this.pool.execute(
+        `DELETE FROM seven_days_cache WHERE expires_at < NOW()`
+      );
+      console.log(`[BK数据库] 清理过期缓存完成`);
+    } catch (error) {
+      console.error('[BK数据库] 清理过期缓存失败:', error);
     }
   }
 }

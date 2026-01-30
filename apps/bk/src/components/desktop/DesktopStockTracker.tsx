@@ -184,7 +184,7 @@ export default function Home() {
     return rank !== -1 ? rank + 1 : null;
   };
 
-  const fetch7DaysData = async (range: number = 7, silentMode: boolean = false) => {
+  const fetch7DaysData = async (range: number = 7, silentMode: boolean = false, forceRefresh: boolean = false) => {
     // silentMode为true时，不显示全局loading（用于后台加载15天数据）
     if (!silentMode) {
       setLoading(true);
@@ -195,29 +195,35 @@ export default function Home() {
     const cacheKey = `stock-7days-${range}-${getTodayString()}`;
     const CACHE_TTL = 5 * 60 * 1000; // 5分钟
 
-    try {
-      // 尝试从localStorage读取缓存
-      const cachedData = localStorage.getItem(cacheKey);
-      if (cachedData) {
-        const { data, dates: cachedDates, timestamp } = JSON.parse(cachedData);
-        const age = Date.now() - timestamp;
+    // forceRefresh时跳过缓存
+    if (!forceRefresh) {
+      try {
+        // 尝试从localStorage读取缓存
+        const cachedData = localStorage.getItem(cacheKey);
+        if (cachedData) {
+          const { data, dates: cachedDates, timestamp } = JSON.parse(cachedData);
+          const age = Date.now() - timestamp;
 
-        // 5分钟内复用缓存
-        if (age < CACHE_TTL) {
-          console.log(`[前端缓存] 命中缓存，缓存时间: ${Math.round(age / 1000)}秒前`);
-          setSevenDaysData(data);
-          setDates(cachedDates);
-          setDateRange(range);
-          setLoading(false);
-          return;
-        } else {
-          console.log(`[前端缓存] 缓存已过期，重新获取数据`);
-          localStorage.removeItem(cacheKey);
+          // 5分钟内复用缓存
+          if (age < CACHE_TTL) {
+            console.log(`[前端缓存] 命中缓存，缓存时间: ${Math.round(age / 1000)}秒前`);
+            setSevenDaysData(data);
+            setDates(cachedDates);
+            setDateRange(range);
+            setLoading(false);
+            return;
+          } else {
+            console.log(`[前端缓存] 缓存已过期，重新获取数据`);
+            localStorage.removeItem(cacheKey);
+          }
         }
+      } catch (cacheError) {
+        console.warn('[前端缓存] 读取缓存失败:', cacheError);
+        // 缓存读取失败不影响正常流程，继续执行
       }
-    } catch (cacheError) {
-      console.warn('[前端缓存] 读取缓存失败:', cacheError);
-      // 缓存读取失败不影响正常流程，继续执行
+    } else {
+      console.log(`[前端缓存] 强制刷新，跳过缓存`);
+      localStorage.removeItem(cacheKey);
     }
 
     try {
@@ -227,10 +233,32 @@ export default function Home() {
       const result = await response.json();
 
       if (result.success) {
-        setSevenDaysData(result.data);
+        // v4.8.41: 转换数据结构，将stock.performance转换为followUpData格式
+        const transformedData: Record<string, any> = {};
+        Object.entries(result.data).forEach(([date, dayData]: [string, any]) => {
+          const followUpData: Record<string, Record<string, Record<string, number>>> = {};
+
+          if (dayData.categories) {
+            Object.entries(dayData.categories).forEach(([sectorName, stocks]: [string, any]) => {
+              followUpData[sectorName] = {};
+              stocks.forEach((stock: any) => {
+                if (stock.performance) {
+                  followUpData[sectorName][stock.code] = stock.performance;
+                }
+              });
+            });
+          }
+
+          transformedData[date] = {
+            ...dayData,
+            followUpData
+          };
+        });
+
+        setSevenDaysData(transformedData);
         // v4.8.31新增：过滤掉非交易日（没有数据的日期）
         const validDates = (result.dates || []).filter((date: string) => {
-          const dayData = result.data[date];
+          const dayData = transformedData[date];
           // 检查该日期是否有数据：categories不为空
           return dayData && dayData.categories && Object.keys(dayData.categories).length > 0;
         });
@@ -240,7 +268,7 @@ export default function Home() {
         // 存储到localStorage
         try {
           localStorage.setItem(cacheKey, JSON.stringify({
-            data: result.data,
+            data: transformedData,
             dates: validDates,  // 存储过滤后的日期
             timestamp: Date.now()
           }));
@@ -3610,7 +3638,7 @@ export default function Home() {
 
             {/* 刷新按钮 */}
             <button
-              onClick={() => fetch7DaysData(7)}
+              onClick={() => fetch7DaysData(7, false, true)}
               disabled={loading}
               className="px-3 py-1.5 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
