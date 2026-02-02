@@ -72,13 +72,22 @@ jobs:
           # 创建部署目录
           mkdir -p deploy
 
-          # 复制必要的文件
-          cp -r .next deploy/
-          cp -r public deploy/
-          cp package.json package-lock.json deploy/
-          cp next.config.js deploy/
-          cp ecosystem.config.js deploy/ 2>/dev/null || echo "No ecosystem.config.js"
-          cp -r src deploy/ 2>/dev/null || true
+          # 复制Next.js standalone输出
+          if [ -d ".next/standalone" ]; then
+            echo "📦 Using Next.js standalone output"
+            cp -r .next/standalone/. deploy/
+            cp -r .next/static deploy/.next/
+            cp -r public deploy/
+          else
+            echo "⚠️ No standalone output found, using regular build"
+            cp -r .next deploy/
+            cp -r public deploy/
+            cp package.json deploy/
+          fi
+
+          # 复制配置文件
+          cp next.config.js deploy/ 2>/dev/null || true
+          cp ecosystem.config.js deploy/ 2>/dev/null || true
 
           # 复制数据库脚本
           cp database-init-v3.sql deploy/ 2>/dev/null || true
@@ -143,12 +152,6 @@ jobs:
             echo "📂 进入部署目录..."
             cd "$DEPLOY_PATH"
 
-            echo "🧹 清理旧的node_modules..."
-            rm -rf node_modules package-lock.json
-
-            echo "📦 安装生产依赖..."
-            npm install --production --no-audit --prefer-offline
-
             echo "🔧 检查PM2状态..."
             if pm2 describe member-system > /dev/null 2>&1; then
               echo "停止旧进程: member-system"
@@ -161,7 +164,10 @@ jobs:
             fi
 
             echo "🚀 启动应用..."
-            if [ -f "ecosystem.config.js" ]; then
+            if [ -f "server.js" ]; then
+              # 使用standalone模式启动
+              pm2 start server.js --name $APP_NAME --node-args="--max-old-space-size=2048"
+            elif [ -f "ecosystem.config.js" ]; then
               pm2 startOrReload ecosystem.config.js --env production
             else
               pm2 start npm --name $APP_NAME -- start -- -p 3000
