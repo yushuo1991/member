@@ -358,7 +358,7 @@ export default function ProductDetailPage() {
                   {product.trialEnabled && (
                     <button
                       onClick={handleTrialClick}
-                      disabled={isTrialLoading || (trialStatus && !trialStatus.canUseTrial)}
+                      disabled={isTrialLoading || !!(trialStatus && !trialStatus.canUseTrial)}
                       className={`w-full py-3 px-6 rounded-full transition-all duration-300 font-medium ${
                         isTrialLoading || (trialStatus && !trialStatus.canUseTrial)
                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
