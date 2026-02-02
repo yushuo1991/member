@@ -24,10 +24,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8.15.0
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
+          cache: 'pnpm'
 
       # 检测是Monorepo还是单仓库结构
       - name: Detect repository structure
@@ -47,12 +53,16 @@ jobs:
           fi
 
       - name: Install dependencies
-        working-directory: ${{ steps.detect.outputs.work_dir }}
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build application
-        working-directory: ${{ steps.detect.outputs.work_dir }}
-        run: npm run build
+        run: |
+          if [ "${{ steps.detect.outputs.structure }}" == "monorepo" ]; then
+            pnpm turbo run build --filter=web
+          else
+            cd ${{ steps.detect.outputs.work_dir }}
+            pnpm run build
+          fi
 
       - name: Prepare deployment files
         run: |
