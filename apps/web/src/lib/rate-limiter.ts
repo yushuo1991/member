@@ -3,7 +3,7 @@
  * 基于IP地址和操作类型进行限流
  */
 
-import { memberDatabase } from './database';
+import { MemberDatabase } from '@repo/database';
 import { NextRequest } from 'next/server';
 
 interface RateLimitConfig {
@@ -76,7 +76,7 @@ export async function checkRateLimit(
   resetAt?: Date;
 }> {
   const config = RATE_LIMIT_CONFIGS[actionType] || DEFAULT_CONFIG;
-  const db = memberDatabase.getPool();
+  const db = MemberDatabase.getInstance().getPool();
 
   try {
     // 查询当前IP的限流记录
@@ -152,7 +152,7 @@ export async function recordAttempt(
   success: boolean
 ): Promise<void> {
   const config = RATE_LIMIT_CONFIGS[actionType] || DEFAULT_CONFIG;
-  const db = memberDatabase.getPool();
+  const db = MemberDatabase.getInstance().getPool();
 
   try {
     const [rows] = await db.execute<any[]>(
@@ -215,7 +215,7 @@ export async function resetRateLimit(
   ipAddress: string,
   actionType: string
 ): Promise<void> {
-  const db = memberDatabase.getPool();
+  const db = MemberDatabase.getInstance().getPool();
 
   try {
     await db.execute(
