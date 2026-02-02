@@ -1,14 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import ProductCard from '@/components/ProductCard';
+import MobileProductCard from '@/components/MobileProductCard';
 import { PRODUCTS, MEMBERSHIP_LEVELS, getMembershipProducts, getStandaloneProducts } from '@/lib/membership-levels';
 import type { MembershipLevel } from '@/types/membership';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<'all' | 'membership' | 'standalone'>('all');
+  const [activeCardIndex, setActiveCardIndex] = useState(0);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // 根据tab筛选产品
   const getFilteredProducts = () => {
@@ -27,12 +30,38 @@ export default function Home() {
   // 会员等级（不包括none）
   const membershipTiers = Object.values(MEMBERSHIP_LEVELS).filter(m => m.level !== 'none');
 
+  // 处理移动端卡片滑动
+  const handleScroll = () => {
+    if (scrollContainerRef.current) {
+      const scrollLeft = scrollContainerRef.current.scrollLeft;
+      const cardWidth = 296; // 280px + 16px gap
+      const newIndex = Math.round(scrollLeft / cardWidth);
+      setActiveCardIndex(newIndex);
+    }
+  };
+
+  // 滚动到指定卡片
+  const scrollToCard = (index: number) => {
+    if (scrollContainerRef.current) {
+      const cardWidth = 296;
+      scrollContainerRef.current.scrollTo({
+        left: index * cardWidth,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   return (
     <main className="min-h-screen bg-white">
       <Navbar />
 
       {/* Hero Section - 响应式 */}
-      <section className="pt-20 pb-12 sm:pt-24 sm:pb-16 md:pt-32 md:pb-20 px-4 sm:px-6 lg:px-8">
+      <section className="relative pt-20 pb-12 sm:pt-24 sm:pb-16 md:pt-32 md:pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        {/* 移动端装饰性背景 */}
+        <div className="absolute inset-0 lg:hidden pointer-events-none">
+          <div className="absolute w-72 h-72 bg-[#ff8c42] rounded-full opacity-10 blur-3xl -top-20 -right-20 animate-pulse" style={{ animationDuration: '8s' }} />
+          <div className="absolute w-64 h-64 bg-[#e67d3a] rounded-full opacity-10 blur-3xl -bottom-10 -left-10 animate-pulse" style={{ animationDuration: '10s', animationDelay: '2s' }} />
+        </div>
         <div className="max-w-7xl mx-auto text-center">
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-4 sm:mb-6 leading-tight">
             宇硕短线
@@ -60,16 +89,19 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Products Section - 响应式网格 */}
-      <section id="products" className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
+      {/* Products Section - 移动端滑动卡片 / 桌面端网格 */}
+      <section id="products" className="py-12 sm:py-16 md:py-20 bg-gray-50 lg:bg-white">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-8 sm:mb-12 md:mb-16">
+          <div className="text-center mb-8 sm:mb-12 md:mb-16 px-4 sm:px-6 lg:px-8">
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-3 sm:mb-4">产品服务</h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-600">专业工具助力交易成长</p>
+            <p className="text-base sm:text-lg md:text-xl text-gray-600">
+              <span className="hidden lg:inline">专业工具助力交易成长</span>
+              <span className="lg:hidden">左右滑动查看更多</span>
+            </p>
           </div>
 
-          {/* 产品筛选Tab - 响应式 */}
-          <div className="flex justify-center mb-8 sm:mb-12">
+          {/* 桌面端：产品筛选Tab */}
+          <div className="hidden lg:flex justify-center mb-8 sm:mb-12 px-4 sm:px-6 lg:px-8">
             <div className="inline-flex bg-white rounded-full p-1 shadow-sm border border-gray-100">
               <button
                 onClick={() => setActiveTab('all')}
@@ -104,8 +136,67 @@ export default function Home() {
             </div>
           </div>
 
-          {/* 产品网格 - 响应式：手机1列，平板2列，桌面3列 */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+          {/* 移动端：滑动卡片展示 */}
+          <div className="lg:hidden">
+            <div
+              ref={scrollContainerRef}
+              className="overflow-x-auto overflow-y-hidden scrollbar-hide px-4 pb-4"
+              onScroll={handleScroll}
+              style={{
+                scrollSnapType: 'x mandatory',
+                WebkitOverflowScrolling: 'touch'
+              }}
+            >
+              <div className="flex gap-4" style={{ paddingLeft: 'calc(50vw - 140px)' }}>
+                {PRODUCTS.map((product) => (
+                  <div key={product.slug} style={{ scrollSnapAlign: 'center' }}>
+                    <MobileProductCard product={product} />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 滑动指示器 */}
+            <div className="flex justify-center gap-2 mt-6">
+              {PRODUCTS.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => scrollToCard(index)}
+                  className={`transition-all duration-300 ${
+                    index === activeCardIndex
+                      ? 'w-8 h-2 bg-gradient-to-r from-[#ff8c42] to-[#e67d3a] rounded-full'
+                      : 'w-2 h-2 bg-gray-300 rounded-full hover:bg-gray-400'
+                  }`}
+                  aria-label={`查看产品 ${index + 1}`}
+                />
+              ))}
+            </div>
+
+            {/* 快速导航按钮 */}
+            <div className="grid grid-cols-2 gap-3 px-4 mt-8">
+              <Link
+                href="/membership"
+                className="flex flex-col items-center justify-center gap-2 p-4 bg-gradient-to-br from-[#ff8c42]/5 to-[#e67d3a]/5 border-2 border-[#ff8c42]/20 rounded-2xl hover:border-[#ff8c42]/40 transition-all duration-300"
+              >
+                <svg className="w-6 h-6 text-[#ff8c42]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                </svg>
+                <span className="text-sm font-semibold text-[#ff8c42]">会员方案</span>
+              </Link>
+              <Link
+                href="/login"
+                className="flex flex-col items-center justify-center gap-2 p-4 bg-gradient-to-br from-[#ff8c42]/5 to-[#e67d3a]/5 border-2 border-[#ff8c42]/20 rounded-2xl hover:border-[#ff8c42]/40 transition-all duration-300"
+              >
+                <svg className="w-6 h-6 text-[#ff8c42]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <span className="text-sm font-semibold text-[#ff8c42]">立即登录</span>
+              </Link>
+            </div>
+          </div>
+
+          {/* 桌面端：产品网格 */}
+          <div className="hidden lg:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 px-4 sm:px-6 lg:px-8">
             {filteredProducts.map((product) => (
               <ProductCard key={product.slug} product={product} />
             ))}

@@ -105,6 +105,16 @@ const nextConfig = {
         hostname: 'images.unsplash.com',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'wuqq-obsidian.oss-cn-shanghai.aliyuncs.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'image.taoguba.com.cn',
+        pathname: '/**',
+      },
     ],
     formats: ['image/avif', 'image/webp'],
   },
