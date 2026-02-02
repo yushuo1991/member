@@ -95,7 +95,7 @@ jobs:
           port: 22
           source: "${{ steps.detect.outputs.work_dir }}/deploy/*"
           target: "/tmp/member-system-deploy/"
-          strip_components: 2
+          strip_components: 3
           rm: false
 
       - name: Restart application
