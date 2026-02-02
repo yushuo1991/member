@@ -2859,7 +2859,7 @@ export default function Home() {
               <div className="w-3/5 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 flex flex-col">
                 <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
                   <span className="text-2xl">📈</span>
-                  <span>板块7天涨停趋势图</span>
+                  <span>板块15天涨停趋势图</span>
                 </h4>
                 <div className="flex-1 bg-white rounded-lg p-4 shadow-inner">
                   <ResponsiveContainer width="100%" height="100%">

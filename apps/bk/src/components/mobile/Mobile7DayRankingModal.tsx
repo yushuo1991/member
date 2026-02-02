@@ -206,7 +206,7 @@ export default function Mobile7DayRankingModal({
           <div className="bg-white rounded-lg border border-gray-200 p-3 mb-4">
             <h4 className="text-xs font-semibold text-gray-700 mb-3 flex items-center gap-2">
               <span className="text-lg">📈</span>
-              <span>板块7天涨停趋势图</span>
+              <span>板块15天涨停趋势图</span>
             </h4>
             <div className="bg-gray-50 rounded-lg p-2">
               <ResponsiveContainer width="100%" height={250}>

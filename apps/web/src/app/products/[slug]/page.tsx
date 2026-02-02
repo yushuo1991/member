@@ -28,6 +28,11 @@ export default function ProductDetailPage() {
     slug === 'bk';
 
   const [product, setProduct] = useState<Product | null>(null);
+  const [trialStatus, setTrialStatus] = useState<{
+    trialRemaining: number;
+    canUseTrial: boolean;
+  } | null>(null);
+  const [isTrialLoading, setIsTrialLoading] = useState(false);
 
   useEffect(() => {
     const p = getProductBySlug(slug);
@@ -35,6 +40,78 @@ export default function ProductDetailPage() {
       setProduct(p);
     }
   }, [slug]);
+
+  // 获取试用状态
+  useEffect(() => {
+    if (!product || !product.trialEnabled || !isAuthenticated) return;
+
+    const fetchTrialStatus = async () => {
+      try {
+        const response = await fetch(`/api/products/trial/${slug}`);
+        const data = await response.json();
+
+        if (data.success && data.data) {
+          setTrialStatus({
+            trialRemaining: data.data.trialRemaining,
+            canUseTrial: data.data.canUseTrial
+          });
+        }
+      } catch (error) {
+        console.error('获取试用状态失败:', error);
+      }
+    };
+
+    fetchTrialStatus();
+  }, [product, slug, isAuthenticated]);
+
+  // 处理试用按钮点击
+  const handleTrialClick = async () => {
+    if (!isAuthenticated) {
+      router.push('/login?redirect=' + encodeURIComponent(`/products/${slug}`));
+      return;
+    }
+
+    if (!trialStatus?.canUseTrial) {
+      alert('试用次数已用完');
+      return;
+    }
+
+    setIsTrialLoading(true);
+
+    try {
+      const response = await fetch(`/api/products/trial/${slug}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // 更新试用状态
+        setTrialStatus({
+          trialRemaining: data.data.trialRemaining,
+          canUseTrial: data.data.trialRemaining > 0
+        });
+
+        // 显示成功消息
+        alert(data.data.message || '试用成功！');
+
+        // 跳转到产品页面
+        if (data.data.redirectUrl) {
+          window.open(data.data.redirectUrl, '_blank');
+        }
+      } else {
+        alert(data.message || '试用失败，请稍后重试');
+      }
+    } catch (error) {
+      console.error('试用失败:', error);
+      alert('试用失败，请稍后重试');
+    } finally {
+      setIsTrialLoading(false);
+    }
+  };
 
   if (!product) {
     return (
@@ -280,17 +357,21 @@ export default function ProductDetailPage() {
                   {/* 试用按钮 */}
                   {product.trialEnabled && (
                     <button
-                      onClick={() => {
-                        if (!isAuthenticated) {
-                          router.push('/login?redirect=' + encodeURIComponent(`/products/${slug}`));
-                          return;
-                        }
-                        // TODO: 调用试用API
-                        alert('试用功能开发中...');
-                      }}
-                      className="w-full py-3 px-6 bg-green-500 text-white rounded-full hover:bg-green-600 transition-all duration-300 font-medium"
+                      onClick={handleTrialClick}
+                      disabled={isTrialLoading || (trialStatus && !trialStatus.canUseTrial)}
+                      className={`w-full py-3 px-6 rounded-full transition-all duration-300 font-medium ${
+                        isTrialLoading || (trialStatus && !trialStatus.canUseTrial)
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-green-500 text-white hover:bg-green-600'
+                      }`}
                     >
-                      免费试用（{product.trialCount}次）
+                      {isTrialLoading
+                        ? '处理中...'
+                        : trialStatus
+                        ? trialStatus.canUseTrial
+                          ? `免费试用（剩${trialStatus.trialRemaining}次）`
+                          : '试用已用完'
+                        : `免费试用（${product.trialCount}次）`}
                     </button>
                   )}
 
