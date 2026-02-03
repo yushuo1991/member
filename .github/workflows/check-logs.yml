@@ -69,3 +69,12 @@ jobs:
 
             echo "=== Check which path the app uses ==="
             curl -sI http://127.0.0.1:3000/products/xuexiquan-cover.png | grep -E "(Content-Length|Last-Modified)"
+
+            echo ""
+            echo "=== Download and verify each image MD5 via HTTP ==="
+            cd /tmp
+            for img in xuexiquan-cover bankuaizhushou-cover bk-cover xinli-cover fuplan-cover qingxubiaoge-cover fupanbanmian-cover jiandanfupan-cover; do
+              curl -s "http://127.0.0.1:3000/products/$img.png" -o "$img.png"
+              echo "$img.png: $(md5sum $img.png | cut -d' ' -f1)"
+              rm -f "$img.png"
+            done
