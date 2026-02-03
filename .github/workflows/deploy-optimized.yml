@@ -152,6 +152,9 @@ jobs:
             echo "📂 进入部署目录..."
             cd "$DEPLOY_PATH"
 
+            echo "📦 安装sharp依赖（图片优化必需）..."
+            npm install sharp@0.33.5 --no-save || echo "⚠️ sharp安装失败，将使用备用方案"
+
             echo "🔧 检查PM2状态..."
             if pm2 describe member-system > /dev/null 2>&1; then
               echo "停止旧进程: member-system"
