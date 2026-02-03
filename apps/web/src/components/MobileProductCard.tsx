@@ -11,82 +11,100 @@ interface MobileProductCardProps {
 export default function MobileProductCard({ product }: MobileProductCardProps) {
   const shouldOpenInNewTab = product.slug === 'bk' || product.slug === 'fuplan';
 
-  // 根据产品类型设置动态背景颜色
-  const getBlobColor = () => {
-    const colors = [
-      '#ff8c42', // 主题橙色
-      '#e67d3a', // 深橙色
-      '#ffa366', // 浅橙色
-      '#ff7629', // 活力橙
-    ];
-    // 根据产品slug生成一致的颜色
-    const index = product.slug.length % colors.length;
-    return colors[index];
+  const linkProps = shouldOpenInNewTab
+    ? { target: '_blank' as const, rel: 'noopener noreferrer' }
+    : {};
+
+  // 价格类型标签
+  const getPriceTypeLabel = () => {
+    switch (product.priceType) {
+      case 'membership':
+        return { text: '会员专属', color: 'text-[#ff8c42]' };
+      case 'standalone':
+        return { text: '单独购买', color: 'text-blue-600' };
+      case 'both':
+        return { text: '会员/单购', color: 'text-purple-600' };
+      default:
+        return null;
+    }
   };
+
+  const priceTypeLabel = getPriceTypeLabel();
 
   return (
     <div className="mobile-product-card">
-      {/* 动态背景 blob */}
-      <div
-        className="blob"
-        style={{
-          backgroundColor: getBlobColor(),
-          '--blob-color': getBlobColor()
-        } as React.CSSProperties}
-      />
-
-      {/* 玻璃态背景 */}
-      <div className="bg" />
+      {/* 产品图片区域 - 可点击 */}
+      <Link
+        href={`/products/${product.slug}`}
+        {...linkProps}
+        className="image-section"
+      >
+        {product.imageUrl ? (
+          <Image
+            src={product.imageUrl}
+            alt={product.name}
+            fill
+            sizes="280px"
+            className="object-contain"
+            priority={false}
+          />
+        ) : (
+          <div className="placeholder-icon">
+            {product.icon}
+          </div>
+        )}
+      </Link>
 
       {/* 内容区域 */}
-      <div className="card-content">
-        {/* 产品图片 - 更大更突出 */}
-        <div className="product-image">
-          {product.imageUrl ? (
-            <Image
-              src={product.imageUrl}
-              alt={product.name}
-              width={150}
-              height={150}
-              className="rounded-3xl object-cover shadow-xl"
-            />
-          ) : (
-            <div className="w-[150px] h-[150px] rounded-3xl bg-gradient-to-br from-[#ff8c42] to-[#e67d3a] flex items-center justify-center text-6xl shadow-xl">
-              {product.icon}
-            </div>
+      <div className="content-section">
+        {/* 标签行 */}
+        <div className="tags-row">
+          {priceTypeLabel && (
+            <span className={`tag ${priceTypeLabel.color}`}>
+              {priceTypeLabel.text}
+            </span>
+          )}
+          {product.trialEnabled && (
+            <span className="tag text-green-600">
+              可试用{product.trialCount}次
+            </span>
           )}
         </div>
 
-        {/* 产品信息 - 精致排版 */}
-        <div className="product-info">
+        {/* 标题 - 可点击 */}
+        <Link href={`/products/${product.slug}`} {...linkProps}>
           <h3 className="product-title">{product.name}</h3>
-          <p className="product-description">{product.description}</p>
+        </Link>
 
-          {/* 价格标签 - 更小 */}
-          {product.priceType === 'standalone' && product.standalonePrices?.monthly && (
-            <div className="price-tag">
-              ¥{product.standalonePrices.monthly}/月
-            </div>
-          )}
+        {/* 简短描述 */}
+        <p className="product-description">{product.description}</p>
 
-          {product.priceType === 'membership' && (
-            <div className="membership-tag">
-              会员专属
-            </div>
+        {/* 分隔线 */}
+        <div className="separator" />
+
+        {/* 功能特性 - 简约展示 */}
+        <div className="features-row">
+          {product.features.slice(0, 2).map((feature, index) => (
+            <span key={index} className="feature-item">
+              <svg className="feature-icon" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              {feature.length > 6 ? feature.slice(0, 6) + '...' : feature}
+            </span>
+          ))}
+          {product.features.length > 2 && (
+            <span className="feature-more">+{product.features.length - 2}</span>
           )}
         </div>
 
-        {/* 查看详情按钮 - 更小 */}
+        {/* 底部按钮 */}
         <Link
           href={`/products/${product.slug}`}
-          className="view-details-btn"
-          {...(shouldOpenInNewTab && {
-            target: '_blank',
-            rel: 'noopener noreferrer'
-          })}
+          {...linkProps}
+          className="view-btn"
         >
-          查看详情
-          <svg className="w-3.5 h-3.5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          了解详情
+          <svg className="btn-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </Link>
@@ -94,156 +112,134 @@ export default function MobileProductCard({ product }: MobileProductCardProps) {
 
       <style jsx>{`
         .mobile-product-card {
-          position: relative;
           width: 280px;
-          height: 420px;
-          border-radius: 24px;
+          background: white;
+          border-radius: 20px;
           overflow: hidden;
           flex-shrink: 0;
-          box-shadow: 20px 20px 60px rgba(190, 190, 190, 0.3),
-                      -20px -20px 60px rgba(255, 255, 255, 0.8);
+          box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.08);
+          display: flex;
+          flex-direction: column;
         }
 
-        .blob {
-          position: absolute;
-          z-index: 1;
-          top: 50%;
-          left: 50%;
-          width: 200px;
-          height: 200px;
-          border-radius: 50%;
-          opacity: 0.7;
-          filter: blur(50px);
-          animation: blob-bounce 8s infinite ease-in-out;
-        }
-
-        @keyframes blob-bounce {
-          0% {
-            transform: translate(-100%, -100%) translate3d(0, 0, 0);
-          }
-          25% {
-            transform: translate(-100%, -100%) translate3d(120%, 0, 0);
-          }
-          50% {
-            transform: translate(-100%, -100%) translate3d(120%, 120%, 0);
-          }
-          75% {
-            transform: translate(-100%, -100%) translate3d(0, 120%, 0);
-          }
-          100% {
-            transform: translate(-100%, -100%) translate3d(0, 0, 0);
-          }
-        }
-
-        .bg {
-          position: absolute;
-          top: 8px;
-          left: 8px;
-          right: 8px;
-          bottom: 8px;
-          z-index: 2;
-          background: rgba(255, 255, 255, 0.95);
-          backdrop-filter: blur(24px);
-          border-radius: 20px;
-          border: 2px solid rgba(255, 255, 255, 0.8);
-        }
-
-        .card-content {
+        .image-section {
           position: relative;
-          z-index: 3;
-          height: 100%;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          padding: 32px 20px 24px;
-          gap: 14px;
+          width: 100%;
+          aspect-ratio: 4 / 3;
+          background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+          display: block;
         }
 
-        .product-image {
-          margin-bottom: 6px;
+        .placeholder-icon {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 4rem;
+          background: linear-gradient(135deg, #ff8c42 0%, #e67d3a 100%);
         }
 
-        .product-info {
-          text-align: center;
-          flex: 1;
+        .content-section {
+          padding: 16px;
           display: flex;
           flex-direction: column;
+          gap: 10px;
+          border-top: 1px solid #f1f3f4;
+        }
+
+        .tags-row {
+          display: flex;
           align-items: center;
-          gap: 8px;
-          max-width: 100%;
-          padding: 0 4px;
+          justify-content: space-between;
+          min-height: 20px;
+        }
+
+        .tag {
+          font-size: 11px;
+          font-weight: 500;
         }
 
         .product-title {
-          font-size: 17px;
-          font-weight: 700;
+          font-size: 15px;
+          font-weight: 600;
           color: #1f2937;
           margin: 0;
           line-height: 1.4;
-          letter-spacing: -0.01em;
+          display: -webkit-box;
+          -webkit-line-clamp: 1;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
         }
 
         .product-description {
           font-size: 12px;
           color: #6b7280;
-          line-height: 1.6;
+          line-height: 1.5;
           margin: 0;
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
-          max-width: 100%;
-          letter-spacing: 0.01em;
         }
 
-        .price-tag {
-          display: inline-flex;
-          align-items: center;
-          padding: 4px 12px;
-          background: linear-gradient(135deg, #ff8c42 0%, #e67d3a 100%);
-          color: white;
-          border-radius: 16px;
-          font-size: 12px;
-          font-weight: 600;
-          margin-top: 2px;
+        .separator {
+          width: 100%;
+          height: 1px;
+          background: #f1f3f4;
         }
 
-        .membership-tag {
+        .features-row {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          align-items: center;
+        }
+
+        .feature-item {
           display: inline-flex;
           align-items: center;
-          padding: 4px 12px;
-          background: rgba(255, 140, 66, 0.1);
+          font-size: 11px;
+          color: #6b7280;
+        }
+
+        .feature-icon {
+          width: 12px;
+          height: 12px;
           color: #ff8c42;
-          border-radius: 16px;
-          font-size: 12px;
-          font-weight: 600;
-          margin-top: 2px;
+          margin-right: 3px;
+          flex-shrink: 0;
         }
 
-        .view-details-btn {
+        .feature-more {
+          font-size: 11px;
+          color: #9ca3af;
+        }
+
+        .view-btn {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          padding: 10px 28px;
-          background: linear-gradient(135deg, #ff8c42 0%, #e67d3a 100%);
-          color: white;
+          padding: 10px 20px;
+          background: #f3f4f6;
+          color: #374151;
           border-radius: 20px;
-          font-size: 14px;
-          font-weight: 600;
+          font-size: 13px;
+          font-weight: 500;
           text-decoration: none;
           transition: all 0.3s ease;
-          box-shadow: 0 4px 12px rgba(255, 140, 66, 0.3);
-          cursor: pointer;
-          margin-top: auto;
+          margin-top: 4px;
         }
 
-        .view-details-btn:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(255, 140, 66, 0.4);
+        .view-btn:active {
+          background: #ff8c42;
+          color: white;
         }
 
-        .view-details-btn:active {
-          transform: translateY(0);
+        .btn-arrow {
+          width: 14px;
+          height: 14px;
+          margin-left: 4px;
         }
       `}</style>
     </div>
