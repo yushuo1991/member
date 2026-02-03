@@ -99,6 +99,8 @@ const nextConfig = {
 
   // 图片优化配置
   images: {
+    // 禁用图片优化以避免sharp依赖问题
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
