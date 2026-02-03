@@ -143,12 +143,29 @@ jobs:
               --exclude='node_modules' \
               "$TEMP_PATH/" "$DEPLOY_PATH/"
 
-            # 同步public目录到member-monorepo路径（如果存在）
+            # 同步完整构建产物到member-monorepo路径（因为PM2从这里运行）
             MONOREPO_PATH="/www/wwwroot/member-monorepo/apps/web"
             if [ -d "$MONOREPO_PATH" ]; then
-              echo "📦 同步public目录到monorepo路径..."
-              rsync -av "$TEMP_PATH/public/" "$MONOREPO_PATH/public/"
-              echo "✅ Monorepo public目录已同步"
+              echo "📦 同步完整构建产物到monorepo路径..."
+
+              # 备份monorepo的.env文件
+              if [ -f "$MONOREPO_PATH/.env" ]; then
+                cp "$MONOREPO_PATH/.env" /tmp/.env.monorepo.backup
+              fi
+
+              # 同步所有文件（排除.env和node_modules）
+              rsync -av --delete \
+                --exclude='.env' \
+                --exclude='node_modules' \
+                --exclude='logs' \
+                "$TEMP_PATH/" "$MONOREPO_PATH/"
+
+              # 恢复monorepo的.env文件
+              if [ -f /tmp/.env.monorepo.backup ]; then
+                cp /tmp/.env.monorepo.backup "$MONOREPO_PATH/.env"
+              fi
+
+              echo "✅ Monorepo完整构建产物已同步"
             fi
 
             echo "📝 恢复.env文件..."
