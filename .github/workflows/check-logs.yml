@@ -27,21 +27,27 @@ jobs:
             echo "=== PM2 Status ==="
             pm2 list
             echo ""
-            echo "=== Product Images on Server ==="
-            ls -la /www/wwwroot/member-system/public/products/ || echo "Directory not found"
+
+            echo "=== PM2 Process Details (member-web) ==="
+            pm2 describe member-web | grep -E "(cwd|script|exec_cwd|pm_cwd)" || echo "Cannot get process details"
             echo ""
-            echo "=== Image file sizes (for verification) ==="
-            du -h /www/wwwroot/member-system/public/products/*.png 2>/dev/null || echo "No PNG files found"
+
+            echo "=== Check all image files with MD5 ==="
+            echo "--- member-system path ---"
+            cd /www/wwwroot/member-system/public/products/ 2>/dev/null && md5sum *.png 2>/dev/null || echo "No files"
+            echo ""
+            echo "--- member-monorepo path ---"
+            cd /www/wwwroot/member-monorepo/apps/web/public/products/ 2>/dev/null && md5sum *.png 2>/dev/null || echo "No files"
             echo ""
 
             # Restart app if requested to clear cache
             if [ "${{ github.event.inputs.restart_app }}" == "true" ]; then
               echo "=== Restarting application to clear cache ==="
-              cd /www/wwwroot/member-system
 
-              # Clear Next.js cache
-              rm -rf .next/cache 2>/dev/null || true
-              echo "Cleared .next/cache"
+              # Clear Next.js cache in BOTH paths
+              rm -rf /www/wwwroot/member-system/.next/cache 2>/dev/null || true
+              rm -rf /www/wwwroot/member-monorepo/apps/web/.next/cache 2>/dev/null || true
+              echo "Cleared .next/cache in both paths"
 
               # Restart PM2 process
               pm2 restart member-web
@@ -54,17 +60,12 @@ jobs:
             fi
 
             echo ""
-            echo "=== Check if app is responding ==="
-            curl -I http://127.0.0.1:3000 || echo "App not responding"
+            echo "=== Test each image file via HTTP ==="
+            for img in xuexiquan-cover bankuaizhushou-cover bk-cover xinli-cover fuplan-cover qingxubiaoge-cover fupanbanmian-cover jiandanfupan-cover; do
+              echo "--- $img.png ---"
+              curl -sI "http://127.0.0.1:3000/products/$img.png" | grep -E "(HTTP|Content-Length|Last-Modified)"
+            done
             echo ""
-            echo "=== Test image access ==="
-            curl -I http://127.0.0.1:3000/products/xuexiquan-cover.png 2>/dev/null | head -20 || echo "Image not accessible"
-            echo ""
-            echo "=== Image file details (member-system) ==="
-            ls -la /www/wwwroot/member-system/public/products/*.png 2>/dev/null || echo "No PNG files in member-system"
-            echo ""
-            echo "=== Image file details (member-monorepo) ==="
-            ls -la /www/wwwroot/member-monorepo/apps/web/public/products/*.png 2>/dev/null || echo "No PNG files in member-monorepo"
-            echo ""
+
             echo "=== Check which path the app uses ==="
             curl -sI http://127.0.0.1:3000/products/xuexiquan-cover.png | grep -E "(Content-Length|Last-Modified)"
