@@ -114,10 +114,10 @@ export default function MobileProductCard({ product }: MobileProductCardProps) {
         .mobile-product-card {
           width: 280px;
           background: white;
-          border-radius: 20px;
+          border-radius: 16px;
           overflow: hidden;
           flex-shrink: 0;
-          box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.08);
+          border: 1px solid #f1f3f4;
           display: flex;
           flex-direction: column;
         }

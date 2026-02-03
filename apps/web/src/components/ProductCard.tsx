@@ -47,7 +47,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     : {};
 
   return (
-    <div className="group bg-white rounded-[20px] overflow-hidden shadow-[8px_8px_0px_rgba(0,0,0,0.08)] hover:shadow-[12px_12px_0px_rgba(255,140,66,0.15)] transition-all duration-300 flex flex-col">
+    <div className="group bg-white rounded-2xl overflow-hidden border border-gray-100 hover:border-[#ff8c42]/30 transition-all duration-300 flex flex-col">
       {/* 产品图片区域 - 可点击 */}
       <Link
         href={`/products/${product.slug}`}
