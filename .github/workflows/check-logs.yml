@@ -2,12 +2,21 @@ name: Check PM2 Logs
 
 on:
   workflow_dispatch:
+    inputs:
+      restart_app:
+        description: 'Restart the application to clear cache'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
 
 jobs:
   check-logs:
     runs-on: ubuntu-latest
     steps:
-      - name: Get PM2 logs
+      - name: Check server status and optionally restart
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -18,14 +27,35 @@ jobs:
             echo "=== PM2 Status ==="
             pm2 list
             echo ""
-            echo "=== PM2 Error Logs (Last 100 lines) ==="
-            pm2 logs member-web --err --lines 100 --nostream
+            echo "=== Product Images on Server ==="
+            ls -la /www/wwwroot/member-system/public/products/ || echo "Directory not found"
             echo ""
-            echo "=== PM2 Out Logs (Last 50 lines) ==="
-            pm2 logs member-web --out --lines 50 --nostream
+            echo "=== Image file sizes (for verification) ==="
+            du -h /www/wwwroot/member-system/public/products/*.png 2>/dev/null || echo "No PNG files found"
+            echo ""
+
+            # Restart app if requested to clear cache
+            if [ "${{ github.event.inputs.restart_app }}" == "true" ]; then
+              echo "=== Restarting application to clear cache ==="
+              cd /www/wwwroot/member-system
+
+              # Clear Next.js cache
+              rm -rf .next/cache 2>/dev/null || true
+              echo "Cleared .next/cache"
+
+              # Restart PM2 process
+              pm2 restart member-web
+              echo "Restarted member-web"
+
+              sleep 5
+              echo ""
+              echo "=== PM2 Status after restart ==="
+              pm2 list
+            fi
+
             echo ""
             echo "=== Check if app is responding ==="
             curl -I http://127.0.0.1:3000 || echo "App not responding"
             echo ""
-            echo "=== Check public directory ==="
-            ls -la /www/wwwroot/member-system/public/products/ || echo "Directory not found"
+            echo "=== Test image access ==="
+            curl -I http://127.0.0.1:3000/products/xuexiquan-cover.png 2>/dev/null | head -20 || echo "Image not accessible"
