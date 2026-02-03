@@ -143,6 +143,14 @@ jobs:
               --exclude='node_modules' \
               "$TEMP_PATH/" "$DEPLOY_PATH/"
 
+            # 同步public目录到member-monorepo路径（如果存在）
+            MONOREPO_PATH="/www/wwwroot/member-monorepo/apps/web"
+            if [ -d "$MONOREPO_PATH" ]; then
+              echo "📦 同步public目录到monorepo路径..."
+              rsync -av "$TEMP_PATH/public/" "$MONOREPO_PATH/public/"
+              echo "✅ Monorepo public目录已同步"
+            fi
+
             echo "📝 恢复.env文件..."
             if [ -f /tmp/.env.backup ]; then
               cp /tmp/.env.backup "$DEPLOY_PATH/.env"
