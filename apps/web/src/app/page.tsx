@@ -278,7 +278,7 @@ export default function Home() {
             </div>
           </div>
           <div className="border-t border-gray-200 pt-8 text-center text-gray-600 text-sm">
-            <p>&copy; 2024 宇硕短线. All rights reserved.</p>
+            <p>&copy; 2026 宇硕短线. All rights reserved.</p>
           </div>
         </div>
       </footer>
