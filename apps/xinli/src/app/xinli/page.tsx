@@ -71,10 +71,14 @@ export default function XinliPage() {
 
       if (!data.hasAccess) {
         if (data.requireLogin) {
-          router.push('/login?redirect=/xinli');
+          // 重定向到主应用的登录页面
+          const mainAppUrl = process.env.NEXT_PUBLIC_MAIN_APP_URL || 'https://yushuofupan.com';
+          window.location.href = `${mainAppUrl}/login?redirect=${encodeURIComponent(window.location.href)}`;
         } else {
           alert(data.reason);
-          router.push('/upgrade');
+          // 重定向到主应用的升级页面
+          const mainAppUrl = process.env.NEXT_PUBLIC_MAIN_APP_URL || 'https://yushuofupan.com';
+          window.location.href = `${mainAppUrl}/upgrade`;
         }
       } else {
         setLoading(false);
