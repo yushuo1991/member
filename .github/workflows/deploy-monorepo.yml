@@ -266,6 +266,8 @@ jobs:
 
             # 安装生产依赖 (使用pnpm支持workspace协议)
             rm -rf node_modules package-lock.json
+            # 禁用CI环境的frozen-lockfile默认行为
+            export CI=false
             pnpm install --prod --no-frozen-lockfile
 
             # PM2重启
