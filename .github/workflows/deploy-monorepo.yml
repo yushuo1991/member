@@ -340,7 +340,9 @@ jobs:
             fi
 
             rm -rf node_modules package-lock.json
-            pnpm install --prod --frozen-lockfile
+            # 禁用CI环境的frozen-lockfile默认行为
+            export CI=false
+            pnpm install --prod --no-frozen-lockfile
 
             pm2 describe $APP_NAME > /dev/null 2>&1 && pm2 delete $APP_NAME || true
             pm2 start npm --name $APP_NAME -- start -- -p 3001
@@ -410,7 +412,9 @@ jobs:
             fi
 
             rm -rf node_modules package-lock.json
-            pnpm install --prod --frozen-lockfile
+            # 禁用CI环境的frozen-lockfile默认行为
+            export CI=false
+            pnpm install --prod --no-frozen-lockfile
 
             pm2 describe $APP_NAME > /dev/null 2>&1 && pm2 delete $APP_NAME || true
             pm2 start npm --name $APP_NAME -- start -- -p 3002
@@ -480,7 +484,9 @@ jobs:
             fi
 
             rm -rf node_modules package-lock.json
-            pnpm install --prod --frozen-lockfile
+            # 禁用CI环境的frozen-lockfile默认行为
+            export CI=false
+            pnpm install --prod --no-frozen-lockfile
 
             pm2 describe $APP_NAME > /dev/null 2>&1 && pm2 delete $APP_NAME || true
             pm2 start npm --name $APP_NAME -- start -- -p 3003
