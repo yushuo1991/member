@@ -266,7 +266,7 @@ jobs:
 
             # 安装生产依赖 (使用pnpm支持workspace协议)
             rm -rf node_modules package-lock.json
-            pnpm install --prod --frozen-lockfile
+            pnpm install --prod --no-frozen-lockfile
 
             # PM2重启
             pm2 describe $APP_NAME > /dev/null 2>&1 && pm2 delete $APP_NAME || true
