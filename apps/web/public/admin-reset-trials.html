@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>重置试用次数 - 管理员工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .section {
+            margin-bottom: 25px;
+        }
+        label {
+            display: block;
+            color: #555;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 30px;
+        }
+        button {
+            flex: 1;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #666;
+        }
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        .result {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 8px;
+            display: none;
+        }
+        .result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .result h3 {
+            margin-bottom: 12px;
+            font-size: 18px;
+        }
+        .result pre {
+            background: rgba(0,0,0,0.05);
+            padding: 12px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+        .warning strong {
+            display: block;
+            margin-bottom: 8px;
+        }
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 重置试用次数</h1>
+        <p class="subtitle">管理员工具 - 重置所有会员的试用次数为 5 次</p>
+
+        <div class="warning">
+            <strong>⚠️ 警告</strong>
+            此操作将重置所有用户的试用次数（板块节奏系统、心理测评系统、复盘系统）为 5 次。请确认您有管理员权限。
+        </div>
+
+        <div class="section">
+            <label for="username">管理员账号</label>
+            <input type="text" id="username" placeholder="输入管理员用户名或邮箱" value="admin">
+        </div>
+
+        <div class="section">
+            <label for="password">管理员密码</label>
+            <input type="password" id="password" placeholder="输入管理员密码">
+        </div>
+
+        <div class="btn-group">
+            <button class="btn-secondary" onclick="clearForm()">清空</button>
+            <button class="btn-primary" id="resetBtn" onclick="resetTrials()">
+                执行重置
+            </button>
+        </div>
+
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        let adminToken = null;
+
+        async function resetTrials() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const resultDiv = document.getElementById('result');
+            const resetBtn = document.getElementById('resetBtn');
+
+            if (!username || !password) {
+                showResult('error', '请输入管理员账号和密码');
+                return;
+            }
+
+            // Disable button and show loading
+            resetBtn.disabled = true;
+            resetBtn.innerHTML = '<span class="spinner"></span>处理中...';
+            resultDiv.style.display = 'none';
+
+            try {
+                // Step 1: Login as admin
+                const loginResponse = await fetch('/api/admin/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        identifier: username,
+                        password: password
+                    })
+                });
+
+                const loginData = await loginResponse.json();
+
+                if (!loginResponse.ok || !loginData.success) {
+                    throw new Error(loginData.message || '管理员登录失败');
+                }
+
+                adminToken = loginData.data.token;
+
+                // Step 2: Reset trial counts
+                const resetResponse = await fetch('/api/admin/trials/reset', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminToken}`
+                    }
+                });
+
+                const resetData = await resetResponse.json();
+
+                if (!resetResponse.ok || !resetData.success) {
+                    throw new Error(resetData.message || '重置失败');
+                }
+
+                // Show success result
+                const data = resetData.data;
+                const resultHTML = `
+                    <h3>✅ 重置成功！</h3>
+                    <pre>影响用户数: ${data.affectedRows}
+
+重置前统计:
+  - 总用户数: ${data.before.totalUsers}
+  - 需要重置的用户:
+    · 板块节奏系统: ${data.before.needReset.bk} 人
+    · 心理测评系统: ${data.before.needReset.xinli} 人
+    · 复盘系统: ${data.before.needReset.fuplan} 人
+  - 平均试用次数:
+    · 板块节奏系统: ${data.before.average.bk} 次
+    · 心理测评系统: ${data.before.average.xinli} 次
+    · 复盘系统: ${data.before.average.fuplan} 次
+
+重置后验证:
+  - 总用户数: ${data.after.totalUsers}
+  - 重置成功的用户:
+    · 板块节奏系统: ${data.after.success.bk} 人
+    · 心理测评系统: ${data.after.success.xinli} 人
+    · 复盘系统: ${data.after.success.fuplan} 人</pre>
+                `;
+                showResult('success', resultHTML);
+
+            } catch (error) {
+                showResult('error', `❌ 错误: ${error.message}`);
+            } finally {
+                resetBtn.disabled = false;
+                resetBtn.innerHTML = '执行重置';
+            }
+        }
+
+        function showResult(type, message) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = `result ${type}`;
+            resultDiv.innerHTML = message;
+            resultDiv.style.display = 'block';
+        }
+
+        function clearForm() {
+            document.getElementById('username').value = 'admin';
+            document.getElementById('password').value = '';
+            document.getElementById('result').style.display = 'none';
+        }
+
+        // Allow Enter key to submit
+        document.getElementById('password').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                resetTrials();
+            }
+        });
+    </script>
+</body>
+</html>

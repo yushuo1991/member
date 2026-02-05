@@ -176,10 +176,28 @@ export default function LearningCircleGuidePage() {
             <h2 className="text-lg font-semibold text-gray-900 mb-4">C、使用工具</h2>
             <div className="space-y-4">
               <div className="bg-orange-50 rounded-xl p-4">
-                <h3 className="font-medium text-orange-900 mb-2">宇硕板块助手</h3>
-                <p className="text-sm text-orange-800">一键同步核心个股工具</p>
-                <p className="text-sm text-orange-700 mt-2">使用教程：宇硕板块助手 | 一键梳理核心个股</p>
-                <p className="text-xs text-orange-600 mt-1">不能访问请私信我提供</p>
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="flex-1">
+                    <h3 className="font-medium text-orange-900 mb-2">宇硕板块助手 v1.6</h3>
+                    <p className="text-sm text-orange-800">一键同步核心个股工具</p>
+                    <p className="text-sm text-orange-700 mt-2">使用教程：宇硕板块助手 | 一键梳理核心个股</p>
+                  </div>
+                  <a
+                    href="https://wuqq-obsidian.oss-cn-shanghai.aliyuncs.com/%E5%AE%87%E7%A1%95%E6%9D%BF%E5%9D%97%E5%8A%A9%E6%89%8B1.6.exe"
+                    download
+                    className="flex-shrink-0 inline-flex items-center justify-center px-4 py-2 bg-[#ff8c42] text-white rounded-lg font-medium hover:bg-[#e67d3a] transition-colors shadow-sm text-sm"
+                  >
+                    下载安装包
+                  </a>
+                </div>
+                <div className="mt-3 p-3 bg-white rounded-lg border border-orange-200">
+                  <p className="text-xs text-orange-900 font-medium mb-2">安装步骤：</p>
+                  <ol className="text-xs text-orange-800 space-y-1 list-decimal list-inside">
+                    <li>下载后解压到通达信根目录</li>
+                    <li>先运行板块助手（首次会弹出选项）</li>
+                    <li>再打开通达信查看效果（建议12点前执行）</li>
+                  </ol>
+                </div>
               </div>
               <div className="bg-orange-50 rounded-xl p-4">
                 <h3 className="font-medium text-orange-900 mb-2">ima情绪超短知识库</h3>

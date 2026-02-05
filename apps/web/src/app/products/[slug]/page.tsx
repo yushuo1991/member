@@ -78,6 +78,10 @@ export default function ProductDetailPage() {
 
     setIsTrialLoading(true);
 
+    // 在点击时立即打开新窗口（避免被浏览器拦截）
+    // 试用产品都有外部URL，应该在新窗口打开
+    const newWindow = window.open('about:blank', '_blank');
+
     try {
       const response = await fetch(`/api/products/trial/${slug}`, {
         method: 'POST',
@@ -95,18 +99,23 @@ export default function ProductDetailPage() {
           canUseTrial: data.data.trialRemaining > 0
         });
 
-        // 显示成功消息
-        alert(data.data.message || '试用成功！');
-
         // 跳转到产品页面
-        if (data.data.redirectUrl) {
-          window.open(data.data.redirectUrl, '_blank');
+        if (data.data.redirectUrl && newWindow) {
+          newWindow.location.href = data.data.redirectUrl;
         }
       } else {
+        // 如果失败，关闭已打开的窗口
+        if (newWindow) {
+          newWindow.close();
+        }
         alert(data.message || '试用失败，请稍后重试');
       }
     } catch (error) {
       console.error('试用失败:', error);
+      // 如果出错，关闭已打开的窗口
+      if (newWindow) {
+        newWindow.close();
+      }
       alert('试用失败，请稍后重试');
     } finally {
       setIsTrialLoading(false);

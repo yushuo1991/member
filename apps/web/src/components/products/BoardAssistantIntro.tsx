@@ -82,14 +82,21 @@ export default function BoardAssistantIntro() {
           </div>
 
           <div className="flex flex-col items-stretch sm:items-end gap-2">
+            <a
+              href="https://wuqq-obsidian.oss-cn-shanghai.aliyuncs.com/%E5%AE%87%E7%A1%95%E6%9D%BF%E5%9D%97%E5%8A%A9%E6%89%8B1.6.exe"
+              download
+              className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-[#ff8c42] text-white font-medium hover:bg-[#e67d3a] transition-colors shadow-sm"
+            >
+              下载板块助手 v1.6
+            </a>
             <button
               onClick={copyWechat}
-              className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-[#ff8c42] text-white font-medium hover:bg-[#e67d3a] transition-colors shadow-sm"
+              className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 transition-colors"
             >
               {copied ? '已复制微信号' : `复制微信号：${WECHAT_ID}`}
             </button>
             <p className="text-xs text-gray-500 sm:text-right">
-              获取安装包/更新说明：添加微信并备注“板块助手”
+              遇到问题？添加微信并备注"板块助手"
             </p>
           </div>
         </div>
