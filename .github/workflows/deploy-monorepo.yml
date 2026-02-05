@@ -256,9 +256,9 @@ jobs:
               cp /tmp/.env.web.backup .env
             fi
 
-            # 安装生产依赖
+            # 安装生产依赖 (使用pnpm支持workspace协议)
             rm -rf node_modules package-lock.json
-            npm install --production --no-audit
+            pnpm install --prod --frozen-lockfile
 
             # PM2重启
             pm2 describe $APP_NAME > /dev/null 2>&1 && pm2 delete $APP_NAME || true
@@ -325,7 +325,7 @@ jobs:
             fi
 
             rm -rf node_modules package-lock.json
-            npm install --production --no-audit
+            pnpm install --prod --frozen-lockfile
 
             pm2 describe $APP_NAME > /dev/null 2>&1 && pm2 delete $APP_NAME || true
             pm2 start npm --name $APP_NAME -- start -- -p 3001
@@ -390,7 +390,7 @@ jobs:
             fi
 
             rm -rf node_modules package-lock.json
-            npm install --production --no-audit
+            pnpm install --prod --frozen-lockfile
 
             pm2 describe $APP_NAME > /dev/null 2>&1 && pm2 delete $APP_NAME || true
             pm2 start npm --name $APP_NAME -- start -- -p 3002
@@ -455,7 +455,7 @@ jobs:
             fi
 
             rm -rf node_modules package-lock.json
-            npm install --production --no-audit
+            pnpm install --prod --frozen-lockfile
 
             pm2 describe $APP_NAME > /dev/null 2>&1 && pm2 delete $APP_NAME || true
             pm2 start npm --name $APP_NAME -- start -- -p 3003

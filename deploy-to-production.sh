@@ -218,6 +218,9 @@ DB_PORT=3306
 DB_USER=root
 DB_PASSWORD=ChangeMe2026!Secure
 DB_NAME=member_system
+
+# 主应用URL（用于跨应用重定向）
+NEXT_PUBLIC_MAIN_APP_URL=http://8.153.110.212:3000
 EOF
 
 echo "✅ Xinli应用环境变量配置完成"
