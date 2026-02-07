@@ -12,6 +12,27 @@ interface RateLimitConfig {
   blockDurationMinutes: number; // 封禁时长（分钟）
 }
 
+// 内存缓存作为降级方案
+interface MemoryCacheEntry {
+  attemptCount: number;
+  firstAttemptAt: Date;
+  blockedUntil?: Date;
+}
+
+// 错误计数器
+interface ErrorCounter {
+  count: number;
+  lastErrorAt: Date;
+}
+
+const memoryCache = new Map<string, MemoryCacheEntry>();
+const errorCounters = new Map<string, ErrorCounter>();
+
+// 错误阈值配置
+const ERROR_THRESHOLD = 3; // 连续错误次数阈值
+const ERROR_WINDOW_MS = 60000; // 错误窗口时间（1分钟）
+const FALLBACK_MODE_DURATION_MS = 300000; // 降级模式持续时间（5分钟）
+
 // 默认限流配置
 const DEFAULT_CONFIG: RateLimitConfig = {
   maxAttempts: 5,
@@ -38,6 +59,158 @@ const RATE_LIMIT_CONFIGS: Record<string, RateLimitConfig> = {
     blockDurationMinutes: 5
   }
 };
+
+/**
+ * 生成缓存键
+ */
+function getCacheKey(ipAddress: string, actionType: string): string {
+  return `${ipAddress}:${actionType}`;
+}
+
+/**
+ * 记录数据库错误
+ */
+function recordDatabaseError(actionType: string): void {
+  const key = `db_error:${actionType}`;
+  const now = new Date();
+  const counter = errorCounters.get(key);
+
+  if (!counter) {
+    errorCounters.set(key, { count: 1, lastErrorAt: now });
+    return;
+  }
+
+  // 如果错误窗口已过期，重置计数
+  if (now.getTime() - counter.lastErrorAt.getTime() > ERROR_WINDOW_MS) {
+    errorCounters.set(key, { count: 1, lastErrorAt: now });
+  } else {
+    counter.count++;
+    counter.lastErrorAt = now;
+  }
+}
+
+/**
+ * 检查是否应该使用降级模式
+ */
+function shouldUseFallbackMode(actionType: string): boolean {
+  const key = `db_error:${actionType}`;
+  const counter = errorCounters.get(key);
+
+  if (!counter) return false;
+
+  const now = new Date();
+  const timeSinceLastError = now.getTime() - counter.lastErrorAt.getTime();
+
+  // 如果在错误窗口内且错误次数超过阈值，使用降级模式
+  if (timeSinceLastError < FALLBACK_MODE_DURATION_MS && counter.count >= ERROR_THRESHOLD) {
+    return true;
+  }
+
+  // 如果已经超过降级模式持续时间，清除错误计数
+  if (timeSinceLastError > FALLBACK_MODE_DURATION_MS) {
+    errorCounters.delete(key);
+  }
+
+  return false;
+}
+
+/**
+ * 使用内存缓存检查限流
+ */
+function checkRateLimitFromMemory(
+  ipAddress: string,
+  actionType: string,
+  config: RateLimitConfig
+): {
+  isAllowed: boolean;
+  remainingAttempts?: number;
+  blockedUntil?: Date;
+  resetAt?: Date;
+} {
+  const cacheKey = getCacheKey(ipAddress, actionType);
+  const cached = memoryCache.get(cacheKey);
+  const now = new Date();
+
+  if (!cached) {
+    return {
+      isAllowed: true,
+      remainingAttempts: config.maxAttempts - 1
+    };
+  }
+
+  // 检查是否在封禁期
+  if (cached.blockedUntil && cached.blockedUntil > now) {
+    return {
+      isAllowed: false,
+      blockedUntil: cached.blockedUntil
+    };
+  }
+
+  // 检查时间窗口
+  const windowEnd = new Date(cached.firstAttemptAt.getTime() + config.windowMinutes * 60 * 1000);
+
+  if (now > windowEnd) {
+    // 窗口已过期，允许访问
+    return {
+      isAllowed: true,
+      remainingAttempts: config.maxAttempts - 1,
+      resetAt: new Date(now.getTime() + config.windowMinutes * 60 * 1000)
+    };
+  }
+
+  // 检查尝试次数
+  if (cached.attemptCount >= config.maxAttempts) {
+    return {
+      isAllowed: false,
+      blockedUntil: new Date(now.getTime() + config.blockDurationMinutes * 60 * 1000)
+    };
+  }
+
+  return {
+    isAllowed: true,
+    remainingAttempts: config.maxAttempts - cached.attemptCount - 1,
+    resetAt: windowEnd
+  };
+}
+
+/**
+ * 更新内存缓存
+ */
+function updateMemoryCache(
+  ipAddress: string,
+  actionType: string,
+  config: RateLimitConfig
+): void {
+  const cacheKey = getCacheKey(ipAddress, actionType);
+  const cached = memoryCache.get(cacheKey);
+  const now = new Date();
+
+  if (!cached) {
+    memoryCache.set(cacheKey, {
+      attemptCount: 1,
+      firstAttemptAt: now
+    });
+    return;
+  }
+
+  const windowEnd = new Date(cached.firstAttemptAt.getTime() + config.windowMinutes * 60 * 1000);
+
+  if (now > windowEnd) {
+    // 窗口已过期，重置
+    memoryCache.set(cacheKey, {
+      attemptCount: 1,
+      firstAttemptAt: now
+    });
+  } else {
+    // 增加计数
+    cached.attemptCount++;
+
+    // 如果达到最大尝试次数，设置封禁时间
+    if (cached.attemptCount >= config.maxAttempts) {
+      cached.blockedUntil = new Date(now.getTime() + config.blockDurationMinutes * 60 * 1000);
+    }
+  }
+}
 
 /**
  * 从请求中获取客户端IP地址
@@ -76,6 +249,13 @@ export async function checkRateLimit(
   resetAt?: Date;
 }> {
   const config = RATE_LIMIT_CONFIGS[actionType] || DEFAULT_CONFIG;
+
+  // 检查是否应该使用降级模式（内存缓存）
+  if (shouldUseFallbackMode(actionType)) {
+    console.warn(`[限流器] 使用降级模式（内存缓存）检查限流: ${actionType}`);
+    return checkRateLimitFromMemory(ipAddress, actionType, config);
+  }
+
   const db = MemberDatabase.getInstance().getPool();
 
   try {
@@ -134,9 +314,13 @@ export async function checkRateLimit(
     };
 
   } catch (error) {
-    console.error('[限流器] 检查限流失败:', error);
-    // 发生错误时允许访问（避免影响正常用户）
-    return { isAllowed: true };
+    console.error('[限流器] 数据库查询失败，切换到内存缓存:', error);
+
+    // 记录数据库错误
+    recordDatabaseError(actionType);
+
+    // 使用内存缓存作为降级方案
+    return checkRateLimitFromMemory(ipAddress, actionType, config);
   }
 }
 
@@ -152,6 +336,16 @@ export async function recordAttempt(
   success: boolean
 ): Promise<void> {
   const config = RATE_LIMIT_CONFIGS[actionType] || DEFAULT_CONFIG;
+
+  // 先更新内存缓存（无论数据库是否可用）
+  updateMemoryCache(ipAddress, actionType, config);
+
+  // 如果在降级模式，只使用内存缓存
+  if (shouldUseFallbackMode(actionType)) {
+    console.warn(`[限流器] 降级模式：仅使用内存缓存记录尝试: ${actionType}`);
+    return;
+  }
+
   const db = MemberDatabase.getInstance().getPool();
 
   try {
@@ -202,7 +396,10 @@ export async function recordAttempt(
     }
 
   } catch (error) {
-    console.error('[限流器] 记录尝试失败:', error);
+    console.error('[限流器] 数据库记录失败，已使用内存缓存:', error);
+    // 记录数据库错误
+    recordDatabaseError(actionType);
+    // 内存缓存已在函数开始时更新，无需额外操作
   }
 }
 

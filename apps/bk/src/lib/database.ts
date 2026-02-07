@@ -37,9 +37,9 @@ export class StockDatabase {
     return StockDatabase.instance;
   }
 
-  // 获取连接池（访问私有pool通过类型断言）
+  // 获取连接池（使用公共方法）
   get pool() {
-    return (this.baseDb as any).pool;
+    return this.baseDb.getPool();
   }
 
   // 初始化BK系统专用表
@@ -156,10 +156,14 @@ export class StockDatabase {
     if (isDatabaseDisabled) return;
     if (!stocks || stocks.length === 0) return;
 
+    const connection = await this.pool.getConnection();
     try {
       const formattedDate = formatDateToISO(date);
 
-      // 使用批量插入
+      // 开启事务以确保数据一致性
+      await connection.beginTransaction();
+
+      // 准备批量插入的值数组
       const values = stocks.map(stock => [
         stock.StockCode,
         stock.StockName,
@@ -170,23 +174,32 @@ export class StockDatabase {
         stock.Amount || null
       ]);
 
-      // 使用INSERT ... ON DUPLICATE KEY UPDATE 更新成交额等字段
-      for (const value of values) {
-        await this.pool.execute(
-          `INSERT INTO stock_data
-           (stock_code, stock_name, sector_name, td_type, trade_date, limit_up_time, amount)
-           VALUES (?, ?, ?, ?, ?, ?, ?)
-           ON DUPLICATE KEY UPDATE
-             amount = COALESCE(VALUES(amount), amount),
-             limit_up_time = COALESCE(VALUES(limit_up_time), limit_up_time),
-             updated_at = CURRENT_TIMESTAMP`,
-          value
-        );
-      }
+      // 构建批量插入SQL（使用单条SQL语句插入所有数据）
+      const placeholders = values.map(() => '(?, ?, ?, ?, ?, ?, ?)').join(', ');
+      const flatValues = values.flat();
 
-      console.log(`[BK数据库] 缓存 ${formattedDate} 的 ${stocks.length} 只股票`);
+      await connection.execute(
+        `INSERT INTO stock_data
+         (stock_code, stock_name, sector_name, td_type, trade_date, limit_up_time, amount)
+         VALUES ${placeholders}
+         ON DUPLICATE KEY UPDATE
+           amount = COALESCE(VALUES(amount), amount),
+           limit_up_time = COALESCE(VALUES(limit_up_time), limit_up_time),
+           updated_at = CURRENT_TIMESTAMP`,
+        flatValues
+      );
+
+      // 提交事务
+      await connection.commit();
+
+      console.log(`[BK数据库] 批量缓存 ${formattedDate} 的 ${stocks.length} 只股票`);
     } catch (error) {
+      // 发生错误时回滚事务
+      await connection.rollback();
       console.error('[BK数据库] 缓存股票数据失败:', error);
+    } finally {
+      // 释放连接回连接池
+      connection.release();
     }
   }
 
