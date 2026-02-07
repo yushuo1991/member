@@ -1,0 +1,66 @@
+<svg width="800" height="450" xmlns="http://www.w3.org/2000/svg">
+  <!-- 金色渐变背景 -->
+  <defs>
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#FFA500;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FF8C00;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- 光晕效果 -->
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#FFD700;stop-opacity:0" />
+    </radialGradient>
+  </defs>
+
+  <!-- 背景 -->
+  <rect width="800" height="450" fill="url(#goldGradient)"/>
+
+  <!-- 装饰圆圈 -->
+  <circle cx="150" cy="100" r="80" fill="url(#glow)" opacity="0.5"/>
+  <circle cx="650" cy="350" r="100" fill="url(#glow)" opacity="0.5"/>
+
+  <!-- 装饰线条 -->
+  <path d="M 0 225 Q 200 200 400 225 T 800 225" stroke="#FFFFFF" stroke-width="2" fill="none" opacity="0.3"/>
+  <path d="M 0 250 Q 200 275 400 250 T 800 250" stroke="#FFFFFF" stroke-width="2" fill="none" opacity="0.3"/>
+
+  <!-- 图标背景圆 -->
+  <circle cx="400" cy="160" r="60" fill="#FFFFFF" opacity="0.9"/>
+
+  <!-- 毕业帽图标 -->
+  <g transform="translate(400, 160)">
+    <!-- 帽子顶部 -->
+    <rect x="-35" y="-15" width="70" height="8" fill="#FF8C00" rx="2"/>
+    <!-- 帽子底部 -->
+    <path d="M -40 -7 L 40 -7 L 35 5 L -35 5 Z" fill="#FFA500"/>
+    <!-- 流苏 -->
+    <line x1="35" y1="-15" x2="35" y2="15" stroke="#FF8C00" stroke-width="2"/>
+    <circle cx="35" cy="18" r="4" fill="#FFD700"/>
+    <!-- 书本 -->
+    <rect x="-25" y="8" width="50" height="30" fill="#FFFFFF" stroke="#FF8C00" stroke-width="2" rx="2"/>
+    <line x1="-25" y1="18" x2="25" y2="18" stroke="#FF8C00" stroke-width="1"/>
+    <line x1="-25" y1="28" x2="25" y2="28" stroke="#FF8C00" stroke-width="1"/>
+  </g>
+
+  <!-- 主标题 -->
+  <text x="400" y="280" font-family="Microsoft YaHei, SimHei, Arial, sans-serif" font-size="56" font-weight="bold" fill="#FFFFFF" text-anchor="middle" letter-spacing="8">
+    宇硕陪伴营
+  </text>
+
+  <!-- 副标题 -->
+  <text x="400" y="330" font-family="Microsoft YaHei, SimHei, Arial, sans-serif" font-size="24" fill="#FFFFFF" text-anchor="middle" opacity="0.95" letter-spacing="4">
+    专业交易教育 · 全程陪伴成长
+  </text>
+
+  <!-- 装饰星星 -->
+  <g opacity="0.6">
+    <polygon points="100,380 105,390 115,390 107,397 110,407 100,400 90,407 93,397 85,390 95,390" fill="#FFFFFF"/>
+    <polygon points="700,80 705,90 715,90 707,97 710,107 700,100 690,107 693,97 685,90 695,90" fill="#FFFFFF"/>
+    <polygon points="250,50 253,56 260,56 255,60 257,67 250,63 243,67 245,60 240,56 247,56" fill="#FFFFFF"/>
+    <polygon points="550,400 553,406 560,406 555,410 557,417 550,413 543,417 545,410 540,406 547,406" fill="#FFFFFF"/>
+  </g>
+
+  <!-- 底部装饰条 -->
+  <rect x="0" y="420" width="800" height="30" fill="#FFFFFF" opacity="0.1"/>
+</svg>

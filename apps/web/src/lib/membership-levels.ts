@@ -209,6 +209,20 @@ export const PRODUCTS: Product[] = [
     features: ['每日复盘记录', '市场情绪分析', '交易日志管理', '数据统计图表'],
     sortOrder: 5
   },
+  {
+    slug: 'peibanying',
+    name: '🎓 宇硕陪伴营 | 全体系交付，陪伴式学习',
+    description: '深度陪伴式学习计划，全体系产品访问权限',
+    detailDescription: '宇硕陪伴营是一个深度陪伴式学习计划，提供全体系产品的永久访问权限。通过系统化的学习路径、实战指导和持续陪伴，帮助学员建立完整的交易体系。不定期开放，名额有限。',
+    icon: '🎓',
+    imageUrl: '/products/peibanying-cover.png',
+    requiredLevel: 'lifetime',
+    priceType: 'membership',
+    trialEnabled: false,
+    trialCount: 0,
+    features: ['全体系产品永久访问', '陪伴式学习指导', '系统化学习路径', '实战经验分享', '优先体验新功能', '专属学习社群'],
+    sortOrder: 5.5
+  },
   // 单独购买产品
   {
     slug: 'qingxubiaoge',

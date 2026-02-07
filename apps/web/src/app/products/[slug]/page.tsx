@@ -28,6 +28,7 @@ export default function ProductDetailPage() {
     slug === 'bk';
 
   const [product, setProduct] = useState<Product | null>(null);
+  const [productContent, setProductContent] = useState<any>(null);
   const [trialStatus, setTrialStatus] = useState<{
     trialRemaining: number;
     canUseTrial: boolean;
@@ -39,7 +40,25 @@ export default function ProductDetailPage() {
     if (p) {
       setProduct(p);
     }
+
+    // 从数据库获取产品内容
+    fetchProductContent();
   }, [slug]);
+
+  const fetchProductContent = async () => {
+    try {
+      const response = await fetch(`/api/products/content/${slug}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setProductContent(data.data);
+        }
+      }
+    } catch (error) {
+      console.error('获取产品内容失败:', error);
+      // 如果获取失败，使用代码中的默认数据
+    }
+  };
 
   // 获取试用状态
   useEffect(() => {
@@ -81,16 +100,21 @@ export default function ProductDetailPage() {
     // 在点击时立即打开新窗口（避免被浏览器拦截）
     // 试用产品都有外部URL，应该在新窗口打开
     const newWindow = window.open('about:blank', '_blank');
+    console.log('[试用] 新窗口已打开:', newWindow);
 
     try {
+      console.log('[试用] 开始调用API:', `/api/products/trial/${slug}`);
       const response = await fetch(`/api/products/trial/${slug}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
-        }
+        },
+        credentials: 'include'
       });
 
+      console.log('[试用] API响应状态:', response.status);
       const data = await response.json();
+      console.log('[试用] API响应数据:', data);
 
       if (data.success) {
         // 更新试用状态
@@ -100,10 +124,22 @@ export default function ProductDetailPage() {
         });
 
         // 跳转到产品页面
+        console.log('[试用] redirectUrl:', data.data.redirectUrl);
+        console.log('[试用] newWindow存在:', !!newWindow);
+
         if (data.data.redirectUrl && newWindow) {
+          console.log('[试用] 准备跳转到:', data.data.redirectUrl);
           newWindow.location.href = data.data.redirectUrl;
+          console.log('[试用] 跳转命令已执行');
+        } else {
+          console.error('[试用] 跳转失败 - redirectUrl:', data.data.redirectUrl, 'newWindow:', newWindow);
+          if (newWindow) {
+            newWindow.close();
+          }
+          alert('跳转失败：未获取到跳转地址');
         }
       } else {
+        console.error('[试用] API返回失败:', data.message);
         // 如果失败，关闭已打开的窗口
         if (newWindow) {
           newWindow.close();
@@ -111,7 +147,7 @@ export default function ProductDetailPage() {
         alert(data.message || '试用失败，请稍后重试');
       }
     } catch (error) {
-      console.error('试用失败:', error);
+      console.error('[试用] 捕获异常:', error);
       // 如果出错，关闭已打开的窗口
       if (newWindow) {
         newWindow.close();
@@ -219,12 +255,19 @@ export default function ProductDetailPage() {
 
               {/* Title */}
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
-                {product.name}
+                {productContent?.title || product.name}
               </h1>
+
+              {/* Subtitle */}
+              {productContent?.subtitle && (
+                <p className="text-gray-500 text-sm sm:text-base mb-2">
+                  {productContent.subtitle}
+                </p>
+              )}
 
               {/* Short Description */}
               <p className="text-gray-600 text-base sm:text-lg">
-                {product.description}
+                {productContent?.description || product.description}
               </p>
             </div>
           </div>
@@ -250,16 +293,30 @@ export default function ProductDetailPage() {
               {/* Detail Description */}
               <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm">
                 <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">产品介绍</h2>
-                <p className="text-gray-600 leading-relaxed">
-                  {product.detailDescription || product.description}
+                <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">
+                  {productContent?.detail_description || product.detailDescription || product.description}
                 </p>
               </div>
+
+              {/* Video */}
+              {productContent?.video_url && (
+                <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm">
+                  <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">产品视频</h2>
+                  <div className="aspect-video">
+                    <iframe
+                      src={productContent.video_url}
+                      className="w-full h-full rounded-lg"
+                      allowFullScreen
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Features */}
               <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm">
                 <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">功能特性</h2>
                 <ul className="space-y-3">
-                  {product.features.map((feature, index) => (
+                  {(productContent?.features || product.features).map((feature: string, index: number) => (
                     <li key={index} className="flex items-start">
                       <svg
                         className="w-5 h-5 text-[#ff8c42] mt-0.5 mr-3 flex-shrink-0"
@@ -279,6 +336,23 @@ export default function ProductDetailPage() {
                   ))}
                 </ul>
               </div>
+
+              {/* Images */}
+              {productContent?.images && productContent.images.length > 0 && (
+                <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm">
+                  <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">产品截图</h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {productContent.images.map((image: string, index: number) => (
+                      <img
+                        key={index}
+                        src={image}
+                        alt={`${product.name} 截图 ${index + 1}`}
+                        className="w-full rounded-lg shadow-sm"
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
                 </>
               )}
             </div>
