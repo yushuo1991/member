@@ -20,10 +20,27 @@
     "build:xinli": "turbo run build --filter=xinli",
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
+    "validate-env": "node scripts/validate-env.js",
+    "validate-env:web": "node scripts/validate-env.js web",
+    "validate-env:bk": "node scripts/validate-env.js bk",
+    "validate-env:fuplan": "node scripts/validate-env.js fuplan",
+    "validate-env:xinli": "node scripts/validate-env.js xinli",
+    "db:indexes": "bash scripts/apply-indexes.sh",
+    "db:indexes:win": "scripts\\apply-indexes.bat",
+    "db:verify-indexes": "mysql -u root -p member_system < scripts/verify-indexes.sql",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
     "clean": "turbo run clean && rm -rf node_modules",
     "clean:all": "rm -rf node_modules apps/*/node_modules packages/*/node_modules apps/*/.next"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/jest": "^30.0.0",
+    "jest": "^30.2.0",
+    "jest-environment-jsdom": "^30.2.0",
+    "ts-jest": "^29.4.6",
     "turbo": "^2.3.3"
   },
   "engines": {

@@ -1,3 +1,5 @@
+const { withSentryConfig } = require("@sentry/nextjs");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Windows环境下暂时禁用standalone以避免符号链接权限问题
@@ -5,6 +7,11 @@ const nextConfig = {
   // output: 'standalone',
   reactStrictMode: true,
   transpilePackages: ['@repo/ui', '@repo/auth', '@repo/database', '@repo/utils'],
+
+  experimental: {
+    // 启用 instrumentation 以支持优雅关闭
+    instrumentationHook: true,
+  },
 
   // Security headers
   async headers() {
@@ -36,4 +43,19 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+// Sentry configuration options
+const sentryWebpackPluginOptions = {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  silent: !process.env.CI,
+  widenClientFileUpload: true,
+  reactComponentAnnotation: {
+    enabled: true,
+  },
+  tunnelRoute: "/monitoring",
+  hideSourceMaps: true,
+  disableLogger: true,
+  automaticVercelMonitors: true,
+};
+
+module.exports = withSentryConfig(nextConfig, sentryWebpackPluginOptions);
