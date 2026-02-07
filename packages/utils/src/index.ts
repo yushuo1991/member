@@ -11,3 +11,46 @@ export { isValidEmail, isValidPhone, checkPasswordStrength, isValidUsername } fr
 
 // 格式化工具
 export { formatPrice, truncate, randomString, maskPhone, maskEmail } from './format';
+
+// 优雅关闭工具
+export {
+  shutdownManager,
+  registerDatabaseCleanup,
+  initGracefulShutdown
+} from './shutdown';
+
+// Zod 验证 Schemas
+export {
+  LoginSchema,
+  RegisterSchema,
+  ActivationCodeSchema,
+  MemberAdjustSchema,
+  AdminLoginSchema,
+  GenerateCodeSchema,
+  UpdateUserStatusSchema,
+  ResetTrialsSchema,
+  validateRequest,
+  safeValidateRequest,
+  type LoginInput,
+  type RegisterInput,
+  type ActivationCodeInput,
+  type MemberAdjustInput,
+  type AdminLoginInput,
+  type GenerateCodeInput,
+  type UpdateUserStatusInput,
+  type ResetTrialsInput,
+} from './validation-schemas';
+
+// 日志工具
+export {
+  logger,
+  Logger,
+  createLogger,
+  winstonLogger,
+  requestLogger,
+  logError,
+  PerformanceLogger,
+  LogPerformance,
+  type LogLevel,
+  type LogMetadata,
+} from './logger';

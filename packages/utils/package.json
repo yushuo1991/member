@@ -10,7 +10,12 @@
     "type-check": "tsc --noEmit"
   },
   "devDependencies": {
-    "typescript": "^5.6.3",
-    "eslint": "^8.57.1"
+    "@types/winston": "^2.4.4",
+    "eslint": "^8.57.1",
+    "typescript": "^5.6.3"
+  },
+  "dependencies": {
+    "winston": "^3.19.0",
+    "zod": "^3.23.8"
   }
 }
