@@ -11,7 +11,10 @@ export class TokenManager {
   private jwtExpiresIn: string;
 
   constructor(secret?: string, expiresIn: string = '7d') {
-    this.jwtSecret = secret || process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+    this.jwtSecret = secret || process.env.JWT_SECRET || '';
+    if (!this.jwtSecret) {
+      throw new Error('JWT_SECRET environment variable is required');
+    }
     this.jwtExpiresIn = expiresIn;
   }
 

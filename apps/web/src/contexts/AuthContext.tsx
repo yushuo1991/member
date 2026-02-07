@@ -36,12 +36,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.ok) {
         const data = await response.json();
         setUser(data?.data?.user ?? null);
-      } else {
+      } else if (response.status === 401 || response.status === 403) {
+        // 只有在未授权或禁止访问时才清除用户状态
+        console.log('用户未授权，清除登录状态');
         setUser(null);
+      } else {
+        // 其他HTTP错误（如500服务器错误）保持当前状态
+        console.warn(`检查登录状态返回错误状态码: ${response.status}`);
+        // 不清除用户状态，避免因临时服务器问题导致用户被登出
       }
     } catch (error) {
-      console.error('检查登录状态失败:', error);
-      setUser(null);
+      // 网络错误（如断网、超时）保持当前用户状态
+      // 这样可以避免因网络波动导致用户被意外登出
+      console.error('检查登录状态失败（网络错误）:', error);
+      // 不清除用户状态，保持用户体验
     } finally {
       setLoading(false);
     }

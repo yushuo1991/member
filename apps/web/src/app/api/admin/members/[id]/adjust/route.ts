@@ -8,6 +8,7 @@ import { memberDatabase } from '@repo/database';
 import { verifyAdminToken, errorResponse, successResponse } from '@repo/auth';
 import { MEMBERSHIP_LEVELS, calculateExpiry } from '@/lib/membership-levels';
 import { MembershipLevel } from '@/types/membership';
+import { MemberAdjustSchema, validateRequest } from '@repo/utils';
 
 export async function PUT(
   request: NextRequest,
@@ -29,16 +30,14 @@ export async function PUT(
 
     // 解析请求体
     const body = await request.json();
-    const { membershipLevel, customExpiry } = body;
 
-    // 输入验证
-    if (!membershipLevel) {
-      return errorResponse('会员等级不能为空', 400);
+    // Zod 验证
+    const validation = validateRequest(MemberAdjustSchema, body);
+    if (!validation.success) {
+      return errorResponse(validation.error, 400);
     }
 
-    if (!MEMBERSHIP_LEVELS[membershipLevel as MembershipLevel]) {
-      return errorResponse('无效的会员等级', 400);
-    }
+    const { membershipLevel, customExpiry } = validation.data;
 
     const db = memberDatabase.getPool();
 

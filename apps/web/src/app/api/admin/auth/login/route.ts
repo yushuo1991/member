@@ -8,7 +8,7 @@ import { memberDatabase } from '@repo/database';
 import { verifyPassword, generateToken, createAuthCookie } from '@repo/auth';
 import { errorResponse, successResponse } from '@/lib/utils';
 import { checkRateLimit, recordAttempt, resetRateLimit, getClientIP } from '@/lib/rate-limiter';
-import { LoginRequest } from '@/types/user';
+import { AdminLoginSchema, validateRequest } from '@repo/utils';
 
 function tryEnvAdminLogin(identifier: string, password: string) {
   const adminUsername = process.env.ADMIN_USERNAME;
@@ -40,14 +40,16 @@ export async function POST(request: NextRequest) {
       return errorResponse('Too many login attempts, please try again later.', 429);
     }
 
-    const body: LoginRequest = await request.json();
-    const identifier = body.identifier || body.username || body.email || '';
-    const { password } = body;
+    const body = await request.json();
 
-    if (!identifier || !password) {
+    // Zod 验证
+    const validation = validateRequest(AdminLoginSchema, body);
+    if (!validation.success) {
       await recordAttempt(clientIP, 'login', false);
-      return errorResponse('Email and password are required.', 400);
+      return errorResponse(validation.error, 400);
     }
+
+    const { username: identifier, password } = validation.data;
 
     // Prefer env-based admin login when configured (useful for first-time setup).
     const envAdmin = tryEnvAdminLogin(identifier, password);

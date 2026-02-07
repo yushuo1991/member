@@ -10,9 +10,9 @@
 import { NextRequest } from 'next/server';
 import { memberDatabase } from '@repo/database';
 import { hashPassword } from '@repo/auth';
-import { errorResponse, successResponse, isValidEmail, isValidUsername, isValidPassword } from '@/lib/utils';
+import { errorResponse, successResponse } from '@/lib/utils';
 import { checkRateLimit, recordAttempt, getClientIP } from '@/lib/rate-limiter';
-import { RegisterRequest } from '@/types/user';
+import { RegisterSchema, validateRequest } from '@repo/utils';
 
 function toPlaceholderEmail(username: string) {
   const safeLocalPart = username.replace(/[^a-zA-Z0-9_.-]/g, '_').slice(0, 64) || 'user';
@@ -32,31 +32,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body: RegisterRequest = await request.json();
-    const username = body.username?.trim();
-    const password = body.password;
-    const emailInput = body.email?.trim();
-    const email = emailInput || toPlaceholderEmail(username || '');
+    const body = await request.json();
 
-    if (!username || !password) {
+    // Zod 验证
+    const validation = validateRequest(RegisterSchema, body);
+    if (!validation.success) {
       await recordAttempt(clientIP, 'register', false);
-      return errorResponse('账号和密码不能为空', 400);
+      return errorResponse(validation.error, 400);
     }
 
-    if (!isValidUsername(username)) {
-      await recordAttempt(clientIP, 'register', false);
-      return errorResponse('用户名格式不正确（2-50字符，可用汉字/字母/数字/下划线）', 400);
-    }
-
-    if (emailInput && !isValidEmail(emailInput)) {
-      await recordAttempt(clientIP, 'register', false);
-      return errorResponse('邮箱格式不正确', 400);
-    }
-
-    if (!isValidPassword(password)) {
-      await recordAttempt(clientIP, 'register', false);
-      return errorResponse('密码格式不正确（至少6位）', 400);
-    }
+    const { username, password, email: emailInput } = validation.data;
+    const email = emailInput || toPlaceholderEmail(username);
 
     const db = memberDatabase.getPool();
 

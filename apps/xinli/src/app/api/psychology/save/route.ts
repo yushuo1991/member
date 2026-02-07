@@ -24,8 +24,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const db = memberDatabase.getPool();
+
     // 查找或创建测评记录
-    const [existingTests] = await memberDatabase.query(
+    const [existingTests] = await db.execute(
       `SELECT id, progress FROM user_psychology_tests
        WHERE user_id = ? AND status = 'in_progress'
        ORDER BY started_at DESC LIMIT 1`,
@@ -39,7 +41,7 @@ export async function POST(request: NextRequest) {
       testId = (existingTests as any[])[0].id;
     } else {
       // 创建新测评
-      const [result] = await memberDatabase.query(
+      const [result] = await db.execute(
         `INSERT INTO user_psychology_tests (user_id, progress, status)
          VALUES (?, 0, 'in_progress')`,
         [userId]
@@ -47,42 +49,60 @@ export async function POST(request: NextRequest) {
       testId = (result as any).insertId;
     }
 
-    // 保存答案（使用 REPLACE INTO 来处理更新）
-    for (const answer of answers) {
-      const { scenarioId, operation, thought } = answer;
+    // 开启事务
+    const connection = await db.getConnection();
+    await connection.beginTransaction();
 
-      if (!scenarioId) continue;
+    try {
+      // 保存答案（使用 INSERT ... ON DUPLICATE KEY UPDATE 来处理更新）
+      for (const answer of answers) {
+        const { scenarioId, operation, thought } = answer;
 
-      await memberDatabase.query(
-        `INSERT INTO user_psychology_answers
-         (test_id, scenario_id, operation, thought)
-         VALUES (?, ?, ?, ?)
-         ON DUPLICATE KEY UPDATE
-         operation = VALUES(operation),
-         thought = VALUES(thought),
-         updated_at = CURRENT_TIMESTAMP`,
-        [testId, scenarioId, operation || '', thought || '']
+        if (!scenarioId) continue;
+
+        await connection.execute(
+          `INSERT INTO user_psychology_answers
+           (test_id, scenario_id, operation, thought)
+           VALUES (?, ?, ?, ?)
+           ON DUPLICATE KEY UPDATE
+           operation = VALUES(operation),
+           thought = VALUES(thought),
+           updated_at = CURRENT_TIMESTAMP`,
+          [testId, scenarioId, operation || '', thought || '']
+        );
+      }
+
+      // 更新进度
+      const progress = answers.filter(a => a.operation || a.thought).length;
+      const newStatus = status === 'completed' ? 'completed' : 'in_progress';
+      const completedAt = status === 'completed' ? new Date() : null;
+
+      await connection.execute(
+        `UPDATE user_psychology_tests
+         SET progress = ?, status = ?, completed_at = ?, updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?`,
+        [progress, newStatus, completedAt, testId]
       );
+
+      // 提交事务
+      await connection.commit();
+
+      return NextResponse.json({
+        success: true,
+        testId,
+        progress,
+        message: '保存成功',
+      });
+
+    } catch (error) {
+      // 回滚事务
+      await connection.rollback();
+      throw error;
+    } finally {
+      // 释放连接
+      connection.release();
     }
 
-    // 更新进度
-    const progress = answers.filter(a => a.operation || a.thought).length;
-    const newStatus = status === 'completed' ? 'completed' : 'in_progress';
-    const completedAt = status === 'completed' ? new Date() : null;
-
-    await memberDatabase.query(
-      `UPDATE user_psychology_tests
-       SET progress = ?, status = ?, completed_at = ?, updated_at = CURRENT_TIMESTAMP
-       WHERE id = ?`,
-      [progress, newStatus, completedAt, testId]
-    );
-
-    return NextResponse.json({
-      success: true,
-      testId,
-      progress,
-      message: '保存成功',
-    });
   } catch (error) {
     console.error('保存测评答案失败:', error);
     return NextResponse.json(
