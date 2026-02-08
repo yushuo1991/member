@@ -37,13 +37,14 @@ export async function PUT(
       return errorResponse(validation.error, 400);
     }
 
-    const { membershipLevel, customExpiry } = validation.data;
+    const { membershipLevel, customExpiry, trialBk, trialXinli, trialFuplan } = validation.data;
 
     const db = memberDatabase.getPool();
 
     // 查询用户是否存在
     const [users] = await db.execute<any[]>(
-      `SELECT u.id, u.username, m.level as membership_level, m.expires_at as membership_expiry
+      `SELECT u.id, u.username, u.trial_bk, u.trial_xinli, u.trial_fuplan,
+              m.level as membership_level, m.expires_at as membership_expiry
        FROM users u
        LEFT JOIN memberships m ON u.id = m.user_id
        WHERE u.id = ?`,
@@ -79,6 +80,33 @@ export async function PUT(
       [userId, membershipLevel, newExpiry]
     );
 
+    // 更新试用次数（如果提供了）
+    if (trialBk !== undefined || trialXinli !== undefined || trialFuplan !== undefined) {
+      const updateFields: string[] = [];
+      const updateValues: any[] = [];
+
+      if (trialBk !== undefined) {
+        updateFields.push('trial_bk = ?');
+        updateValues.push(trialBk);
+      }
+      if (trialXinli !== undefined) {
+        updateFields.push('trial_xinli = ?');
+        updateValues.push(trialXinli);
+      }
+      if (trialFuplan !== undefined) {
+        updateFields.push('trial_fuplan = ?');
+        updateValues.push(trialFuplan);
+      }
+
+      if (updateFields.length > 0) {
+        updateValues.push(userId);
+        await db.execute(
+          `UPDATE users SET ${updateFields.join(', ')} WHERE id = ?`,
+          updateValues
+        );
+      }
+    }
+
     // 记录审计日志（失败不影响主操作）
     try {
       await db.execute(
@@ -107,9 +135,14 @@ export async function PUT(
         previousExpiry: user.membership_expiry,
         newLevel: membershipLevel,
         newExpiry: newExpiry?.toISOString() || null,
+        trialCounts: {
+          bk: trialBk ?? user.trial_bk ?? 5,
+          xinli: trialXinli ?? user.trial_xinli ?? 5,
+          fuplan: trialFuplan ?? user.trial_fuplan ?? 5
+        },
         adjustedBy: admin.username
       },
-      '会员等级调整成功'
+      '会员信息调整成功'
     );
 
   } catch (error) {

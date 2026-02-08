@@ -118,6 +118,10 @@ export type ActivationCodeInput = z.infer<typeof ActivationCodeSchema>;
 export const MemberAdjustSchema = z.object({
   membershipLevel: membershipLevelSchema,
   customExpiry: isoDateSchema.optional().nullable(),
+  // 试用次数（可选）
+  trialBk: z.number().int().min(0, '试用次数不能为负').max(99, '试用次数不能超过99').optional(),
+  trialXinli: z.number().int().min(0, '试用次数不能为负').max(99, '试用次数不能超过99').optional(),
+  trialFuplan: z.number().int().min(0, '试用次数不能为负').max(99, '试用次数不能超过99').optional(),
 });
 
 export type MemberAdjustInput = z.infer<typeof MemberAdjustSchema>;

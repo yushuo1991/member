@@ -52,9 +52,10 @@ export async function GET(request: NextRequest) {
 
     const total = countResult[0].total;
 
-    // 查询会员列表
+    // 查询会员列表（包含试用次数）
     const [members] = await db.execute<any[]>(
       `SELECT u.id, u.username, u.email, u.status, u.created_at, u.updated_at,
+              u.trial_bk, u.trial_xinli, u.trial_fuplan,
               COALESCE(m.level, 'none') as membership_level,
               m.expires_at as membership_expiry
        FROM users u
@@ -75,7 +76,10 @@ export async function GET(request: NextRequest) {
           membershipExpiry: member.membership_expiry || null,
           isFrozen: member.status === 0,
           createdAt: member.created_at,
-          updatedAt: member.updated_at
+          updatedAt: member.updated_at,
+          trialBk: member.trial_bk ?? 5,
+          trialXinli: member.trial_xinli ?? 5,
+          trialFuplan: member.trial_fuplan ?? 5
         })),
         pagination: {
           page,

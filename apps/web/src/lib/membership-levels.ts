@@ -112,7 +112,7 @@ export const MEMBERSHIP_LEVELS: Record<MembershipLevel, MembershipConfig> = {
   },
   lifetime: {
     level: 'lifetime',
-    name: '宇硕陪伴营 | 全体系交付，陪伴式学习',
+    name: '陪伴营',
     duration: null,
     price: 0,
     color: 'gold',

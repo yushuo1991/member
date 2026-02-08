@@ -12,6 +12,10 @@ interface Member {
   isFrozen: boolean;
   createdAt: string;
   updatedAt: string;
+  // 试用次数
+  trialBk?: number;
+  trialXinli?: number;
+  trialFuplan?: number;
 }
 
 interface PaginationInfo {
@@ -34,6 +38,10 @@ interface EditModalData {
   currentExpiry: string | null;
   newLevel: MembershipLevel;
   customExpiry: string;
+  // 试用次数
+  trialBk: number;
+  trialXinli: number;
+  trialFuplan: number;
 }
 
 export default function MembersPage() {
@@ -170,7 +178,10 @@ export default function MembersPage() {
       currentLevel: member.membershipLevel,
       currentExpiry: member.membershipExpiry,
       newLevel: member.membershipLevel,
-      customExpiry: expiryDate
+      customExpiry: expiryDate,
+      trialBk: member.trialBk ?? 5,
+      trialXinli: member.trialXinli ?? 5,
+      trialFuplan: member.trialFuplan ?? 5
     });
     setShowEditModal(true);
   };
@@ -189,7 +200,10 @@ export default function MembersPage() {
         credentials: 'include',
         body: JSON.stringify({
           membershipLevel: editModalData.newLevel,
-          customExpiry: editModalData.customExpiry || undefined
+          customExpiry: editModalData.customExpiry || undefined,
+          trialBk: editModalData.trialBk,
+          trialXinli: editModalData.trialXinli,
+          trialFuplan: editModalData.trialFuplan
         })
       });
 
@@ -665,6 +679,70 @@ export default function MembersPage() {
                 <p className="text-xs text-gray-500 mt-1">
                   留空则根据等级自动计算到期时间
                 </p>
+              </div>
+
+              {/* 试用次数设置 */}
+              <div className="border-t border-gray-200 pt-4 mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  🎯 试用次数设置
+                </label>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label htmlFor="trialBk" className="block text-xs text-gray-500 mb-1">
+                      板块节奏
+                    </label>
+                    <input
+                      type="number"
+                      id="trialBk"
+                      min="0"
+                      max="99"
+                      value={editModalData.trialBk}
+                      onChange={(e) => setEditModalData({ ...editModalData, trialBk: parseInt(e.target.value) || 0 })}
+                      disabled={editLoading}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#007AFF] focus:border-transparent text-center disabled:bg-gray-50 disabled:cursor-not-allowed"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="trialXinli" className="block text-xs text-gray-500 mb-1">
+                      心理测评
+                    </label>
+                    <input
+                      type="number"
+                      id="trialXinli"
+                      min="0"
+                      max="99"
+                      value={editModalData.trialXinli}
+                      onChange={(e) => setEditModalData({ ...editModalData, trialXinli: parseInt(e.target.value) || 0 })}
+                      disabled={editLoading}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#007AFF] focus:border-transparent text-center disabled:bg-gray-50 disabled:cursor-not-allowed"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="trialFuplan" className="block text-xs text-gray-500 mb-1">
+                      复盘系统
+                    </label>
+                    <input
+                      type="number"
+                      id="trialFuplan"
+                      min="0"
+                      max="99"
+                      value={editModalData.trialFuplan}
+                      onChange={(e) => setEditModalData({ ...editModalData, trialFuplan: parseInt(e.target.value) || 0 })}
+                      disabled={editLoading}
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#007AFF] focus:border-transparent text-center disabled:bg-gray-50 disabled:cursor-not-allowed"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditModalData({ ...editModalData, trialBk: 5, trialXinli: 5, trialFuplan: 5 })}
+                    disabled={editLoading}
+                    className="text-xs text-[#007AFF] hover:underline disabled:opacity-50"
+                  >
+                    全部重置为5次
+                  </button>
+                </div>
               </div>
             </div>
 
