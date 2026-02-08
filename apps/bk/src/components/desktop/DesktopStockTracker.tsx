@@ -898,7 +898,7 @@ export default function Home() {
     });
   };
 
-  // 计算板块最近7天涨停家数排序（前5名）- 修改为7天
+  // 计算板块最近15天涨停家数排序（前5名）- 修改为15天
   const getSectorStrengthRanking = useMemo(() => {
     if (!sevenDaysData || !dates) return [];
 
@@ -2815,7 +2815,7 @@ export default function Home() {
           <div className="bg-white rounded-xl p-6 w-[98vw] max-w-[98vw] max-h-[95vh] overflow-hidden shadow-2xl flex flex-col">
             <div className="flex justify-between items-center mb-3 pb-3 border-b border-gray-200">
               <h3 className="text-lg font-bold text-gray-900">
-                🏆 板块7天涨停总数排行 (前5名)
+                🏆 板块15天涨停总数排行 (前5名)
               </h3>
               <button
                 onClick={closeSectorRankingModal}
@@ -2825,11 +2825,11 @@ export default function Home() {
               </button>
             </div>
 
-            {/* 最近7天概况 */}
+            {/* 最近15天概况 */}
             <div className="mb-4 bg-blue-50 rounded-lg p-3">
               <h4 className="text-sm font-semibold text-blue-800 mb-2">📊 统计说明</h4>
               <p className="text-blue-700 text-xs">
-                统计最近7个交易日各板块涨停总数，按总数降序排列，显示前5名最活跃板块
+                统计最近15个交易日各板块涨停总数，按总数降序排列，显示前5名最活跃板块
               </p>
               {dates.length >= 7 && (
                 <div className="mt-2 flex flex-wrap gap-1.5">
@@ -2979,7 +2979,7 @@ export default function Home() {
                   </ResponsiveContainer>
                 </div>
                 <p className="text-xs text-gray-600 mt-3 text-center">
-                  💡 数据说明：展示前5名板块近7天涨停家数变化趋势
+                  💡 数据说明：展示前5名板块近15天涨停家数变化趋势
                 </p>
               </div>
 
@@ -3005,7 +3005,7 @@ export default function Home() {
                         <div>
                           <h4 className="text-sm font-semibold text-gray-900">{sector.name}</h4>
                           <div className="text-xs text-gray-500">
-                            最近7天累计涨停数
+                            最近15天累计涨停数
                           </div>
                         </div>
                       </div>

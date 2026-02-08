@@ -7,11 +7,11 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { formatDate } from '@/lib/utils';
 
 /**
- * 移动端7天涨停排行弹窗
+ * 移动端15天涨停排行弹窗
  *
  * 功能：
- * - 显示7天涨停总数排行前5名的板块
- * - 板块7天涨停趋势图（多条线）
+ * - 显示15天涨停总数排行前5名的板块
+ * - 板块15天涨停趋势图（多条线）
  * - 板块排行列表，可点击查看详情
  * - 和PC端逻辑一致
  */
@@ -187,7 +187,7 @@ export default function Mobile7DayRankingModal({
         <div className="mb-4 bg-blue-50 rounded-lg p-3">
           <h4 className="text-xs font-semibold text-blue-800 mb-1">📊 统计说明</h4>
           <p className="text-blue-700 text-2xs">
-            统计最近7个交易日各板块涨停总数，按总数降序排列，显示前5名最活跃板块
+            统计最近15个交易日各板块涨停总数，按总数降序排列，显示前5名最活跃板块
           </p>
           {dates.length >= 7 && (
             <div className="mt-2 flex flex-wrap gap-1">
@@ -259,7 +259,7 @@ export default function Mobile7DayRankingModal({
               </ResponsiveContainer>
             </div>
             <p className="text-2xs text-gray-500 mt-2 text-center">
-              💡 展示前5名板块近7天涨停家数变化趋势
+              💡 展示前5名板块近15天涨停家数变化趋势
             </p>
           </div>
         )}
@@ -293,7 +293,7 @@ export default function Mobile7DayRankingModal({
                     <div>
                       <h5 className="text-sm font-semibold text-gray-900">{sector.name}</h5>
                       <div className="text-2xs text-gray-500">
-                        最近7天累计涨停数
+                        最近15天累计涨停数
                       </div>
                     </div>
                   </div>
