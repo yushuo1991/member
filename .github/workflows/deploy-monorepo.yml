@@ -270,6 +270,16 @@ jobs:
             export CI=false
             pnpm install --prod --no-frozen-lockfile
 
+            # 执行数据库迁移（如果迁移脚本存在）
+            if [ -f "scripts/migrate-add-trial-support.js" ]; then
+              echo "🔄 执行数据库迁移..."
+              # 从.env文件加载数据库配置
+              if [ -f ".env" ]; then
+                export $(cat .env | grep -E '^(DB_HOST|DB_USER|DB_PASSWORD|DB_NAME)=' | xargs)
+              fi
+              node scripts/migrate-add-trial-support.js || echo "⚠️ 数据库迁移失败或已执行过"
+            fi
+
             # PM2重启
             pm2 describe $APP_NAME > /dev/null 2>&1 && pm2 delete $APP_NAME || true
             pm2 start ecosystem.config.js --name $APP_NAME --env production
