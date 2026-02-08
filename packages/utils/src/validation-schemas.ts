@@ -200,6 +200,18 @@ export const ResetTrialsSchema = z.object({
 
 export type ResetTrialsInput = z.infer<typeof ResetTrialsSchema>;
 
+/**
+ * 试用产品请求验证
+ * POST /api/products/trial/[slug]
+ */
+export const TrialProductSchema = z.object({
+  slug: z.enum(['bk', 'xinli', 'fuplan'], {
+    errorMap: () => ({ message: '产品标识必须是 bk、xinli 或 fuplan' }),
+  })
+});
+
+export type TrialProductInput = z.infer<typeof TrialProductSchema>;
+
 // ============================================
 // 验证辅助函数
 // ============================================
