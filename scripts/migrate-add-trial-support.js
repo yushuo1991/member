@@ -110,8 +110,38 @@ async function runMigration() {
       }
     }
 
-    // 3. 检查并创建 trial_logs 表
-    console.log('\n[3/4] 检查 trial_logs 表...');
+    // 3. 检查并添加"宇硕陪伴营"产品
+    console.log('\n[3/5] 检查"宇硕陪伴营"产品...');
+
+    const [peibanyingExists] = await connection.query(
+      `SELECT COUNT(*) as count FROM products WHERE slug = 'peibanying'`
+    );
+
+    if (peibanyingExists[0].count === 0) {
+      console.log('  添加"宇硕陪伴营"产品...');
+      await connection.query(`
+        INSERT INTO products (slug, name, description, url, icon, required_level, price_type, standalone_prices, trial_enabled, trial_count, status)
+        VALUES (
+          'peibanying',
+          '宇硕陪伴营',
+          '携手同行，成长无忧 - 全体系交付，陪伴式学习',
+          NULL,
+          '🎓',
+          'lifetime',
+          'membership',
+          NULL,
+          0,
+          0,
+          1
+        )
+      `);
+      console.log('  ✓ "宇硕陪伴营"产品添加成功');
+    } else {
+      console.log('  ⊙ "宇硕陪伴营"产品已存在，跳过');
+    }
+
+    // 4. 检查并创建 trial_logs 表
+    console.log('\n[4/5] 检查 trial_logs 表...');
 
     const trialLogsExists = await checkTableExists(connection, 'trial_logs');
     if (!trialLogsExists) {
@@ -133,8 +163,8 @@ async function runMigration() {
       console.log('  ⊙ trial_logs 表已存在，跳过');
     }
 
-    // 4. 验证迁移结果
-    console.log('\n[4/4] 验证迁移结果...\n');
+    // 5. 验证迁移结果
+    console.log('\n[5/5] 验证迁移结果...\n');
 
     const [userColumns] = await connection.query(`
       SELECT COLUMN_NAME, COLUMN_TYPE, COLUMN_DEFAULT, COLUMN_COMMENT
