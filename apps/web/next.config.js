@@ -9,7 +9,7 @@ const nextConfig = {
   transpilePackages: ['@repo/ui', '@repo/auth', '@repo/database', '@repo/utils'],
 
   // Exclude server-only packages from client bundle
-  serverComponentsExternalPackages: ['winston', '@repo/utils', '@repo/database', '@repo/auth'],
+  serverComponentsExternalPackages: ['winston'],
 
   // Webpack configuration for Node.js built-ins
   webpack: (config, { isServer }) => {
