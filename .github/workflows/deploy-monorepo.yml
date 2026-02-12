@@ -260,33 +260,20 @@ jobs:
             cd "$DEPLOY_PATH"
             tar -xzf /tmp/web-build.tar.gz
 
-            # 调试：查看解压后的目录结构
-            echo "📂 检查解压后的目录结构..."
-            ls -la
-            echo "📂 检查.next目录..."
-            ls -la .next/ || echo ".next目录不存在"
-            echo "📂 检查.next/standalone目录..."
-            ls -la .next/standalone/ || echo ".next/standalone目录不存在"
-            echo "📂 检查.next/standalone/apps目录..."
-            ls -la .next/standalone/apps/ || echo ".next/standalone/apps目录不存在"
-            echo "📂 检查.next/standalone/apps/web目录..."
-            ls -la .next/standalone/apps/web/ || echo ".next/standalone/apps/web目录不存在"
-
             # 恢复.env
             if [ -f /tmp/.env.web.backup ]; then
               cp /tmp/.env.web.backup .env
             fi
 
-            # 复制standalone文件到正确位置（monorepo结构）
-            if [ -d ".next/standalone/apps/web" ]; then
+            # 复制standalone文件到正确位置
+            if [ -d ".next/standalone" ]; then
               echo "✅ 找到standalone目录，开始复制..."
-              cp -r .next/standalone/apps/web/* .
-              cp -r .next/standalone/node_modules .
+              cp -r .next/standalone/* .
               cp -r .next/static .next/
               echo "✅ 复制完成，检查server.js..."
               ls -la server.js || echo "❌ server.js不存在"
             else
-              echo "❌ .next/standalone/apps/web目录不存在"
+              echo "❌ .next/standalone目录不存在"
               exit 1
             fi
 
@@ -369,10 +356,9 @@ jobs:
               cp /tmp/.env.bk.backup .env
             fi
 
-            # 复制standalone文件到正确位置（monorepo结构）
-            if [ -d ".next/standalone/apps/bk" ]; then
-              cp -r .next/standalone/apps/bk/* .
-              cp -r .next/standalone/node_modules .
+            # 复制standalone文件到正确位置
+            if [ -d ".next/standalone" ]; then
+              cp -r .next/standalone/* .
               cp -r .next/static .next/
             fi
 
@@ -444,10 +430,9 @@ jobs:
               cp /tmp/.env.fuplan.backup .env
             fi
 
-            # 复制standalone文件到正确位置（monorepo结构）
-            if [ -d ".next/standalone/apps/fuplan" ]; then
-              cp -r .next/standalone/apps/fuplan/* .
-              cp -r .next/standalone/node_modules .
+            # 复制standalone文件到正确位置
+            if [ -d ".next/standalone" ]; then
+              cp -r .next/standalone/* .
               cp -r .next/static .next/
             fi
 
@@ -519,10 +504,9 @@ jobs:
               cp /tmp/.env.xinli.backup .env
             fi
 
-            # 复制standalone文件到正确位置（monorepo结构）
-            if [ -d ".next/standalone/apps/xinli" ]; then
-              cp -r .next/standalone/apps/xinli/* .
-              cp -r .next/standalone/node_modules .
+            # 复制standalone文件到正确位置
+            if [ -d ".next/standalone" ]; then
+              cp -r .next/standalone/* .
               cp -r .next/static .next/
             fi
 
