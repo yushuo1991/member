@@ -100,7 +100,7 @@ jobs:
           # 只构建需要部署的应用
           if [ "${{ needs.detect-changes.outputs.web }}" == "true" ] || [ "${{ github.event.inputs.apps }}" == "all" ] || [[ "${{ github.event.inputs.apps }}" == *"web"* ]]; then
             echo "🔨 Building web app..."
-            pnpm turbo run build --filter=web
+            pnpm turbo run build --filter=web --force
           fi
 
           if [ "${{ needs.detect-changes.outputs.bk }}" == "true" ] || [ "${{ github.event.inputs.apps }}" == "all" ] || [[ "${{ github.event.inputs.apps }}" == *"bk"* ]]; then
