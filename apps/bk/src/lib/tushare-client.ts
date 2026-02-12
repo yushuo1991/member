@@ -37,7 +37,6 @@ interface DailyPriceItem {
 class TushareClient {
   private static instance: TushareClient;
   private readonly API_URL = 'http://api.tushare.pro';
-  private readonly TOKEN = process.env.TUSHARE_TOKEN || '';
 
   // 交易日历缓存 (4小时)
   private tradingCalendarCache: Map<string, { data: TradingCalendarItem[]; timestamp: number }> = new Map();
@@ -48,12 +47,20 @@ class TushareClient {
   private readonly DAILY_PRICE_CACHE_TTL = 60 * 60 * 1000;
 
   private constructor() {
-    // 验证TOKEN是否配置
-    if (!this.TOKEN) {
+    // 构造函数不再检查TOKEN，延迟到运行时检查
+  }
+
+  /**
+   * 获取TOKEN（运行时检查）
+   */
+  private getToken(): string {
+    const token = process.env.TUSHARE_TOKEN;
+    if (!token) {
       throw new Error(
         'TUSHARE_TOKEN environment variable is not set. Please configure it in .env file.'
       );
     }
+    return token;
   }
 
   public static getInstance(): TushareClient {
@@ -78,7 +85,7 @@ class TushareClient {
       },
       body: JSON.stringify({
         api_name: apiName,
-        token: this.TOKEN,
+        token: this.getToken(),
         params: params,
         fields: fields || '',
       }),

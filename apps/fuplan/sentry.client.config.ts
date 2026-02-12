@@ -35,7 +35,7 @@ Sentry.init({
   release: process.env.NEXT_PUBLIC_SENTRY_RELEASE || 'fuplan@1.0.0',
 
   // Additional configuration
-  beforeSend(event, hint) {
+  beforeSend(event, _hint) {
     // Filter out sensitive data
     if (event.request) {
       delete event.request.cookies;
