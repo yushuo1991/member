@@ -267,11 +267,30 @@ jobs:
 
             # 复制standalone文件到正确位置
             if [ -d ".next/standalone" ]; then
-              echo "✅ 找到standalone目录，开始复制..."
-              cp -r .next/standalone/* .
+              echo "✅ 找到standalone目录"
+              echo "📂 standalone目录内容："
+              ls -la .next/standalone/
+              echo "📂 开始复制standalone文件..."
+
+              # 先复制到临时目录避免冲突
+              rm -rf /tmp/standalone-temp
+              cp -r .next/standalone /tmp/standalone-temp
+
+              # 清理当前目录的旧文件（保留.env和.git）
+              find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.env' ! -name '.git' ! -name 'logs' -exec rm -rf {} + 2>/dev/null || true
+
+              # 从临时目录复制所有文件
+              cp -r /tmp/standalone-temp/* .
               cp -r .next/static .next/
-              echo "✅ 复制完成，检查server.js..."
+
+              echo "✅ 复制完成"
+              echo "📂 当前目录内容："
+              ls -la
+              echo "📂 检查server.js："
               ls -la server.js || echo "❌ server.js不存在"
+
+              # 清理临时目录
+              rm -rf /tmp/standalone-temp
             else
               echo "❌ .next/standalone目录不存在"
               exit 1
