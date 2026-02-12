@@ -269,33 +269,53 @@ jobs:
             if [ -d ".next/standalone" ]; then
               echo "✅ 找到standalone目录"
 
-              # 先备份static目录
-              if [ -d ".next/static" ]; then
-                cp -r .next/static /tmp/static-backup
+              # 检查是否是monorepo结构（有apps子目录）
+              if [ -d ".next/standalone/apps/web" ]; then
+                echo "📂 检测到monorepo结构，保持目录结构不变"
+
+                # 复制.env到standalone根目录
+                if [ -f .env ]; then
+                  cp .env .next/standalone/.env
+                fi
+
+                # 复制static目录到正确位置
+                if [ -d ".next/static" ]; then
+                  mkdir -p .next/standalone/apps/web/.next
+                  cp -r .next/static .next/standalone/apps/web/.next/static
+                fi
+
+                echo "✅ 准备完成，将从.next/standalone/apps/web/server.js启动"
+                SERVER_PATH=".next/standalone/apps/web/server.js"
+              else
+                echo "📂 检测到标准结构，直接复制"
+                # 先备份static目录
+                if [ -d ".next/static" ]; then
+                  cp -r .next/static /tmp/static-backup
+                fi
+
+                # 先复制到临时目录避免冲突
+                rm -rf /tmp/standalone-temp
+                cp -r .next/standalone /tmp/standalone-temp
+
+                # 清理当前目录的旧文件（保留.env和.git）
+                find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.env' ! -name '.git' ! -name 'logs' -exec rm -rf {} + 2>/dev/null || true
+
+                # 从临时目录复制所有文件
+                cp -r /tmp/standalone-temp/* .
+
+                # 恢复static目录
+                if [ -d "/tmp/static-backup" ]; then
+                  mkdir -p .next
+                  cp -r /tmp/static-backup .next/static
+                  rm -rf /tmp/static-backup
+                fi
+
+                rm -rf /tmp/standalone-temp
+                echo "✅ 复制完成"
+                SERVER_PATH="server.js"
               fi
 
-              # 先复制到临时目录避免冲突
-              rm -rf /tmp/standalone-temp
-              cp -r .next/standalone /tmp/standalone-temp
-
-              # 清理当前目录的旧文件（保留.env和.git）
-              find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.env' ! -name '.git' ! -name 'logs' -exec rm -rf {} + 2>/dev/null || true
-
-              # 从临时目录复制所有文件
-              cp -r /tmp/standalone-temp/* .
-
-              # 恢复static目录
-              if [ -d "/tmp/static-backup" ]; then
-                mkdir -p .next
-                cp -r /tmp/static-backup .next/static
-                rm -rf /tmp/static-backup
-              fi
-
-              echo "✅ 复制完成"
-              ls -la server.js || echo "❌ server.js不存在"
-
-              # 清理临时目录
-              rm -rf /tmp/standalone-temp
+              ls -la $SERVER_PATH 2>/dev/null || echo "❌ $SERVER_PATH 不存在"
             else
               echo "❌ .next/standalone目录不存在"
               exit 1
@@ -312,7 +332,8 @@ jobs:
 
             # PM2重启
             pm2 describe $APP_NAME > /dev/null 2>&1 && pm2 delete $APP_NAME || true
-            pm2 start server.js --name $APP_NAME
+            cd "$DEPLOY_PATH"
+            pm2 start $SERVER_PATH --name $APP_NAME
             pm2 save
 
             # 清理
