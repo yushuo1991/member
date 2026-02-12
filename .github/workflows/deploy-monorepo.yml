@@ -133,6 +133,24 @@ jobs:
           if [ -d "web/.next" ]; then
             echo "📦 Packaging web app..."
             cd web
+
+            # 解引用standalone中的pnpm符号链接
+            echo "🔗 Resolving symlinks in standalone/node_modules..."
+            if [ -d ".next/standalone/node_modules" ]; then
+              cd .next/standalone/node_modules
+              for link in $(find . -maxdepth 1 -type l); do
+                target=$(readlink -f "$link")
+                if [ -e "$target" ]; then
+                  rm "$link"
+                  cp -r "$target" "$link"
+                  echo "  Resolved: $link -> $target"
+                else
+                  echo "  WARNING: broken link $link -> $target"
+                fi
+              done
+              cd ../../..
+            fi
+
             tar -czf ../../deployment-artifacts/web-build.tar.gz \
               .next/standalone \
               .next/static \
