@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     const validation = validateRequest(LoginSchema, body);
     if (!validation.success) {
       await recordAttempt(clientIP, 'login', false);
-      logger.warn('登录请求验证失败', { error: validation.error, clientIP });
+      logger.warn('登录请求验证失败', { message: validation.error, clientIP });
       return errorResponse(validation.error, 400);
     }
 

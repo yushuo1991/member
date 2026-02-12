@@ -96,7 +96,7 @@ export async function PUT(
     if (!isValid || !admin) {
       return errorResponse(error || '未授权访问', 401);
     }
-    const adminId = admin.id;
+    const adminId = admin.userId;
 
     const body = await request.json();
     const {

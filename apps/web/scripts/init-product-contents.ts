@@ -16,7 +16,6 @@ async function initProductContents() {
 
     let syncedCount = 0;
     let skippedCount = 0;
-    let updatedCount = 0;
 
     for (const product of PRODUCTS) {
       console.log(`处理产品: ${product.name} (${product.slug})`);

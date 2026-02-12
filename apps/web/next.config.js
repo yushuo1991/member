@@ -5,6 +5,26 @@ const nextConfig = {
   output: 'standalone',
   reactStrictMode: true,
 
+  // Exclude server-only packages from client bundle
+  serverComponentsExternalPackages: ['winston', '@repo/utils', '@repo/database', '@repo/auth'],
+
+  // Webpack configuration for Node.js built-ins
+  webpack: (config, { isServer }) => {
+    // Add fallbacks for Node.js built-in modules in client bundle
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        os: false,
+        path: false,
+        crypto: false,
+      };
+    }
+    return config;
+  },
+
   experimental: {
     // 启用 instrumentation 以支持优雅关闭
     instrumentationHook: true,

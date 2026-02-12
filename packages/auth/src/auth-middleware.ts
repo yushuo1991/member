@@ -19,7 +19,7 @@ const JWT_EXPIRES_IN = '7d'; // Token有效期7天
  * @returns JWT字符串
  */
 export function generateToken(payload: Omit<JWTPayload, 'iat' | 'exp'>): string {
-  return jwt.sign(payload, JWT_SECRET, {
+  return jwt.sign(payload, JWT_SECRET as string, {
     expiresIn: JWT_EXPIRES_IN
   });
 }
@@ -31,7 +31,7 @@ export function generateToken(payload: Omit<JWTPayload, 'iat' | 'exp'>): string 
  */
 export function verifyToken(token: string): JWTPayload | null {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
+    const decoded = jwt.verify(token, JWT_SECRET as string) as unknown as JWTPayload;
     return decoded;
   } catch (error) {
     console.error('[JWT] Token验证失败:', error);

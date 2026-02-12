@@ -6,7 +6,7 @@
 import { NextRequest } from 'next/server';
 import { memberDatabase } from '@repo/database';
 import { verifyAdminToken, errorResponse, successResponse } from '@repo/auth';
-import { MEMBERSHIP_LEVELS, calculateExpiry } from '@/lib/membership-levels';
+import { calculateExpiry } from '@/lib/membership-levels';
 import { MembershipLevel } from '@/types/membership';
 import { MemberAdjustSchema, validateRequest } from '@repo/utils';
 

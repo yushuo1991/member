@@ -6,7 +6,7 @@ import { getConnection } from '@repo/database';
  * 获取产品内容（用户端，带缓存）
  */
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { slug: string } }
 ) {
   let connection;

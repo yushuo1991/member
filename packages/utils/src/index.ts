@@ -29,6 +29,7 @@ export {
   GenerateCodeSchema,
   UpdateUserStatusSchema,
   ResetTrialsSchema,
+  TrialProductSchema,
   validateRequest,
   safeValidateRequest,
   type LoginInput,
@@ -39,6 +40,7 @@ export {
   type GenerateCodeInput,
   type UpdateUserStatusInput,
   type ResetTrialsInput,
+  type TrialProductInput,
 } from './validation-schemas';
 
 // 日志工具

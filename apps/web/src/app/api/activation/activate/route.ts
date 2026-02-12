@@ -27,20 +27,20 @@ export async function POST(request: NextRequest) {
     });
 
     // 验证用户Token
-    const { isValid, user, error } = verifyUserToken(request);
+    const { isValid, user, error: authError } = verifyUserToken(request);
 
     if (!isValid || !user) {
-      logger.warn('激活请求未授权', { clientIP, error });
-      return errorResponse(error || '未授权访问', 401);
+      logger.warn('激活请求未授权', { clientIP, message: authError });
+      return errorResponse(authError || '未授权访问', 401);
     }
 
-    logger.debug('用户身份验证成功', { userId: user.userId, clientIP });
+    logger.debug('用户身份验证成功', { userId: String(user.userId), clientIP });
 
     // 限流检查
     const rateLimitCheck = await checkRateLimit(clientIP, 'activate');
     if (!rateLimitCheck.isAllowed) {
       logger.warn('激活请求被限流', {
-        userId: user.userId,
+        userId: String(user.userId),
         clientIP,
         remainingAttempts: rateLimitCheck.remainingAttempts
       });
@@ -57,13 +57,13 @@ export async function POST(request: NextRequest) {
     const validation = validateRequest(ActivationCodeSchema, body);
     if (!validation.success) {
       await recordAttempt(clientIP, 'activate', false);
-      logger.warn('激活码验证失败', { userId: user.userId, error: validation.error, clientIP });
+      logger.warn('激活码验证失败', { userId: String(user.userId), message: validation.error, clientIP });
       return errorResponse(validation.error, 400);
     }
 
     const { code } = validation.data;
 
-    logger.info('处理激活码请求', { userId: user.userId, code, clientIP });
+    logger.info('处理激活码请求', { userId: String(user.userId), code, clientIP });
 
     const db = memberDatabase.getPool();
 
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
 
     if (codes.length === 0) {
       await recordAttempt(clientIP, 'activate', false);
-      logger.warn('激活码不存在', { userId: user.userId, code, clientIP });
+      logger.warn('激活码不存在', { userId: String(user.userId), code, clientIP });
       return errorResponse('激活码不存在', 404);
     }
 
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
     if (activationCode.used === 1) {
       await recordAttempt(clientIP, 'activate', false);
       logger.warn('激活码已被使用', {
-        userId: user.userId,
+        userId: String(user.userId),
         code,
         usedBy: activationCode.used_by,
         usedAt: activationCode.used_at,
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
     if (activationCode.expires_at && new Date(activationCode.expires_at) < new Date()) {
       await recordAttempt(clientIP, 'activate', false);
       logger.warn('激活码已过期', {
-        userId: user.userId,
+        userId: String(user.userId),
         code,
         expiresAt: activationCode.expires_at,
         clientIP
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
     const codeType: CodeType = activationCode.code_type || 'membership';
 
     logger.debug('激活码验证通过', {
-      userId: user.userId,
+      userId: String(user.userId),
       code,
       codeType,
       level: activationCode.level,
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
     } else if (codeType === 'product') {
       return await handleProductActivation(db, user.userId, activationCode, clientIP, startTime);
     } else {
-      logger.error('未知的激活码类型', { userId: user.userId, code, codeType, clientIP });
+      logger.error('未知的激活码类型', { userId: String(user.userId), code, codeType, clientIP });
       return errorResponse('未知的激活码类型', 400);
     }
 
@@ -149,7 +149,7 @@ async function handleMembershipActivation(
   clientIP: string,
   startTime: number
 ) {
-  logger.debug('开始处理会员激活', { userId, code: activationCode.code });
+  logger.debug('开始处理会员激活', { userId: String(userId), code: activationCode.code });
 
   // 获取用户当前会员信息
   const [memberships] = await db.execute(
@@ -159,7 +159,7 @@ async function handleMembershipActivation(
 
   if (memberships.length === 0) {
     await recordAttempt(clientIP, 'activate', false);
-    logger.error('用户会员记录不存在', { userId, clientIP });
+    logger.error('用户会员记录不存在', { userId: String(userId), clientIP });
     return errorResponse('用户会员记录不存在', 404);
   }
 
@@ -171,7 +171,7 @@ async function handleMembershipActivation(
   const currentExpiry = currentMembership.expires_at ? new Date(currentMembership.expires_at) : null;
 
   logger.debug('会员信息', {
-    userId,
+    userId: String(userId),
     currentLevel,
     newLevel,
     durationDays,
@@ -202,7 +202,7 @@ async function handleMembershipActivation(
   if (newWeight < currentWeight && !isCurrentExpired) {
     await recordAttempt(clientIP, 'activate', false);
     logger.warn('激活失败：等级降级', {
-      userId,
+      userId: String(userId),
       currentLevel,
       newLevel,
       currentExpiry: currentExpiry?.toISOString()
@@ -223,7 +223,7 @@ async function handleMembershipActivation(
       // 升级到终身会员
       newExpiresAt = null;
       upgradeMessage = `恭喜升级！从${currentLevelConfig.name}升级到${newLevelConfig.name}`;
-      logger.info('会员升级到终身', { userId, fromLevel: currentLevel, toLevel: newLevel });
+      logger.info('会员升级到终身', { userId: String(userId), fromLevel: currentLevel, toLevel: newLevel });
     } else {
       // 升级到其他等级
       if (!isCurrentExpired && currentExpiry) {
@@ -238,7 +238,7 @@ async function handleMembershipActivation(
 
         upgradeMessage = `恭喜升级！从${currentLevelConfig.name}升级到${newLevelConfig.name}，剩余${remainingDays}天已按80%转换为${convertedDays}天，总计获得${totalDays}天会员时长`;
         logger.info('会员升级（含时长转换）', {
-          userId,
+          userId: String(userId),
           fromLevel: currentLevel,
           toLevel: newLevel,
           remainingDays,
@@ -251,7 +251,7 @@ async function handleMembershipActivation(
         newExpiresAt.setDate(newExpiresAt.getDate() + durationDays);
         upgradeMessage = `恭喜升级！从${currentLevelConfig.name}升级到${newLevelConfig.name}，获得${durationDays}天会员时长`;
         logger.info('会员升级', {
-          userId,
+          userId: String(userId),
           fromLevel: currentLevel,
           toLevel: newLevel,
           durationDays
@@ -265,7 +265,7 @@ async function handleMembershipActivation(
       // 终身会员续费（实际上不需要续费）
       newExpiresAt = null;
       upgradeMessage = `您已经是${newLevelConfig.name}，无需续费`;
-      logger.info('终身会员无需续费', { userId });
+      logger.info('终身会员无需续费', { userId: String(userId) });
     } else {
       // 普通会员续费
       if (currentExpiry && currentExpiry > now) {
@@ -274,7 +274,7 @@ async function handleMembershipActivation(
         newExpiresAt.setDate(newExpiresAt.getDate() + durationDays);
         upgradeMessage = `续费成功！${newLevelConfig.name}时长延长${durationDays}天，新到期时间：${newExpiresAt.toLocaleDateString('zh-CN')}`;
         logger.info('会员续费', {
-          userId,
+          userId: String(userId),
           level: newLevel,
           durationDays,
           newExpiresAt: newExpiresAt.toISOString()
@@ -285,7 +285,7 @@ async function handleMembershipActivation(
         newExpiresAt.setDate(newExpiresAt.getDate() + durationDays);
         upgradeMessage = `续费成功！${newLevelConfig.name}已激活${durationDays}天`;
         logger.info('会员续费（已过期）', {
-          userId,
+          userId: String(userId),
           level: newLevel,
           durationDays,
           newExpiresAt: newExpiresAt.toISOString()
@@ -303,7 +303,7 @@ async function handleMembershipActivation(
     }
     upgradeMessage = `激活成功！您的会员等级已更新为${newLevelConfig.name}`;
     logger.info('会员激活（过期后降级）', {
-      userId,
+      userId: String(userId),
       fromLevel: currentLevel,
       toLevel: newLevel,
       durationDays
@@ -334,7 +334,7 @@ async function handleMembershipActivation(
     await connection.commit();
 
     logger.logEvent('membership_activated', {
-      userId,
+      userId: String(userId),
       code: activationCode.code,
       fromLevel: currentLevel,
       toLevel: newLevel,
@@ -344,7 +344,7 @@ async function handleMembershipActivation(
 
   } catch (error) {
     await connection.rollback();
-    logger.error('会员激活事务失败', error as Error, { userId, code: activationCode.code });
+    logger.error('会员激活事务失败', error as Error, { userId: String(userId), code: activationCode.code });
     throw error;
   } finally {
     connection.release();
@@ -357,7 +357,7 @@ async function handleMembershipActivation(
     url: '/api/activation/activate',
     statusCode: 200,
     duration: Date.now() - startTime,
-    userId,
+    userId: String(userId),
   });
 
   return successResponse(
@@ -387,13 +387,13 @@ async function handleProductActivation(
   const productSlug = activationCode.product_slug;
   const productDuration: PurchaseType = activationCode.product_duration || 'lifetime';
 
-  logger.debug('开始处理产品激活', { userId, productSlug, productDuration });
+  logger.debug('开始处理产品激活', { userId: String(userId), productSlug, productDuration });
 
   // 验证产品存在
   const productConfig = getProductBySlug(productSlug);
   if (!productConfig) {
     await recordAttempt(clientIP, 'activate', false);
-    logger.error('产品不存在', { userId, productSlug, clientIP });
+    logger.error('产品不存在', { userId: String(userId), productSlug, clientIP });
     return errorResponse('激活码对应的产品不存在', 400);
   }
 
@@ -413,7 +413,7 @@ async function handleProductActivation(
   }
 
   logger.debug('产品激活信息', {
-    userId,
+    userId: String(userId),
     productSlug,
     productName: productConfig.name,
     productDuration,
@@ -445,7 +445,7 @@ async function handleProductActivation(
     await connection.commit();
 
     logger.logEvent('product_activated', {
-      userId,
+      userId: String(userId),
       code: activationCode.code,
       productSlug,
       productName: productConfig.name,
@@ -457,7 +457,7 @@ async function handleProductActivation(
   } catch (error) {
     await connection.rollback();
     logger.error('产品激活事务失败', error as Error, {
-      userId,
+      userId: String(userId),
       code: activationCode.code,
       productSlug
     });
@@ -473,7 +473,7 @@ async function handleProductActivation(
     url: '/api/activation/activate',
     statusCode: 200,
     duration: Date.now() - startTime,
-    userId,
+    userId: String(userId),
   });
 
   return successResponse(

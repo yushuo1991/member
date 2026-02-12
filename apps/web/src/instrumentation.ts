@@ -4,13 +4,14 @@
  * 文档: https://nextjs.org/docs/app/building-your-application/optimizing/instrumentation
  */
 
-import { initGracefulShutdown } from '@repo/utils';
-import { memberDatabase } from '@repo/database';
-
 export async function register() {
   // 只在 Node.js 运行时执行（不在 Edge Runtime）
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     console.log('[Web App] 初始化优雅关闭机制...');
+
+    // 使用动态导入避免在客户端打包服务端依赖
+    const { initGracefulShutdown } = await import('@repo/utils/src/shutdown');
+    const { memberDatabase } = await import('@repo/database');
 
     // 初始化优雅关闭，注册数据库连接池清理
     initGracefulShutdown({

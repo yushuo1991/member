@@ -45,7 +45,7 @@ class ShutdownManager {
     });
 
     // 监听未处理的 Promise 拒绝
-    process.on('unhandledRejection', (reason, promise) => {
+    process.on('unhandledRejection', (reason, _promise) => {
       console.error('[Shutdown] 未处理的 Promise 拒绝:', reason);
       this.shutdown('unhandledRejection');
     });

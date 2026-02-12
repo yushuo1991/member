@@ -86,9 +86,9 @@ export async function POST(
 
     // 速率限制检查 - 每个用户每15分钟最多50次试用请求
     const rateLimitKey = `trial:${user.userId}`;
-    const isAllowed = await checkRateLimit(rateLimitKey, 50, 15 * 60 * 1000);
+    const rateLimitResult = await checkRateLimit(rateLimitKey, 'activate');
 
-    if (!isAllowed) {
+    if (!rateLimitResult.isAllowed) {
       Sentry.captureMessage('Trial rate limit exceeded', {
         level: 'warning',
         tags: { userId: user.userId, product: slug },
@@ -98,7 +98,7 @@ export async function POST(
     }
 
     // 记录请求
-    await recordAttempt(rateLimitKey);
+    await recordAttempt(rateLimitKey, 'activate', true);
 
     // 获取产品配置
     const productConfig = getProductBySlug(slug);
