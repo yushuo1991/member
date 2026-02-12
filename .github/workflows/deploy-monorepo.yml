@@ -251,9 +251,9 @@ jobs:
             # 创建部署目录
             mkdir -p "$DEPLOY_PATH"
 
-            # 清理旧的构建产物以避免冲突
+            # 清理旧的构建产物
             rm -rf "$DEPLOY_PATH/.next"
-            rm -rf "$DEPLOY_PATH/node_modules"
+            rm -rf "$DEPLOY_PATH/public"
 
             # 解压构建产物
             cd "$DEPLOY_PATH"
@@ -264,16 +264,15 @@ jobs:
               cp /tmp/.env.web.backup .env
             fi
 
-            # 安装生产依赖 (使用pnpm支持workspace协议)
-            rm -rf node_modules package-lock.json
-            # 禁用CI环境的frozen-lockfile默认行为
-            export CI=false
-            pnpm install --prod --no-frozen-lockfile
+            # 复制standalone文件到正确位置
+            if [ -d ".next/standalone" ]; then
+              cp -r .next/standalone/* .
+              cp -r .next/static .next/
+            fi
 
             # 执行数据库迁移（如果迁移脚本存在）
             if [ -f "scripts/migrate-add-trial-support.js" ]; then
               echo "🔄 执行数据库迁移..."
-              # 从.env文件加载数据库配置
               if [ -f ".env" ]; then
                 export $(cat .env | grep -E '^(DB_HOST|DB_USER|DB_PASSWORD|DB_NAME)=' | xargs)
               fi
@@ -282,7 +281,7 @@ jobs:
 
             # PM2重启
             pm2 describe $APP_NAME > /dev/null 2>&1 && pm2 delete $APP_NAME || true
-            pm2 start ecosystem.config.js --name $APP_NAME --env production
+            pm2 start server.js --name $APP_NAME
             pm2 save
 
             # 清理
@@ -338,9 +337,9 @@ jobs:
 
             mkdir -p "$DEPLOY_PATH"
 
-            # 清理旧的构建产物以避免冲突
+            # 清理旧的构建产物
             rm -rf "$DEPLOY_PATH/.next"
-            rm -rf "$DEPLOY_PATH/node_modules"
+            rm -rf "$DEPLOY_PATH/public"
 
             cd "$DEPLOY_PATH"
             tar -xzf /tmp/bk-build.tar.gz
@@ -349,13 +348,14 @@ jobs:
               cp /tmp/.env.bk.backup .env
             fi
 
-            rm -rf node_modules package-lock.json
-            # 禁用CI环境的frozen-lockfile默认行为
-            export CI=false
-            pnpm install --prod --no-frozen-lockfile
+            # 复制standalone文件到正确位置
+            if [ -d ".next/standalone" ]; then
+              cp -r .next/standalone/* .
+              cp -r .next/static .next/
+            fi
 
             pm2 describe $APP_NAME > /dev/null 2>&1 && pm2 delete $APP_NAME || true
-            pm2 start npm --name $APP_NAME -- start -- -p 3001
+            PORT=3001 pm2 start server.js --name $APP_NAME
             pm2 save
 
             rm -f /tmp/bk-build.tar.gz
@@ -410,9 +410,9 @@ jobs:
 
             mkdir -p "$DEPLOY_PATH"
 
-            # 清理旧的构建产物以避免冲突
+            # 清理旧的构建产物
             rm -rf "$DEPLOY_PATH/.next"
-            rm -rf "$DEPLOY_PATH/node_modules"
+            rm -rf "$DEPLOY_PATH/public"
 
             cd "$DEPLOY_PATH"
             tar -xzf /tmp/fuplan-build.tar.gz
@@ -421,13 +421,14 @@ jobs:
               cp /tmp/.env.fuplan.backup .env
             fi
 
-            rm -rf node_modules package-lock.json
-            # 禁用CI环境的frozen-lockfile默认行为
-            export CI=false
-            pnpm install --prod --no-frozen-lockfile
+            # 复制standalone文件到正确位置
+            if [ -d ".next/standalone" ]; then
+              cp -r .next/standalone/* .
+              cp -r .next/static .next/
+            fi
 
             pm2 describe $APP_NAME > /dev/null 2>&1 && pm2 delete $APP_NAME || true
-            pm2 start npm --name $APP_NAME -- start -- -p 3002
+            PORT=3002 pm2 start server.js --name $APP_NAME
             pm2 save
 
             rm -f /tmp/fuplan-build.tar.gz
@@ -482,9 +483,9 @@ jobs:
 
             mkdir -p "$DEPLOY_PATH"
 
-            # 清理旧的构建产物以避免冲突
+            # 清理旧的构建产物
             rm -rf "$DEPLOY_PATH/.next"
-            rm -rf "$DEPLOY_PATH/node_modules"
+            rm -rf "$DEPLOY_PATH/public"
 
             cd "$DEPLOY_PATH"
             tar -xzf /tmp/xinli-build.tar.gz
@@ -493,13 +494,14 @@ jobs:
               cp /tmp/.env.xinli.backup .env
             fi
 
-            rm -rf node_modules package-lock.json
-            # 禁用CI环境的frozen-lockfile默认行为
-            export CI=false
-            pnpm install --prod --no-frozen-lockfile
+            # 复制standalone文件到正确位置
+            if [ -d ".next/standalone" ]; then
+              cp -r .next/standalone/* .
+              cp -r .next/static .next/
+            fi
 
             pm2 describe $APP_NAME > /dev/null 2>&1 && pm2 delete $APP_NAME || true
-            pm2 start npm --name $APP_NAME -- start -- -p 3003
+            PORT=3003 pm2 start server.js --name $APP_NAME
             pm2 save
 
             rm -f /tmp/xinli-build.tar.gz
