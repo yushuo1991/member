@@ -129,11 +129,11 @@ jobs:
           # 打包每个应用的构建产物
           cd apps
 
-          # Web应用
+          # Web应用 - 使用-h解引用pnpm符号链接
           if [ -d "web/.next" ]; then
             echo "📦 Packaging web app..."
             cd web
-            tar -czf ../../deployment-artifacts/web-build.tar.gz \
+            tar -czh -f ../../deployment-artifacts/web-build.tar.gz \
               .next/standalone \
               .next/static \
               public \
