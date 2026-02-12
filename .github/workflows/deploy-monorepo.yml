@@ -135,20 +135,26 @@ jobs:
             cd web
 
             # 解引用standalone中的pnpm符号链接
+            # 符号链接指向 ../../../node_modules/.pnpm/... (即apps/web/node_modules/.pnpm/)
+            # 但pnpm的.pnpm存储在monorepo根目录，需要修正路径
             echo "🔗 Resolving symlinks in standalone/node_modules..."
             if [ -d ".next/standalone/node_modules" ]; then
-              cd .next/standalone/node_modules
-              for link in $(find . -maxdepth 1 -type l); do
-                target=$(readlink -f "$link")
-                if [ -e "$target" ]; then
-                  rm "$link"
-                  cp -r "$target" "$link"
-                  echo "  Resolved: $link -> $target"
-                else
-                  echo "  WARNING: broken link $link -> $target"
+              MONOREPO_ROOT=$(cd ../.. && pwd)
+              for link in .next/standalone/node_modules/*; do
+                if [ -L "$link" ]; then
+                  raw_target=$(readlink "$link")
+                  # 将 ../../../node_modules/.pnpm/... 转换为 monorepo根/node_modules/.pnpm/...
+                  pnpm_path=$(echo "$raw_target" | sed 's|^\.\./\.\./\.\./||')
+                  real_path="$MONOREPO_ROOT/$pnpm_path"
+                  if [ -e "$real_path" ]; then
+                    rm "$link"
+                    cp -rL "$real_path" "$link"
+                    echo "  Resolved: $(basename $link)"
+                  else
+                    echo "  WARNING: $real_path not found"
+                  fi
                 fi
               done
-              cd ../../..
             fi
 
             tar -czf ../../deployment-artifacts/web-build.tar.gz \
