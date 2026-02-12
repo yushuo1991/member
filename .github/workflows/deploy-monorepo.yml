@@ -321,6 +321,16 @@ jobs:
             echo "✅ Web app deployed successfully"
             pm2 info $APP_NAME --no-daemon
 
+            # 等待应用启动并检查日志
+            echo "⏳ 等待应用启动..."
+            sleep 5
+            echo "📋 检查应用状态和日志..."
+            pm2 status
+            echo "📋 最近的应用日志："
+            pm2 logs $APP_NAME --lines 30 --nostream || true
+            echo "📋 错误日志："
+            pm2 logs $APP_NAME --err --lines 20 --nostream || true
+
   # 部署BK应用(板块节奏系统)
   deploy-bk:
     name: Deploy BK App
@@ -457,6 +467,16 @@ jobs:
             echo "✅ BK app deployed successfully"
             pm2 info $APP_NAME --no-daemon
 
+            # 等待应用启动并检查日志
+            echo "⏳ 等待应用启动..."
+            sleep 5
+            echo "📋 检查应用状态和日志..."
+            pm2 status
+            echo "📋 最近的应用日志："
+            pm2 logs $APP_NAME --lines 30 --nostream || true
+            echo "📋 错误日志："
+            pm2 logs $APP_NAME --err --lines 20 --nostream || true
+
   # 部署Fuplan应用(复盘系统)
   deploy-fuplan:
     name: Deploy Fuplan App
@@ -584,6 +604,16 @@ jobs:
             echo "✅ Fuplan app deployed successfully"
             pm2 info $APP_NAME --no-daemon
 
+            # 等待应用启动并检查日志
+            echo "⏳ 等待应用启动..."
+            sleep 5
+            echo "📋 检查应用状态和日志..."
+            pm2 status
+            echo "📋 最近的应用日志："
+            pm2 logs $APP_NAME --lines 30 --nostream || true
+            echo "📋 错误日志："
+            pm2 logs $APP_NAME --err --lines 20 --nostream || true
+
   # 部署Xinli应用(心理测评系统)
   deploy-xinli:
     name: Deploy Xinli App
@@ -710,6 +740,16 @@ jobs:
 
             echo "✅ Xinli app deployed successfully"
             pm2 info $APP_NAME --no-daemon
+
+            # 等待应用启动并检查日志
+            echo "⏳ 等待应用启动..."
+            sleep 5
+            echo "📋 检查应用状态和日志..."
+            pm2 status
+            echo "📋 最近的应用日志："
+            pm2 logs $APP_NAME --lines 30 --nostream || true
+            echo "📋 错误日志："
+            pm2 logs $APP_NAME --err --lines 20 --nostream || true
 
   # 部署后健康检查
   health-check:
