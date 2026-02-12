@@ -268,9 +268,11 @@ jobs:
             # 复制standalone文件到正确位置
             if [ -d ".next/standalone" ]; then
               echo "✅ 找到standalone目录"
-              echo "📂 standalone目录内容："
-              ls -la .next/standalone/
-              echo "📂 开始复制standalone文件..."
+
+              # 先备份static目录
+              if [ -d ".next/static" ]; then
+                cp -r .next/static /tmp/static-backup
+              fi
 
               # 先复制到临时目录避免冲突
               rm -rf /tmp/standalone-temp
@@ -281,12 +283,15 @@ jobs:
 
               # 从临时目录复制所有文件
               cp -r /tmp/standalone-temp/* .
-              cp -r .next/static .next/
+
+              # 恢复static目录
+              if [ -d "/tmp/static-backup" ]; then
+                mkdir -p .next
+                cp -r /tmp/static-backup .next/static
+                rm -rf /tmp/static-backup
+              fi
 
               echo "✅ 复制完成"
-              echo "📂 当前目录内容："
-              ls -la
-              echo "📂 检查server.js："
               ls -la server.js || echo "❌ server.js不存在"
 
               # 清理临时目录
