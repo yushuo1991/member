@@ -133,17 +133,6 @@ jobs:
           if [ -d "web/.next" ]; then
             echo "📦 Packaging web app..."
             cd web
-
-            # 在standalone目录中安装真实依赖替换pnpm符号链接
-            echo "🔗 Installing real dependencies in standalone..."
-            if [ -d ".next/standalone/node_modules" ]; then
-              rm -rf .next/standalone/node_modules
-              cd .next/standalone
-              npm install next@14.2.35 react@18.3.1 react-dom@18.3.1 --no-save --no-package-lock 2>&1 | tail -3
-              cd ../..
-            fi
-            echo "✅ Dependencies installed"
-
             tar -czf ../../deployment-artifacts/web-build.tar.gz \
               .next/standalone \
               .next/static \
@@ -311,6 +300,14 @@ jobs:
                 SERVER_PATH=".next/standalone/apps/web/server.js"
               else
                 echo "📂 检测到标准结构，保持standalone目录不变"
+
+                # 安装真实依赖替换pnpm符号链接
+                echo "🔗 Installing dependencies in standalone..."
+                rm -rf .next/standalone/node_modules
+                cd .next/standalone
+                npm install next@14.2.35 react@18.3.1 react-dom@18.3.1 --no-save --no-package-lock 2>&1 | tail -5
+                cd ../..
+                echo "✅ Dependencies installed"
 
                 # 复制.env到standalone根目录
                 if [ -f .env ]; then
