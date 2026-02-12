@@ -260,6 +260,16 @@ jobs:
             cd "$DEPLOY_PATH"
             tar -xzf /tmp/web-build.tar.gz
 
+            # 调试：查看解压后的内容
+            echo "📂 解压后的目录内容："
+            ls -la
+            echo "📂 检查.next目录："
+            ls -la .next/ 2>/dev/null || echo ".next目录不存在"
+            echo "📂 检查.next/standalone目录："
+            ls -la .next/standalone/ 2>/dev/null || echo ".next/standalone目录不存在"
+            echo "📂 检查.next/standalone/apps目录："
+            ls -la .next/standalone/apps/ 2>/dev/null || echo ".next/standalone/apps目录不存在"
+
             # 恢复.env
             if [ -f /tmp/.env.web.backup ]; then
               cp /tmp/.env.web.backup .env
