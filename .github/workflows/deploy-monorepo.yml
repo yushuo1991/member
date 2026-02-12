@@ -254,6 +254,7 @@ jobs:
             # 清理旧的构建产物
             rm -rf "$DEPLOY_PATH/.next"
             rm -rf "$DEPLOY_PATH/public"
+            rm -rf "$DEPLOY_PATH/server.js"
 
             # 解压构建产物
             cd "$DEPLOY_PATH"
@@ -264,9 +265,10 @@ jobs:
               cp /tmp/.env.web.backup .env
             fi
 
-            # 复制standalone文件到正确位置
-            if [ -d ".next/standalone" ]; then
-              cp -r .next/standalone/* .
+            # 复制standalone文件到正确位置（monorepo结构）
+            if [ -d ".next/standalone/apps/web" ]; then
+              cp -r .next/standalone/apps/web/* .
+              cp -r .next/standalone/node_modules .
               cp -r .next/static .next/
             fi
 
@@ -340,6 +342,7 @@ jobs:
             # 清理旧的构建产物
             rm -rf "$DEPLOY_PATH/.next"
             rm -rf "$DEPLOY_PATH/public"
+            rm -rf "$DEPLOY_PATH/server.js"
 
             cd "$DEPLOY_PATH"
             tar -xzf /tmp/bk-build.tar.gz
@@ -348,9 +351,10 @@ jobs:
               cp /tmp/.env.bk.backup .env
             fi
 
-            # 复制standalone文件到正确位置
-            if [ -d ".next/standalone" ]; then
-              cp -r .next/standalone/* .
+            # 复制standalone文件到正确位置（monorepo结构）
+            if [ -d ".next/standalone/apps/bk" ]; then
+              cp -r .next/standalone/apps/bk/* .
+              cp -r .next/standalone/node_modules .
               cp -r .next/static .next/
             fi
 
@@ -413,6 +417,7 @@ jobs:
             # 清理旧的构建产物
             rm -rf "$DEPLOY_PATH/.next"
             rm -rf "$DEPLOY_PATH/public"
+            rm -rf "$DEPLOY_PATH/server.js"
 
             cd "$DEPLOY_PATH"
             tar -xzf /tmp/fuplan-build.tar.gz
@@ -421,9 +426,10 @@ jobs:
               cp /tmp/.env.fuplan.backup .env
             fi
 
-            # 复制standalone文件到正确位置
-            if [ -d ".next/standalone" ]; then
-              cp -r .next/standalone/* .
+            # 复制standalone文件到正确位置（monorepo结构）
+            if [ -d ".next/standalone/apps/fuplan" ]; then
+              cp -r .next/standalone/apps/fuplan/* .
+              cp -r .next/standalone/node_modules .
               cp -r .next/static .next/
             fi
 
@@ -486,6 +492,7 @@ jobs:
             # 清理旧的构建产物
             rm -rf "$DEPLOY_PATH/.next"
             rm -rf "$DEPLOY_PATH/public"
+            rm -rf "$DEPLOY_PATH/server.js"
 
             cd "$DEPLOY_PATH"
             tar -xzf /tmp/xinli-build.tar.gz
@@ -494,9 +501,10 @@ jobs:
               cp /tmp/.env.xinli.backup .env
             fi
 
-            # 复制standalone文件到正确位置
-            if [ -d ".next/standalone" ]; then
-              cp -r .next/standalone/* .
+            # 复制standalone文件到正确位置（monorepo结构）
+            if [ -d ".next/standalone/apps/xinli" ]; then
+              cp -r .next/standalone/apps/xinli/* .
+              cp -r .next/standalone/node_modules .
               cp -r .next/static .next/
             fi
 
