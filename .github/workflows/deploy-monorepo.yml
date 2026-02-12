@@ -134,28 +134,27 @@ jobs:
             echo "📦 Packaging web app..."
             cd web
 
-            # 解引用standalone中的pnpm符号链接
-            # 符号链接指向 ../../../node_modules/.pnpm/... (即apps/web/node_modules/.pnpm/)
-            # 但pnpm的.pnpm存储在monorepo根目录，需要修正路径
-            echo "🔗 Resolving symlinks in standalone/node_modules..."
-            if [ -d ".next/standalone/node_modules" ]; then
-              MONOREPO_ROOT=$(cd ../.. && pwd)
-              for link in .next/standalone/node_modules/*; do
-                if [ -L "$link" ]; then
-                  raw_target=$(readlink "$link")
-                  # 将 ../../../node_modules/.pnpm/... 转换为 monorepo根/node_modules/.pnpm/...
-                  pnpm_path=$(echo "$raw_target" | sed 's|^\.\./\.\./\.\./||')
-                  real_path="$MONOREPO_ROOT/$pnpm_path"
-                  if [ -e "$real_path" ]; then
-                    rm "$link"
-                    cp -rL "$real_path" "$link"
-                    echo "  Resolved: $(basename $link)"
-                  else
-                    echo "  WARNING: $real_path not found"
-                  fi
-                fi
-              done
-            fi
+            # 递归解引用standalone中所有pnpm符号链接
+            echo "🔗 Resolving all symlinks in standalone..."
+            MONOREPO_ROOT=$(cd ../.. && pwd)
+            find .next/standalone -type l | while read link; do
+              raw_target=$(readlink "$link")
+              # 获取符号链接所在目录，计算绝对路径
+              link_dir=$(dirname "$link")
+              real_path=$(cd "$link_dir" && readlink -f "$(basename "$link")" 2>/dev/null) || true
+              if [ -z "$real_path" ] || [ ! -e "$real_path" ]; then
+                # 尝试从monorepo根目录解析
+                pnpm_path=$(echo "$raw_target" | sed 's|^\(\.\./\)*||')
+                real_path="$MONOREPO_ROOT/$pnpm_path"
+              fi
+              if [ -e "$real_path" ]; then
+                rm "$link"
+                cp -rL "$real_path" "$link" 2>/dev/null || cp -r "$real_path" "$link"
+              else
+                echo "  WARNING: cannot resolve $link -> $raw_target"
+              fi
+            done
+            echo "✅ Symlink resolution complete"
 
             tar -czf ../../deployment-artifacts/web-build.tar.gz \
               .next/standalone \
