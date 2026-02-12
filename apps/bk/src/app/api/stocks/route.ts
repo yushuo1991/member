@@ -1392,11 +1392,12 @@ function convertStockCodeForTushare(stockCode: string): string {
           const realAmount = realAmounts.get(stock.StockCode) || parseFloat(stock.Amount) || 0;
 
           // v4.8.34修复：合并当天和后续5天的performance数据
+          // v4.40.1修复：performance只包含后续5天数据，不包含当天（避免计算平均溢价时多算一天）
           const stockPerformance: StockPerformance = {
             name: stock.StockName,
             code: stock.StockCode,
             td_type: stock.TDType, // v4.21.6修复：保留原始TDType格式（如"13天12板"），不进行转换
-            performance: { [day]: 10.0, ...followUpPerformance }, // 包含当天10%和后续5天数据
+            performance: followUpPerformance, // 只包含后续5天数据，不包含当天
             total_return: Math.round(totalReturn * 100) / 100,
             amount: realAmount, // v4.8.18修改：使用Tushare真实成交额（亿元）
             limitUpTime: stock.LimitUpTime // v4.8.24新增：涨停时间
@@ -1666,11 +1667,12 @@ function convertStockCodeForTushare(stockCode: string): string {
           const realAmount = realAmounts.get(stock.StockCode) || 0;
 
           // v4.8.34修复：合并当天和后续5天的performance数据
+          // v4.40.1修复：performance只包含后续5天数据，不包含当天（避免计算平均溢价时多算一天）
           const stockPerformance: StockPerformance = {
             name: stock.StockName,
             code: stock.StockCode,
             td_type: stock.TDType,
-            performance: { [day]: 10.0, ...followUpPerformance }, // 包含当天10%和后续5天数据
+            performance: followUpPerformance, // 只包含后续5天数据，不包含当天
             total_return: Math.round(totalReturn * 100) / 100,
             amount: realAmount,
             limitUpTime: stock.LimitUpTime

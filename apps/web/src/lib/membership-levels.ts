@@ -211,7 +211,7 @@ export const PRODUCTS: Product[] = [
   },
   {
     slug: 'peibanying',
-    name: '🎓 宇硕陪伴营 | 全体系交付，陪伴式学习',
+    name: '🎓 陪伴营',
     description: '深度陪伴式学习计划，全体系产品访问权限',
     detailDescription: '宇硕陪伴营是一个深度陪伴式学习计划，提供全体系产品的永久访问权限。通过系统化的学习路径、实战指导和持续陪伴，帮助学员建立完整的交易体系。不定期开放，名额有限。',
     icon: '🎓',

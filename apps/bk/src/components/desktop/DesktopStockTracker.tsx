@@ -3811,7 +3811,7 @@ export default function Home() {
               <li>• <span className="font-semibold bg-green-100 px-1 rounded">新功能</span> <span className="font-semibold">点击星期几</span>: 显示当天连板个股梯队（2板+），含溢价图表和成交额全局排名</li>
               <li>• <span className="font-semibold">点击日期头部</span>: 显示涨停数前5名板块及后续5天平均溢价</li>
               <li>• <span className="font-semibold">点击板块名称</span>: 查看该板块个股5天溢价图表和详情（含K线批量查看）</li>
-              <li>• <span className="font-semibold">点击排行徽章</span>: 查看该板块7天涨停个股阶梯，点击日期可查看完整板块详情</li>
+              <li>• <span className="font-semibold">点击排行徽章</span>: 查看该板块15天涨停个股阶梯，点击日期可查看完整板块详情</li>
               <li>• <span className="font-semibold">点击涨停数</span>: 按板块分组显示当天所有涨停个股，每个板块标题有📈K按钮可批量查看K线</li>
               <li>• <span className="font-semibold">排序模式</span>: 右上角可切换"连板排序"或"涨幅排序"，影响所有个股列表和K线显示顺序</li>
               <li>• <span className="font-semibold bg-yellow-100 px-1 rounded">分时图说明</span>: "📊今日分时"显示实时数据，"📷当日分时"显示历史快照（需数据库支持，如无快照会显示提示）</li>
