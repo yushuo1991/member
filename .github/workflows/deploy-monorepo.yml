@@ -390,30 +390,62 @@ jobs:
 
             # 复制standalone文件到正确位置
             if [ -d ".next/standalone" ]; then
-              # 先备份static目录
-              if [ -d ".next/static" ]; then
-                cp -r .next/static /tmp/static-backup-bk
+              echo "✅ 找到standalone目录"
+
+              # 检查是否是monorepo结构（有apps子目录）
+              if [ -d ".next/standalone/apps/bk" ]; then
+                echo "📂 检测到monorepo结构，从apps/bk复制"
+
+                # 先备份static目录
+                if [ -d ".next/static" ]; then
+                  cp -r .next/static /tmp/static-backup-bk
+                fi
+
+                # 复制到临时目录
+                rm -rf /tmp/standalone-temp-bk
+                mkdir -p /tmp/standalone-temp-bk
+                cp -r .next/standalone/apps/bk/* /tmp/standalone-temp-bk/
+                cp -r .next/standalone/node_modules /tmp/standalone-temp-bk/
+
+                # 清理当前目录
+                find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.env' ! -name '.git' ! -name 'logs' -exec rm -rf {} + 2>/dev/null || true
+
+                # 复制文件
+                cp -r /tmp/standalone-temp-bk/* .
+
+                # 恢复static目录
+                if [ -d "/tmp/static-backup-bk" ]; then
+                  mkdir -p .next
+                  cp -r /tmp/static-backup-bk .next/static
+                  rm -rf /tmp/static-backup-bk
+                fi
+
+                rm -rf /tmp/standalone-temp-bk
+              else
+                echo "📂 检测到标准结构，直接复制"
+                # 原有的复制逻辑（用于web应用）
+                if [ -d ".next/static" ]; then
+                  cp -r .next/static /tmp/static-backup-bk
+                fi
+
+                rm -rf /tmp/standalone-temp-bk
+                cp -r .next/standalone /tmp/standalone-temp-bk
+
+                find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.env' ! -name '.git' ! -name 'logs' -exec rm -rf {} + 2>/dev/null || true
+
+                cp -r /tmp/standalone-temp-bk/* .
+
+                if [ -d "/tmp/static-backup-bk" ]; then
+                  mkdir -p .next
+                  cp -r /tmp/static-backup-bk .next/static
+                  rm -rf /tmp/static-backup-bk
+                fi
+
+                rm -rf /tmp/standalone-temp-bk
               fi
 
-              # 先复制到临时目录避免冲突
-              rm -rf /tmp/standalone-temp-bk
-              cp -r .next/standalone /tmp/standalone-temp-bk
-
-              # 清理当前目录的旧文件（保留.env和.git）
-              find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.env' ! -name '.git' ! -name 'logs' -exec rm -rf {} + 2>/dev/null || true
-
-              # 从临时目录复制所有文件
-              cp -r /tmp/standalone-temp-bk/* .
-
-              # 恢复static目录
-              if [ -d "/tmp/static-backup-bk" ]; then
-                mkdir -p .next
-                cp -r /tmp/static-backup-bk .next/static
-                rm -rf /tmp/static-backup-bk
-              fi
-
-              # 清理临时目录
-              rm -rf /tmp/standalone-temp-bk
+              echo "✅ 复制完成"
+              ls -la server.js 2>/dev/null || echo "❌ server.js不存在"
             fi
 
             pm2 describe $APP_NAME > /dev/null 2>&1 && pm2 delete $APP_NAME || true
@@ -486,30 +518,61 @@ jobs:
 
             # 复制standalone文件到正确位置
             if [ -d ".next/standalone" ]; then
-              # 先备份static目录
-              if [ -d ".next/static" ]; then
-                cp -r .next/static /tmp/static-backup-fuplan
+              echo "✅ 找到standalone目录"
+
+              # 检查是否是monorepo结构（有apps子目录）
+              if [ -d ".next/standalone/apps/fuplan" ]; then
+                echo "📂 检测到monorepo结构，从apps/fuplan复制"
+
+                # 先备份static目录
+                if [ -d ".next/static" ]; then
+                  cp -r .next/static /tmp/static-backup-fuplan
+                fi
+
+                # 复制到临时目录
+                rm -rf /tmp/standalone-temp-fuplan
+                mkdir -p /tmp/standalone-temp-fuplan
+                cp -r .next/standalone/apps/fuplan/* /tmp/standalone-temp-fuplan/
+                cp -r .next/standalone/node_modules /tmp/standalone-temp-fuplan/
+
+                # 清理当前目录
+                find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.env' ! -name '.git' ! -name 'logs' -exec rm -rf {} + 2>/dev/null || true
+
+                # 复制文件
+                cp -r /tmp/standalone-temp-fuplan/* .
+
+                # 恢复static目录
+                if [ -d "/tmp/static-backup-fuplan" ]; then
+                  mkdir -p .next
+                  cp -r /tmp/static-backup-fuplan .next/static
+                  rm -rf /tmp/static-backup-fuplan
+                fi
+
+                rm -rf /tmp/standalone-temp-fuplan
+              else
+                echo "📂 检测到标准结构，直接复制"
+                if [ -d ".next/static" ]; then
+                  cp -r .next/static /tmp/static-backup-fuplan
+                fi
+
+                rm -rf /tmp/standalone-temp-fuplan
+                cp -r .next/standalone /tmp/standalone-temp-fuplan
+
+                find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.env' ! -name '.git' ! -name 'logs' -exec rm -rf {} + 2>/dev/null || true
+
+                cp -r /tmp/standalone-temp-fuplan/* .
+
+                if [ -d "/tmp/static-backup-fuplan" ]; then
+                  mkdir -p .next
+                  cp -r /tmp/static-backup-fuplan .next/static
+                  rm -rf /tmp/static-backup-fuplan
+                fi
+
+                rm -rf /tmp/standalone-temp-fuplan
               fi
 
-              # 先复制到临时目录避免冲突
-              rm -rf /tmp/standalone-temp-fuplan
-              cp -r .next/standalone /tmp/standalone-temp-fuplan
-
-              # 清理当前目录的旧文件（保留.env和.git）
-              find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.env' ! -name '.git' ! -name 'logs' -exec rm -rf {} + 2>/dev/null || true
-
-              # 从临时目录复制所有文件
-              cp -r /tmp/standalone-temp-fuplan/* .
-
-              # 恢复static目录
-              if [ -d "/tmp/static-backup-fuplan" ]; then
-                mkdir -p .next
-                cp -r /tmp/static-backup-fuplan .next/static
-                rm -rf /tmp/static-backup-fuplan
-              fi
-
-              # 清理临时目录
-              rm -rf /tmp/standalone-temp-fuplan
+              echo "✅ 复制完成"
+              ls -la server.js 2>/dev/null || echo "❌ server.js不存在"
             fi
 
             pm2 describe $APP_NAME > /dev/null 2>&1 && pm2 delete $APP_NAME || true
@@ -582,30 +645,61 @@ jobs:
 
             # 复制standalone文件到正确位置
             if [ -d ".next/standalone" ]; then
-              # 先备份static目录
-              if [ -d ".next/static" ]; then
-                cp -r .next/static /tmp/static-backup-xinli
+              echo "✅ 找到standalone目录"
+
+              # 检查是否是monorepo结构（有apps子目录）
+              if [ -d ".next/standalone/apps/xinli" ]; then
+                echo "📂 检测到monorepo结构，从apps/xinli复制"
+
+                # 先备份static目录
+                if [ -d ".next/static" ]; then
+                  cp -r .next/static /tmp/static-backup-xinli
+                fi
+
+                # 复制到临时目录
+                rm -rf /tmp/standalone-temp-xinli
+                mkdir -p /tmp/standalone-temp-xinli
+                cp -r .next/standalone/apps/xinli/* /tmp/standalone-temp-xinli/
+                cp -r .next/standalone/node_modules /tmp/standalone-temp-xinli/
+
+                # 清理当前目录
+                find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.env' ! -name '.git' ! -name 'logs' -exec rm -rf {} + 2>/dev/null || true
+
+                # 复制文件
+                cp -r /tmp/standalone-temp-xinli/* .
+
+                # 恢复static目录
+                if [ -d "/tmp/static-backup-xinli" ]; then
+                  mkdir -p .next
+                  cp -r /tmp/static-backup-xinli .next/static
+                  rm -rf /tmp/static-backup-xinli
+                fi
+
+                rm -rf /tmp/standalone-temp-xinli
+              else
+                echo "📂 检测到标准结构，直接复制"
+                if [ -d ".next/static" ]; then
+                  cp -r .next/static /tmp/static-backup-xinli
+                fi
+
+                rm -rf /tmp/standalone-temp-xinli
+                cp -r .next/standalone /tmp/standalone-temp-xinli
+
+                find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.env' ! -name '.git' ! -name 'logs' -exec rm -rf {} + 2>/dev/null || true
+
+                cp -r /tmp/standalone-temp-xinli/* .
+
+                if [ -d "/tmp/static-backup-xinli" ]; then
+                  mkdir -p .next
+                  cp -r /tmp/static-backup-xinli .next/static
+                  rm -rf /tmp/static-backup-xinli
+                fi
+
+                rm -rf /tmp/standalone-temp-xinli
               fi
 
-              # 先复制到临时目录避免冲突
-              rm -rf /tmp/standalone-temp-xinli
-              cp -r .next/standalone /tmp/standalone-temp-xinli
-
-              # 清理当前目录的旧文件（保留.env和.git）
-              find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.env' ! -name '.git' ! -name 'logs' -exec rm -rf {} + 2>/dev/null || true
-
-              # 从临时目录复制所有文件
-              cp -r /tmp/standalone-temp-xinli/* .
-
-              # 恢复static目录
-              if [ -d "/tmp/static-backup-xinli" ]; then
-                mkdir -p .next
-                cp -r /tmp/static-backup-xinli .next/static
-                rm -rf /tmp/static-backup-xinli
-              fi
-
-              # 清理临时目录
-              rm -rf /tmp/standalone-temp-xinli
+              echo "✅ 复制完成"
+              ls -la server.js 2>/dev/null || echo "❌ server.js不存在"
             fi
 
             pm2 describe $APP_NAME > /dev/null 2>&1 && pm2 delete $APP_NAME || true
