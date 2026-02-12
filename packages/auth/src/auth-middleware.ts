@@ -7,11 +7,18 @@ import { NextRequest } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { JWTPayload } from './types';
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET environment variable is required');
-}
 const JWT_EXPIRES_IN = '7d'; // Token有效期7天
+
+/**
+ * 获取JWT密钥（运行时检查）
+ */
+function getJWTSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET environment variable is required');
+  }
+  return secret;
+}
 
 /**
  * 生成JWT Token
@@ -19,7 +26,7 @@ const JWT_EXPIRES_IN = '7d'; // Token有效期7天
  * @returns JWT字符串
  */
 export function generateToken(payload: Omit<JWTPayload, 'iat' | 'exp'>): string {
-  return jwt.sign(payload, JWT_SECRET as string, {
+  return jwt.sign(payload, getJWTSecret(), {
     expiresIn: JWT_EXPIRES_IN
   });
 }
@@ -31,7 +38,7 @@ export function generateToken(payload: Omit<JWTPayload, 'iat' | 'exp'>): string 
  */
 export function verifyToken(token: string): JWTPayload | null {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET as string) as unknown as JWTPayload;
+    const decoded = jwt.verify(token, getJWTSecret()) as unknown as JWTPayload;
     return decoded;
   } catch (error) {
     console.error('[JWT] Token验证失败:', error);
