@@ -2,7 +2,7 @@ const { withSentryConfig } = require("@sentry/nextjs");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // output: 'standalone',  // 暂时禁用standalone模式 (Windows symlink权限问题)
+  output: 'standalone',  // 生产环境启用standalone模式
   reactStrictMode: true,
   swcMinify: true,
 

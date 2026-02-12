@@ -2,11 +2,9 @@ const { withSentryConfig } = require("@sentry/nextjs");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',  // 生产环境启用standalone模式
   reactStrictMode: true,
   transpilePackages: ['@repo/ui', '@repo/auth', '@repo/database', '@repo/utils'],
-  // Windows环境下暂时禁用standalone以避免符号链接权限问题
-  // 生产环境（Linux）可以启用
-  // output: 'standalone',
 
   experimental: {
     // 启用 instrumentation 以支持优雅关闭
