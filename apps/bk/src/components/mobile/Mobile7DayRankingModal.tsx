@@ -71,7 +71,7 @@ export default function Mobile7DayRankingModal({
   dates,
   onSectorClick,
 }: Mobile7DayRankingModalProps) {
-  // 计算板块最近7天涨停家数排序（前5名）
+  // 计算板块最近15天涨停家数排序（前5名）
   const sectorRanking = useMemo(() => {
     if (!sevenDaysData || !dates || dates.length === 0) return [];
 
@@ -88,7 +88,7 @@ export default function Mobile7DayRankingModal({
       }
     });
 
-    // 为每个板块统计7天数据
+    // 为每个板块统计数据
     const sectorCountMap: Record<string, {
       name: string;
       totalLimitUpCount: number;
@@ -103,7 +103,7 @@ export default function Mobile7DayRankingModal({
       };
     });
 
-    // 统计最近7天每个板块的涨停家数
+    // 统计最近15天每个板块的涨停家数
     dates.forEach(date => {
       const dayData = sevenDaysData[date];
       if (!dayData) return;

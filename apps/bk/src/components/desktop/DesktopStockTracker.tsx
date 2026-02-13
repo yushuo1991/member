@@ -909,7 +909,7 @@ export default function Home() {
 
     const sectorCountMap: Record<string, { name: string; totalLimitUpCount: number; dailyBreakdown: { date: string; count: number }[] }> = {};
 
-    // v4.8.24新增：确保所有板块在7天中都有记录，没有涨停时记录为0
+    // v4.8.24新增：确保所有板块在15天中都有记录，没有涨停时记录为0
     // 首先收集所有出现过的板块名称
     const allSectorNames = new Set<string>();
     recent7Days.forEach(date => {
@@ -933,7 +933,7 @@ export default function Home() {
       };
     });
 
-    // 统计最近7天每个板块的涨停家数
+    // 统计最近15天每个板块的涨停家数
     recent7Days.forEach(date => {
       const dayData = sevenDaysData[date];
       if (!dayData) return;

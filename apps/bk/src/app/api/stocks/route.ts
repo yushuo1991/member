@@ -37,7 +37,15 @@ import { NextRequest, NextResponse } from 'next/server';
      * - 历史数据：24小时（不会变化）
      */
     private getSevenDaysCacheTTL(dates: string[]): number {
-      const today = new Date().toISOString().split('T')[0];
+      // 使用北京时间判断"今天"
+      const formatter = new Intl.DateTimeFormat('zh-CN', {
+        timeZone: 'Asia/Shanghai',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+      const parts = formatter.formatToParts(new Date());
+      const today = `${parts.find(p => p.type === 'year')?.value}-${parts.find(p => p.type === 'month')?.value}-${parts.find(p => p.type === 'day')?.value}`;
       const hasToday = dates.includes(today);
 
       if (hasToday) {
