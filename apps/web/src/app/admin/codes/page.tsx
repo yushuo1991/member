@@ -33,6 +33,8 @@ export default function CodesPage() {
   const [generatedCodes, setGeneratedCodes] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [filterUnused, setFilterUnused] = useState(true);
+  const [filterLevel, setFilterLevel] = useState<string>('all');
 
   // Toast 管理
   const showToast = (message: string, type: ToastType = 'success') => {
@@ -137,6 +139,60 @@ export default function CodesPage() {
     quarterly: '季度会员',
     yearly: '年度会员',
     lifetime: '终身会员',
+  };
+
+  // 筛选后的激活码
+  const filteredCodes = codes.filter(code => {
+    if (filterUnused && code.used) return false;
+    if (filterLevel !== 'all' && code.level !== filterLevel) return false;
+    return true;
+  });
+
+  // 按等级分组的未使用激活码（用于批量复制）
+  const groupedUnusedCodes = codes.filter(c => !c.used).reduce((acc, code) => {
+    if (!acc[code.level]) acc[code.level] = [];
+    acc[code.level].push(code.code);
+    return acc;
+  }, {} as Record<string, string[]>);
+
+  // 批量复制某个等级的所有未使用激活码
+  const handleBatchCopy = async (level: string) => {
+    const codesToCopy = groupedUnusedCodes[level];
+    if (!codesToCopy || codesToCopy.length === 0) {
+      showToast('没有可复制的激活码', 'error');
+      return;
+    }
+    const text = codesToCopy.join('\n');
+    try {
+      const success = await copyToClipboard(text);
+      if (success) {
+        showToast(`已复制 ${codesToCopy.length} 个${levelNames[level] || level}激活码`, 'success');
+      } else {
+        showToast('复制失败，请手动复制', 'error');
+      }
+    } catch {
+      showToast('复制失败，请手动复制', 'error');
+    }
+  };
+
+  // 批量复制当前筛选结果中的所有未使用激活码
+  const handleBatchCopyFiltered = async () => {
+    const codesToCopy = filteredCodes.filter(c => !c.used).map(c => c.code);
+    if (codesToCopy.length === 0) {
+      showToast('没有可复制的激活码', 'error');
+      return;
+    }
+    const text = codesToCopy.join('\n');
+    try {
+      const success = await copyToClipboard(text);
+      if (success) {
+        showToast(`已复制 ${codesToCopy.length} 个激活码`, 'success');
+      } else {
+        showToast('复制失败，请手动复制', 'error');
+      }
+    } catch {
+      showToast('复制失败，请手动复制', 'error');
+    }
   };
 
   return (
@@ -255,13 +311,70 @@ export default function CodesPage() {
         </div>
       </div>
 
+      {/* Unused Codes Summary by Level */}
+      {Object.keys(groupedUnusedCodes).length > 0 && (
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">未使用激活码概览</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {['monthly', 'quarterly', 'yearly', 'lifetime'].map(level => {
+              const count = groupedUnusedCodes[level]?.length || 0;
+              if (count === 0) return null;
+              return (
+                <div key={level} className="flex items-center justify-between p-4 rounded-xl border border-gray-200 bg-gray-50">
+                  <div>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${levelColors[level]}`}>
+                      {levelNames[level]}
+                    </span>
+                    <div className="mt-2 text-2xl font-bold text-gray-900">{count}</div>
+                  </div>
+                  <button
+                    onClick={() => handleBatchCopy(level)}
+                    className="px-3 py-2 bg-[#007AFF] text-white text-sm rounded-lg hover:bg-[#0051D5] transition-colors"
+                    title={`复制所有${levelNames[level]}激活码`}
+                  >
+                    批量复制
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Codes Table */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+        <div className="p-6 border-b border-gray-100 flex flex-wrap items-center justify-between gap-4">
           <h2 className="text-xl font-semibold text-gray-900">激活码列表</h2>
-          <button className="px-4 py-2 bg-gray-100 text-gray-900 rounded-xl hover:bg-gray-200 transition-all duration-300 font-medium text-sm">
-            导出CSV
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={filterUnused}
+                onChange={(e) => setFilterUnused(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 text-[#007AFF] focus:ring-[#007AFF]"
+              />
+              <span className="text-gray-700">仅显示未使用</span>
+            </label>
+            <select
+              value={filterLevel}
+              onChange={(e) => setFilterLevel(e.target.value)}
+              className="px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#007AFF]"
+            >
+              <option value="all">全部等级</option>
+              <option value="monthly">月度会员</option>
+              <option value="quarterly">季度会员</option>
+              <option value="yearly">年度会员</option>
+              <option value="lifetime">终身会员</option>
+            </select>
+            {filteredCodes.filter(c => !c.used).length > 0 && (
+              <button
+                onClick={handleBatchCopyFiltered}
+                className="px-4 py-2 bg-[#007AFF] text-white rounded-xl hover:bg-[#0051D5] transition-all duration-300 font-medium text-sm"
+              >
+                复制筛选结果 ({filteredCodes.filter(c => !c.used).length})
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="overflow-x-auto">
@@ -301,14 +414,14 @@ export default function CodesPage() {
                     </div>
                   </td>
                 </tr>
-              ) : codes.length === 0 ? (
+              ) : filteredCodes.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
-                    暂无激活码数据
+                    {codes.length === 0 ? '暂无激活码数据' : '没有符合筛选条件的激活码'}
                   </td>
                 </tr>
               ) : (
-                codes.map((code) => (
+                filteredCodes.map((code) => (
                   <tr key={code.id} className="hover:bg-gray-50 transition-colors duration-200">
                     <td className="px-6 py-4">
                       <code className="font-mono text-sm bg-gray-100 px-3 py-1 rounded">
@@ -383,7 +496,7 @@ export default function CodesPage() {
 
         {/* Pagination */}
         <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
-          <p className="text-sm text-gray-600">显示 1-{codes.length} 条，共 {codes.length} 条</p>
+          <p className="text-sm text-gray-600">显示 {filteredCodes.length} 条{filterUnused || filterLevel !== 'all' ? `（共 ${codes.length} 条）` : ''}</p>
           <div className="flex gap-2">
             <button className="px-4 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
               上一页

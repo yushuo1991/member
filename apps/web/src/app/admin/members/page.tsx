@@ -489,7 +489,9 @@ export default function MembersPage() {
                           </div>
                           <div>
                             <div className="font-medium text-gray-900">{member.username}</div>
-                            <div className="text-sm text-gray-500">{member.email}</div>
+                            {member.email && !member.email.endsWith('@local.invalid') && (
+                              <div className="text-sm text-gray-500">{member.email}</div>
+                            )}
                           </div>
                         </div>
                       </td>
