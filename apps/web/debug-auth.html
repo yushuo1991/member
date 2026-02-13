@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>认证调试工具</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>认证状态调试工具</h1>
+
+    <div class="section">
+        <h2>1. 检查Cookie</h2>
+        <button onclick="checkCookies()">查看所有Cookie</button>
+        <pre id="cookies"></pre>
+    </div>
+
+    <div class="section">
+        <h2>2. 测试 /api/auth/me</h2>
+        <button onclick="testAuthMe()">调用 /api/auth/me</button>
+        <pre id="authme"></pre>
+    </div>
+
+    <div class="section">
+        <h2>3. 测试产品访问权限</h2>
+        <button onclick="testAccess('bk')">测试BK访问</button>
+        <button onclick="testAccess('fuplan')">测试Fuplan访问</button>
+        <pre id="access"></pre>
+    </div>
+
+    <script>
+        function checkCookies() {
+            const cookies = document.cookie.split(';').map(c => c.trim());
+            document.getElementById('cookies').textContent =
+                cookies.length > 0 ? cookies.join('\n') : '没有找到Cookie';
+        }
+
+        async function testAuthMe() {
+            try {
+                const response = await fetch('/api/auth/me', {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                document.getElementById('authme').textContent =
+                    `状态码: ${response.status}\n\n` +
+                    JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('authme').textContent =
+                    `错误: ${error.message}`;
+            }
+        }
+
+        async function testAccess(productSlug) {
+            try {
+                const response = await fetch(`/api/products/access/${productSlug}`, {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                document.getElementById('access').textContent =
+                    `产品: ${productSlug}\n` +
+                    `状态码: ${response.status}\n\n` +
+                    JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('access').textContent =
+                    `错误: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

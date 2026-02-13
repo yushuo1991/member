@@ -43,7 +43,9 @@ export default function SystemAccessFrame({
   }, [payload, trialReady])
 
   useEffect(() => {
+    console.log('[SystemAccessFrame] 认证状态检查:', { loading, isAuthenticated, pathname });
     if (!loading && !isAuthenticated) {
+      console.log('[SystemAccessFrame] 未登录，重定向到登录页');
       router.push(`/login?redirect=${encodeURIComponent(pathname)}`)
     }
   }, [isAuthenticated, loading, pathname, router])
