@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { memberDatabase } from '@repo/database'
 import { verifyUserToken } from '@repo/auth'
 import { canAccessProductByMembership, getProductBySlug } from '@/lib/membership-levels'
-import { getTrialFieldName } from '@/lib/trial-service'
 import type { MembershipLevel } from '@/types/membership'
 
 export async function GET(
