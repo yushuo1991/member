@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const userId = authResult.user.userId;
 
     // 获取最新的进行中的测评
-    const [tests] = await memberDatabase.query(
+    const tests = await memberDatabase.query(
       `SELECT id, progress, status, started_at, completed_at
        FROM user_psychology_tests
        WHERE user_id = ?
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     const testId = test.id;
 
     // 获取所有答案
-    const [answers] = await memberDatabase.query(
+    const answers = await memberDatabase.query(
       `SELECT scenario_id, operation, thought, updated_at
        FROM user_psychology_answers
        WHERE test_id = ?

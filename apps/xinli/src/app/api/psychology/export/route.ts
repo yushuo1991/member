@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 验证测评是否属于当前用户
-    const [tests] = await memberDatabase.query(
+    const tests = await memberDatabase.query(
       `SELECT id, status, progress, started_at, completed_at
        FROM user_psychology_tests
        WHERE id = ? AND user_id = ?`,
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 获取所有答案
-    const [answers] = await memberDatabase.query(
+    const answers = await memberDatabase.query(
       `SELECT scenario_id, operation, thought
        FROM user_psychology_answers
        WHERE test_id = ?

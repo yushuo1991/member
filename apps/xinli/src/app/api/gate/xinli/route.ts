@@ -54,13 +54,13 @@ export async function GET(request: NextRequest) {
     }
 
     // 检查试用次数
-    const [trials] = await memberDatabase.query(
+    const trials = await memberDatabase.query(
       `SELECT trial_count FROM user_product_trials
        WHERE user_id = ? AND product_slug = 'xinli'`,
       [user.userId]
     );
 
-    const trialCount = (trials as any[]).length > 0 ? (trials as any[])[0].trial_count : 0;
+    const trialCount = (trials as any[])?.length > 0 ? (trials as any[])[0].trial_count : 0;
     const maxTrials = 5;
     const trialRemaining = Math.max(0, maxTrials - trialCount);
 
@@ -120,13 +120,13 @@ export async function POST(request: NextRequest) {
     );
 
     // 获取最新试用次数
-    const [trials] = await memberDatabase.query(
+    const trials = await memberDatabase.query(
       `SELECT trial_count FROM user_product_trials
        WHERE user_id = ? AND product_slug = 'xinli'`,
       [user.userId]
     );
 
-    const trialCount = (trials as any[])[0].trial_count;
+    const trialCount = (trials as any[])[0]?.trial_count || 1;
     const maxTrials = 5;
     const trialRemaining = Math.max(0, maxTrials - trialCount);
 

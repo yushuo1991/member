@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const userId = authResult.user.userId;
 
     // 获取所有测评历史
-    const [tests] = await memberDatabase.query(
+    const tests = await memberDatabase.query(
       `SELECT id, test_name, status, progress, started_at, completed_at, updated_at
        FROM user_psychology_tests
        WHERE user_id = ?
