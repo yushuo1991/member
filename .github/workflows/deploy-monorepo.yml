@@ -296,6 +296,13 @@ jobs:
                 cd ../..
                 echo "✅ Dependencies installed"
 
+                # 确保.env包含COOKIE_DOMAIN
+                if [ -f .env ] && ! grep -q "COOKIE_DOMAIN" .env; then
+                  echo '' >> .env
+                  echo '# Cookie域名（子域名共享）' >> .env
+                  echo 'COOKIE_DOMAIN=.yushuofupan.com' >> .env
+                fi
+
                 # 复制.env到standalone根目录
                 if [ -f .env ]; then
                   cp .env .next/standalone/.env
@@ -387,7 +394,7 @@ jobs:
                 }
               })
             }
-            module.exports = { apps: [{ name: 'member-web', script: process.env.WEB_SERVER_PATH || '.next/standalone/apps/web/server.js', cwd: __dirname, env: envVars, autorestart: true, max_memory_restart: '200M' }] }
+            module.exports = { apps: [{ name: 'member-web', script: process.env.WEB_SERVER_PATH || '.next/standalone/server.js', cwd: __dirname, env: envVars, autorestart: true, max_memory_restart: '200M' }] }
             ECOSYS
 
             WEB_SERVER_PATH="$WEB_SERVER" pm2 start "$DEPLOY_PATH/ecosystem.config.js"
