@@ -290,7 +290,7 @@ jobs:
                 cd .next/standalone
                 rm -rf node_modules
                 cp package.json package.json.bak
-                printf '{"name":"s","private":true,"dependencies":{"next":"14.2.35","react":"18.3.1","react-dom":"18.3.1"}}' > package.json
+                printf '{"name":"s","private":true,"dependencies":{"next":"14.2.35","react":"18.3.1","react-dom":"18.3.1","mysql2":"3.11.0","bcryptjs":"2.4.3","jsonwebtoken":"9.0.2"}}' > package.json
                 npm install --no-package-lock 2>&1 | tail -3
                 mv package.json.bak package.json
                 cd ../..
@@ -317,7 +317,7 @@ jobs:
                 rm -rf .next/standalone/node_modules
                 cd .next/standalone
                 cp package.json package.json.bak
-                printf '{"name":"s","private":true,"dependencies":{"next":"14.2.35","react":"18.3.1","react-dom":"18.3.1"}}' > package.json
+                printf '{"name":"s","private":true,"dependencies":{"next":"14.2.35","react":"18.3.1","react-dom":"18.3.1","mysql2":"3.11.0","bcryptjs":"2.4.3","jsonwebtoken":"9.0.2"}}' > package.json
                 npm install --no-package-lock 2>&1 | tail -3
                 mv package.json.bak package.json
                 cd ../..

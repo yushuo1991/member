@@ -25,6 +25,13 @@ const nextConfig = {
         crypto: false,
       };
     }
+
+    // 强制将这些模块排除在webpack打包之外，运行时从node_modules加载
+    if (isServer) {
+      config.externals = config.externals || [];
+      config.externals.push('mysql2', 'mysql2/promise', 'bcryptjs', 'jsonwebtoken');
+    }
+
     return config;
   },
 
