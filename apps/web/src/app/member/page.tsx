@@ -246,12 +246,12 @@ export default function MemberPage() {
                       </div>
                     </div>
                     <Link
-                      href={product.url || `/products/${product.slug}`}
-                      target={product.openInNewWindow ? '_blank' : undefined}
-                      rel={product.openInNewWindow ? 'noopener noreferrer' : undefined}
+                      href={status.accessType === 'trial' ? `/products/${product.slug}` : (product.url || `/products/${product.slug}`)}
+                      target={status.accessType !== 'trial' && product.openInNewWindow ? '_blank' : undefined}
+                      rel={status.accessType !== 'trial' && product.openInNewWindow ? 'noopener noreferrer' : undefined}
                       className="px-3 py-1.5 bg-[#ff8c42] text-white rounded-full text-xs font-medium hover:bg-[#e67d3a] transition-all whitespace-nowrap"
                     >
-                      访问
+                      {status.accessType === 'trial' ? '试用' : '访问'}
                     </Link>
                   </div>
                 ))}
@@ -348,10 +348,10 @@ export default function MemberPage() {
                       </div>
                       {status.hasAccess ? (
                         <Link
-                          href={product.url || `/products/${product.slug}`}
+                          href={status.accessType === 'trial' ? `/products/${product.slug}` : (product.url || `/products/${product.slug}`)}
                           className="px-3 py-1.5 bg-[#ff8c42] text-white rounded-full hover:bg-[#e67d3a] transition-all duration-300 text-xs font-medium whitespace-nowrap"
                         >
-                          访问
+                          {status.accessType === 'trial' ? '试用' : '访问'}
                         </Link>
                       ) : (
                         <Link

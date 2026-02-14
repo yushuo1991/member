@@ -494,16 +494,15 @@ export default function ProductDetailPage() {
                     )
                   )}
 
-                  {/* 外部链接（如果有） */}
-                  {product.url && (
+                  {/* 外部链接（如果有） — 仅对有会员权限的用户显示直接进入按钮 */}
+                  {product.url && !product.trialEnabled && (
                     <button
                       onClick={() => {
                         if (!isAuthenticated) {
                           router.push('/login?redirect=' + encodeURIComponent(`/products/${slug}`));
                           return;
                         }
-                        // TODO: 验证权限后跳转
-                        router.push(product.url!);
+                        window.open(product.url!, '_blank');
                       }}
                       className="w-full py-3 px-6 bg-gray-100 text-gray-900 rounded-full hover:bg-gray-200 transition-all duration-300 font-medium"
                     >
