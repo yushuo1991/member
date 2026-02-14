@@ -203,6 +203,11 @@ export default function XinliPage() {
               </ul>
             </div>
 
+            <div className="bg-blue-50 rounded-xl p-6 mb-8 text-left">
+              <p className="text-blue-800 font-semibold mb-1">📋 关于测评报告</p>
+              <p className="text-blue-700 text-sm">试用用户仅支持根据问题进行自我梳理，不会产生测试报告。年费会员填写完成后可导出问卷，由专业人员为您出具个性化分析报告。</p>
+            </div>
+
             <button
               onClick={handleStart}
               className="btn btn-primary btn-lg px-8 py-3 text-lg"

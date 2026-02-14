@@ -38,6 +38,12 @@ export default function GuidePage() {
               </ul>
             </div>
 
+            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mt-4">
+              <p className="text-blue-800 font-semibold mb-1">📋 关于测评报告</p>
+              <p className="text-blue-700 text-sm mb-1">试用用户仅支持根据问题进行自我梳理，不会产生测试报告。</p>
+              <p className="text-blue-700 text-sm">年费会员填写完成后可导出问卷，由专业人员为您出具个性化分析报告。</p>
+            </div>
+
             <h2>场景分类（80个）</h2>
             <table className="min-w-full divide-y divide-gray-200">
               <thead>

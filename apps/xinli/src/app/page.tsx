@@ -33,6 +33,11 @@ export default function HomePage() {
                 <li>✅ 随时保存 - 不必一次填完，可分多次进行</li>
               </ul>
             </div>
+
+            <div className="p-4 bg-blue-50 rounded-xl text-left mt-3">
+              <p className="text-blue-800 font-semibold text-sm mb-1">📋 关于测评报告</p>
+              <p className="text-blue-700 text-xs">试用用户仅支持根据问题进行自我梳理，不会产生测试报告。年费会员填写完成后可导出问卷，由专业人员为您出具个性化分析报告。</p>
+            </div>
           </div>
 
           <div className="flex gap-4 justify-center">
