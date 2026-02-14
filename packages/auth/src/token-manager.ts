@@ -71,17 +71,20 @@ export class TokenManager {
       : (process.env.COOKIE_SECURE === 'true' || (process.env.APP_URL || '').startsWith('https://'));
 
     const securePart = secure ? 'Secure; ' : '';
-    const domainPart = options.domain ? `Domain=${options.domain}; ` : '';
+    // 自动检测域名：生产环境设置为顶级域名，使cookie在子域名间共享
+    const domain = options.domain || this.detectCookieDomain();
+    const domainPart = domain ? `Domain=${domain}; ` : '';
 
-    return `${name}=${token}; HttpOnly; ${securePart}SameSite=Strict; Path=/; ${domainPart}Max-Age=${maxAge}`;
+    return `${name}=${token}; HttpOnly; ${securePart}SameSite=Lax; Path=/; ${domainPart}Max-Age=${maxAge}`;
   }
 
   /**
    * 创建删除Cookie字符串
    */
   createDeleteCookie(name: string = 'auth_token', domain?: string): string {
-    const domainPart = domain ? `Domain=${domain}; ` : '';
-    return `${name}=; HttpOnly; SameSite=Strict; Path=/; ${domainPart}Max-Age=0`;
+    const cookieDomain = domain || this.detectCookieDomain();
+    const domainPart = cookieDomain ? `Domain=${cookieDomain}; ` : '';
+    return `${name}=; HttpOnly; SameSite=Lax; Path=/; ${domainPart}Max-Age=0`;
   }
 
   /**
@@ -96,6 +99,28 @@ export class TokenManager {
    */
   updateExpiresIn(newExpiresIn: string): void {
     this.jwtExpiresIn = newExpiresIn;
+  }
+
+  /**
+   * 检测cookie域名：生产环境返回顶级域名（带前导点），使cookie在子域名间共享
+   */
+  private detectCookieDomain(): string | undefined {
+    const appUrl = process.env.APP_URL || '';
+    try {
+      const hostname = new URL(appUrl).hostname;
+      // localhost或IP地址不设置domain
+      if (hostname === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
+        return undefined;
+      }
+      // 返回顶级域名（如 .yushuofupan.com）
+      const parts = hostname.split('.');
+      if (parts.length >= 2) {
+        return '.' + parts.slice(-2).join('.');
+      }
+    } catch {
+      // URL解析失败，不设置domain
+    }
+    return undefined;
   }
 }
 
