@@ -487,6 +487,19 @@ jobs:
 
             pm2 describe $APP_NAME > /dev/null 2>&1 && pm2 delete $APP_NAME || true
             cd "$DEPLOY_PATH"
+
+            # 加载.env环境变量（standalone模式不会自动加载.env）
+            if [ -f .env ]; then
+              export $(grep -v '^#' .env | grep -v '^\s*$' | xargs)
+              echo "✅ 已加载.env环境变量"
+            fi
+
+            # 清除旧的数据缓存
+            if [ -n "$DB_PASSWORD" ]; then
+              mysql -u root -p"$DB_PASSWORD" stock_tracker -e "DELETE FROM seven_days_cache;" 2>/dev/null || true
+              echo "✅ 已清除数据缓存"
+            fi
+
             PORT=3001 pm2 start $SERVER_PATH --name $APP_NAME
             pm2 save
 

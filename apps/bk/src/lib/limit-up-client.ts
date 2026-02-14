@@ -102,9 +102,17 @@ class LimitUpClient {
               const stockCode = stockData[0];
               const stockName = stockData[1];
               const tdType = stockData[9] || '首板';
-              const amountInYuan = parseFloat(stockData[6]) || 0;
+              const amountInYuan = parseFloat(stockData[8]) || 0;
               const amountInYi = amountInYuan / 100000000;
-              const limitUpTime = stockData[7] || '09:30';
+              // stockData[6]是涨停时间的Unix时间戳，转换为HH:MM格式
+              const limitUpTimestamp = parseInt(stockData[6]) || 0;
+              let limitUpTime = '09:30';
+              if (limitUpTimestamp > 0) {
+                const d = new Date(limitUpTimestamp * 1000);
+                const hh = String(d.getUTCHours() + 8).padStart(2, '0'); // UTC+8
+                const mm = String(d.getUTCMinutes()).padStart(2, '0');
+                limitUpTime = `${hh}:${mm}`;
+              }
 
               // 数据清洗：过滤无效数据
               if (
