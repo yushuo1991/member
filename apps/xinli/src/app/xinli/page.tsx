@@ -65,28 +65,9 @@ export default function XinliPage() {
   }, [currentIndex, showWelcome]);
 
   const checkAccess = async () => {
-    try {
-      const res = await fetch('/api/gate/xinli');
-      const data = await res.json();
-
-      if (!data.hasAccess) {
-        if (data.requireLogin) {
-          // 重定向到主应用的登录页面
-          const mainAppUrl = process.env.NEXT_PUBLIC_MAIN_APP_URL || 'https://yushuofupan.com';
-          window.location.href = `${mainAppUrl}/login?redirect=${encodeURIComponent(window.location.href)}`;
-        } else {
-          alert(data.reason);
-          // 重定向到主应用的升级页面
-          const mainAppUrl = process.env.NEXT_PUBLIC_MAIN_APP_URL || 'https://yushuofupan.com';
-          window.location.href = `${mainAppUrl}/upgrade`;
-        }
-      } else {
-        setLoading(false);
-      }
-    } catch (error) {
-      console.error('权限检查失败:', error);
-      setLoading(false);
-    }
+    // nginx auth_request 已经在入口处验证了用户权限
+    // 如果用户能看到这个页面，说明已经通过了nginx认证
+    setLoading(false);
   };
 
   const loadData = async () => {
