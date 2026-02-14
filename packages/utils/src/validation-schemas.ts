@@ -40,14 +40,14 @@ const passwordSchema = z
 
 /**
  * 激活码验证规则
- * - 格式: YS-{M|Q|Y|T|P}-XXXX
+ * - 格式: XXXX-XXXX-XXXX-XXXX（16位，去除易混淆字符）
  * - 不区分大小写
  */
 const activationCodeSchema = z
   .string()
   .min(1, '激活码不能为空')
   .max(50, '激活码格式不正确')
-  .regex(/^YS-[A-Z]-[A-Z0-9]{4,}$/i, '激活码格式不正确，应为 YS-X-XXXX 格式')
+  .regex(/^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/i, '激活码格式不正确，应为 XXXX-XXXX-XXXX-XXXX 格式')
   .transform((val) => val.toUpperCase());
 
 /**
