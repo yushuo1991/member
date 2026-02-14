@@ -289,11 +289,8 @@ jobs:
                 echo "🔗 Installing dependencies in standalone..."
                 cd .next/standalone
                 rm -rf node_modules
-                cat > /tmp/pkg-web.json << 'PKGJSON'
-{"name":"web-standalone","private":true,"dependencies":{"next":"14.2.35","react":"18.3.1","react-dom":"18.3.1"}}
-PKGJSON
                 cp package.json package.json.bak
-                cp /tmp/pkg-web.json package.json
+                printf '{"name":"s","private":true,"dependencies":{"next":"14.2.35","react":"18.3.1","react-dom":"18.3.1"}}' > package.json
                 npm install --no-package-lock 2>&1 | tail -3
                 mv package.json.bak package.json
                 cd ../..
@@ -368,16 +365,29 @@ PKGJSON
               WEB_SERVER=".next/standalone/server.js"
             fi
 
-            # 创建ecosystem.config.js
-            node -e "
-            const fs=require('fs'),path=require('path');
-            const envFile=path.join('$DEPLOY_PATH','.env');
-            const env={NODE_ENV:'production',PORT:'3000'};
-            if(fs.existsSync(envFile)){fs.readFileSync(envFile,'utf8').split('\n').forEach(l=>{l=l.trim();if(l&&!l.startsWith('#')){const i=l.indexOf('=');if(i>0){let v=l.substring(i+1).trim();if((v[0]=='\"'&&v.slice(-1)=='\"')||(v[0]==\"'\"&&v.slice(-1)==\"'\"))v=v.slice(1,-1);env[l.substring(0,i).trim()]=v}}})};
-            fs.writeFileSync('$DEPLOY_PATH/ecosystem.config.js','module.exports={apps:[{name:\"member-web\",script:\"$WEB_SERVER\",cwd:\"$DEPLOY_PATH\",env:'+JSON.stringify(env)+',autorestart:true,max_memory_restart:\"200M\"}]};');
-            "
+            # 创建ecosystem.config.js（从.env读取环境变量）
+            cp /www/wwwroot/bk-system/ecosystem.config.js /tmp/eco-template.js 2>/dev/null || true
+            cat > "$DEPLOY_PATH/ecosystem.config.js" <<'ECOSYS'
+            var fs = require('fs'), path = require('path')
+            var envFile = path.join(__dirname, '.env')
+            var envVars = { NODE_ENV: 'production', PORT: '3000' }
+            if (fs.existsSync(envFile)) {
+              fs.readFileSync(envFile, 'utf8').split('\n').forEach(function(line) {
+                line = line.trim()
+                if (line && line[0] !== '#') {
+                  var eq = line.indexOf('=')
+                  if (eq > 0) {
+                    var val = line.substring(eq + 1).trim()
+                    if ((val[0] === '"' && val.slice(-1) === '"') || (val[0] === "'" && val.slice(-1) === "'")) val = val.slice(1, -1)
+                    envVars[line.substring(0, eq).trim()] = val
+                  }
+                }
+              })
+            }
+            module.exports = { apps: [{ name: 'member-web', script: process.env.WEB_SERVER_PATH || '.next/standalone/apps/web/server.js', cwd: __dirname, env: envVars, autorestart: true, max_memory_restart: '200M' }] }
+            ECOSYS
 
-            pm2 start ecosystem.config.js
+            WEB_SERVER_PATH="$WEB_SERVER" pm2 start "$DEPLOY_PATH/ecosystem.config.js"
             pm2 save
 
             # 清理
