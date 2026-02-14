@@ -285,6 +285,20 @@ jobs:
               if [ -d ".next/standalone/apps/web" ]; then
                 echo "📂 检测到monorepo结构，保持目录结构不变"
 
+                # 安装真实依赖替换pnpm符号链接
+                echo "🔗 Installing dependencies in standalone..."
+                cd .next/standalone
+                rm -rf node_modules
+                cat > /tmp/pkg-web.json << 'PKGJSON'
+{"name":"web-standalone","private":true,"dependencies":{"next":"14.2.35","react":"18.3.1","react-dom":"18.3.1"}}
+PKGJSON
+                cp package.json package.json.bak
+                cp /tmp/pkg-web.json package.json
+                npm install --no-package-lock 2>&1 | tail -3
+                mv package.json.bak package.json
+                cd ../..
+                echo "✅ Dependencies installed"
+
                 # 复制.env到standalone根目录
                 if [ -f .env ]; then
                   cp .env .next/standalone/.env
@@ -343,10 +357,40 @@ jobs:
               node scripts/migrate-add-trial-support.js || echo "⚠️ 数据库迁移失败或已执行过"
             fi
 
-            # PM2重启
+            # PM2重启（使用ecosystem.config.js加载环境变量）
             pm2 describe $APP_NAME > /dev/null 2>&1 && pm2 delete $APP_NAME || true
             cd "$DEPLOY_PATH"
-            pm2 start $SERVER_PATH --name $APP_NAME
+
+            # 创建ecosystem.config.js
+            cat > ecosystem.config.js << 'ECOEOF'
+            const fs = require('fs');
+            const path = require('path');
+            const envFile = path.join(__dirname, '.env');
+            const envVars = { NODE_ENV: 'production', PORT: '3000' };
+            if (fs.existsSync(envFile)) {
+              fs.readFileSync(envFile, 'utf8').split('\n').forEach(line => {
+                line = line.trim();
+                if (line && !line.startsWith('#')) {
+                  const eq = line.indexOf('=');
+                  if (eq > 0) {
+                    let val = line.substring(eq + 1).trim();
+                    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) val = val.slice(1, -1);
+                    envVars[line.substring(0, eq).trim()] = val;
+                  }
+                }
+              });
+            }
+            module.exports = { apps: [{ name: 'member-web', script: '.next/standalone/apps/web/server.js', cwd: '/www/wwwroot/member-system', env: envVars, autorestart: true, max_memory_restart: '200M' }] };
+            ECOEOF
+
+            # 检测server.js路径
+            if [ -f ".next/standalone/apps/web/server.js" ]; then
+              sed -i "s|.next/standalone/apps/web/server.js|.next/standalone/apps/web/server.js|" ecosystem.config.js
+            elif [ -f ".next/standalone/server.js" ]; then
+              sed -i "s|.next/standalone/apps/web/server.js|.next/standalone/server.js|" ecosystem.config.js
+            fi
+
+            pm2 start ecosystem.config.js
             pm2 save
 
             # 清理
