@@ -316,7 +316,10 @@ jobs:
                 echo "🔗 Installing dependencies in standalone..."
                 rm -rf .next/standalone/node_modules
                 cd .next/standalone
-                npm install next@14.2.35 react@18.3.1 react-dom@18.3.1 --no-save --no-package-lock 2>&1 | tail -5
+                cp package.json package.json.bak
+                printf '{"name":"s","private":true,"dependencies":{"next":"14.2.35","react":"18.3.1","react-dom":"18.3.1"}}' > package.json
+                npm install --no-package-lock 2>&1 | tail -3
+                mv package.json.bak package.json
                 cd ../..
                 echo "✅ Dependencies installed"
 
