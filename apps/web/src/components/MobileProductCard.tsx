@@ -9,21 +9,15 @@ interface MobileProductCardProps {
 }
 
 export default function MobileProductCard({ product }: MobileProductCardProps) {
-  const shouldOpenInNewTab = product.slug === 'bk' || product.slug === 'fuplan';
-
-  const linkProps = shouldOpenInNewTab
-    ? { target: '_blank' as const, rel: 'noopener noreferrer' }
-    : {};
-
   // 价格类型标签
   const getPriceTypeLabel = () => {
     switch (product.priceType) {
       case 'membership':
-        return { text: '会员专属', color: 'text-[#ff8c42]' };
+        return { text: '会员专属', bg: 'bg-[#ff8c42]/90', textColor: 'text-white' };
       case 'standalone':
-        return { text: '单独购买', color: 'text-blue-600' };
+        return { text: '单独购买', bg: 'bg-blue-500/90', textColor: 'text-white' };
       case 'both':
-        return { text: '会员/单购', color: 'text-purple-600' };
+        return { text: '会员/单购', bg: 'bg-purple-500/90', textColor: 'text-white' };
       default:
         return null;
     }
@@ -32,13 +26,12 @@ export default function MobileProductCard({ product }: MobileProductCardProps) {
   const priceTypeLabel = getPriceTypeLabel();
 
   return (
-    <div className="mobile-product-card">
-      {/* 产品图片区域 - 可点击 */}
-      <Link
-        href={`/products/${product.slug}`}
-        {...linkProps}
-        className="image-section"
-      >
+    <Link
+      href={`/products/${product.slug}`}
+      className="block w-[280px] flex-shrink-0 rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-sm active:scale-[0.98] transition-transform"
+    >
+      {/* 图片区域 + 浮动标签 */}
+      <div className="relative w-full aspect-[4/3] bg-gradient-to-br from-gray-50 to-gray-100">
         {product.imageUrl ? (
           <Image
             src={product.imageUrl}
@@ -49,199 +42,60 @@ export default function MobileProductCard({ product }: MobileProductCardProps) {
             priority={false}
           />
         ) : (
-          <div className="placeholder-icon">
+          <div className="absolute inset-0 flex items-center justify-center text-5xl bg-gradient-to-br from-[#ff8c42] to-[#e67d3a]">
             {product.icon}
           </div>
         )}
-      </Link>
 
-      {/* 内容区域 */}
-      <div className="content-section">
-        {/* 标签行 */}
-        <div className="tags-row">
-          {priceTypeLabel && (
-            <span className={`tag ${priceTypeLabel.color}`}>
-              {priceTypeLabel.text}
-            </span>
-          )}
-          {product.trialEnabled && (
-            <span className="tag text-green-600">
-              可试用{product.trialCount}次
-            </span>
-          )}
-        </div>
+        {/* 浮动标签 - 左上角 */}
+        {priceTypeLabel && (
+          <span className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-[11px] font-medium ${priceTypeLabel.bg} ${priceTypeLabel.textColor} backdrop-blur-sm`}>
+            {priceTypeLabel.text}
+          </span>
+        )}
 
-        {/* 标题 - 可点击 */}
-        <Link href={`/products/${product.slug}`} {...linkProps}>
-          <h3 className="product-title">{product.name}</h3>
-        </Link>
-
-        {/* 简短描述 */}
-        <p className="product-description">{product.description}</p>
-
-        {/* 分隔线 */}
-        <div className="separator" />
-
-        {/* 功能特性 - 简约展示 */}
-        <div className="features-row">
-          {product.features.slice(0, 2).map((feature, index) => (
-            <span key={index} className="feature-item">
-              <svg className="feature-icon" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              {feature.length > 6 ? feature.slice(0, 6) + '...' : feature}
-            </span>
-          ))}
-          {product.features.length > 2 && (
-            <span className="feature-more">+{product.features.length - 2}</span>
-          )}
-        </div>
-
-        {/* 底部按钮 */}
-        <Link
-          href={`/products/${product.slug}`}
-          {...linkProps}
-          className="view-btn"
-        >
-          了解详情
-          <svg className="btn-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </Link>
+        {/* 试用标签 - 右上角 */}
+        {product.trialEnabled && (
+          <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-[11px] font-medium bg-green-500/90 text-white backdrop-blur-sm">
+            可试用{product.trialCount}次
+          </span>
+        )}
       </div>
 
-      <style jsx>{`
-        .mobile-product-card {
-          width: 280px;
-          background: white;
-          border-radius: 16px;
-          overflow: hidden;
-          flex-shrink: 0;
-          border: 1px solid #f1f3f4;
-          display: flex;
-          flex-direction: column;
-        }
+      {/* 内容区域 - 紧贴图片 */}
+      <div className="px-4 py-3">
+        <h3 className="text-[15px] font-semibold text-gray-900 leading-snug line-clamp-1">
+          {product.name}
+        </h3>
+        <p className="mt-1 text-xs text-gray-500 leading-relaxed line-clamp-2">
+          {product.description}
+        </p>
 
-        .image-section {
-          position: relative;
-          width: 100%;
-          aspect-ratio: 4 / 3;
-          background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-          display: block;
-        }
+        {/* 特性标签 */}
+        <div className="mt-2.5 flex flex-wrap gap-1.5">
+          {product.features.slice(0, 3).map((feature, index) => (
+            <span
+              key={index}
+              className="inline-flex items-center px-2 py-0.5 rounded-md bg-gray-50 text-[11px] text-gray-600"
+            >
+              {feature.length > 6 ? feature.slice(0, 6) + '…' : feature}
+            </span>
+          ))}
+          {product.features.length > 3 && (
+            <span className="inline-flex items-center px-2 py-0.5 text-[11px] text-gray-400">
+              +{product.features.length - 3}
+            </span>
+          )}
+        </div>
 
-        .placeholder-icon {
-          position: absolute;
-          inset: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 4rem;
-          background: linear-gradient(135deg, #ff8c42 0%, #e67d3a 100%);
-        }
-
-        .content-section {
-          padding: 16px;
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-          border-top: 1px solid #f1f3f4;
-        }
-
-        .tags-row {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          min-height: 20px;
-        }
-
-        .tag {
-          font-size: 11px;
-          font-weight: 500;
-        }
-
-        .product-title {
-          font-size: 15px;
-          font-weight: 600;
-          color: #1f2937;
-          margin: 0;
-          line-height: 1.4;
-          display: -webkit-box;
-          -webkit-line-clamp: 1;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-
-        .product-description {
-          font-size: 12px;
-          color: #6b7280;
-          line-height: 1.5;
-          margin: 0;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-
-        .separator {
-          width: 100%;
-          height: 1px;
-          background: #f1f3f4;
-        }
-
-        .features-row {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-          align-items: center;
-        }
-
-        .feature-item {
-          display: inline-flex;
-          align-items: center;
-          font-size: 11px;
-          color: #6b7280;
-        }
-
-        .feature-icon {
-          width: 12px;
-          height: 12px;
-          color: #ff8c42;
-          margin-right: 3px;
-          flex-shrink: 0;
-        }
-
-        .feature-more {
-          font-size: 11px;
-          color: #9ca3af;
-        }
-
-        .view-btn {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 10px 20px;
-          background: #f3f4f6;
-          color: #374151;
-          border-radius: 20px;
-          font-size: 13px;
-          font-weight: 500;
-          text-decoration: none;
-          transition: all 0.3s ease;
-          margin-top: 4px;
-        }
-
-        .view-btn:active {
-          background: #ff8c42;
-          color: white;
-        }
-
-        .btn-arrow {
-          width: 14px;
-          height: 14px;
-          margin-left: 4px;
-        }
-      `}</style>
-    </div>
+        {/* 底部操作提示 */}
+        <div className="mt-3 flex items-center justify-between">
+          <span className="text-xs text-[#ff8c42] font-medium">了解详情</span>
+          <svg className="w-4 h-4 text-[#ff8c42]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
+      </div>
+    </Link>
   );
 }
