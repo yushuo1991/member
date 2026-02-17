@@ -551,7 +551,7 @@ jobs:
               echo "✅ 已清除数据缓存"
             fi
 
-            PORT=3001 pm2 start $SERVER_PATH --name $APP_NAME
+            PORT=3001 pm2 start $SERVER_PATH --name $APP_NAME --max-memory-restart 200M
             pm2 save
 
             rm -f /tmp/bk-build.tar.gz
@@ -678,7 +678,7 @@ jobs:
 
             pm2 describe $APP_NAME > /dev/null 2>&1 && pm2 delete $APP_NAME || true
             cd "$DEPLOY_PATH"
-            PORT=3002 pm2 start $SERVER_PATH --name $APP_NAME
+            PORT=3002 pm2 start $SERVER_PATH --name $APP_NAME --max-memory-restart 200M
             pm2 save
 
             rm -f /tmp/fuplan-build.tar.gz
@@ -805,7 +805,7 @@ jobs:
 
             pm2 describe $APP_NAME > /dev/null 2>&1 && pm2 delete $APP_NAME || true
             cd "$DEPLOY_PATH"
-            PORT=3003 pm2 start $SERVER_PATH --name $APP_NAME
+            PORT=3003 pm2 start $SERVER_PATH --name $APP_NAME --max-memory-restart 200M
             pm2 save
 
             rm -f /tmp/xinli-build.tar.gz
