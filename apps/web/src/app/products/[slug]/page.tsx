@@ -34,6 +34,7 @@ export default function ProductDetailPage() {
     canUseTrial: boolean;
   } | null>(null);
   const [isTrialLoading, setIsTrialLoading] = useState(false);
+  const [accessType, setAccessType] = useState<'membership' | 'purchased' | 'trial' | 'none' | null>(null);
 
   useEffect(() => {
     const p = getProductBySlug(slug);
@@ -62,25 +63,29 @@ export default function ProductDetailPage() {
 
   // 获取试用状态
   useEffect(() => {
-    if (!product || !product.trialEnabled || !isAuthenticated) return;
+    if (!product || !isAuthenticated) return;
 
-    const fetchTrialStatus = async () => {
+    const fetchAccessAndTrial = async () => {
       try {
-        const response = await fetch(`/api/products/trial/${slug}`);
-        const data = await response.json();
-
-        if (data.success && data.data) {
-          setTrialStatus({
-            trialRemaining: data.data.trialRemaining,
-            canUseTrial: data.data.canUseTrial
-          });
+        // 获取访问权限类型
+        const accessRes = await fetch(`/api/products/access/${slug}`, { credentials: 'include' });
+        const accessData = await accessRes.json();
+        if (accessData.success && accessData.data) {
+          setAccessType(accessData.data.accessType);
+          // 如果是试用类型，设置试用状态
+          if (accessData.data.accessType === 'trial') {
+            setTrialStatus({
+              trialRemaining: accessData.data.trialRemaining || 0,
+              canUseTrial: (accessData.data.trialRemaining || 0) > 0
+            });
+          }
         }
       } catch (error) {
-        console.error('获取试用状态失败:', error);
+        console.error('获取访问状态失败:', error);
       }
     };
 
-    fetchTrialStatus();
+    fetchAccessAndTrial();
   }, [product, slug, isAuthenticated]);
 
   // 处理试用按钮点击
@@ -494,14 +499,10 @@ export default function ProductDetailPage() {
                     )
                   )}
 
-                  {/* 外部链接（如果有） — 仅对有会员权限的用户显示直接进入按钮 */}
-                  {product.url && !product.trialEnabled && (
+                  {/* 外部链接 — 有会员权限或已购买的用户显示直接进入按钮 */}
+                  {product.url && (accessType === 'membership' || accessType === 'purchased') && (
                     <button
                       onClick={() => {
-                        if (!isAuthenticated) {
-                          router.push('/login?redirect=' + encodeURIComponent(`/products/${slug}`));
-                          return;
-                        }
                         window.open(product.url!, '_blank');
                       }}
                       className="w-full py-3 px-6 bg-gray-100 text-gray-900 rounded-full hover:bg-gray-200 transition-all duration-300 font-medium"
