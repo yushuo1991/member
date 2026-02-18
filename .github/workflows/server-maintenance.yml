@@ -9,6 +9,7 @@ on:
         type: choice
         options:
           - diagnose-bk-data
+          - check-bk-amounts
           - preload-bk-date
           - server-status
           - custom-command
@@ -104,6 +105,59 @@ jobs:
               echo ""
               echo "=== BK最近日志 ==="
               pm2 logs member-bk --lines 10 --nostream 2>&1 | grep -v TAILING | tail -10
+
+            elif [ "$ACTION" = "check-bk-amounts" ]; then
+              echo "=== 检查个股成交额 ==="
+              curl -s "http://localhost:3001/api/stocks?mode=7days&date=$TARGET_DATE" > /tmp/bk-check.json
+
+              TARGET_DATE_FOR_PY="$TARGET_DATE" python3 << 'PYEOF'
+import json, sys, os
+sys.stdout.reconfigure(encoding="utf-8")
+target_date = os.environ.get("TARGET_DATE_FOR_PY", "")
+with open("/tmp/bk-check.json") as f:
+    d = json.load(f)
+data = d.get("data", {})
+dates = sorted(data.keys())
+print("dates:", dates)
+# use target_date if in data, otherwise last date
+use_date = target_date if target_date in data else (dates[-1] if dates else "")
+target = data.get(use_date, {})
+cats = target.get("categories", {})
+sa = target.get("sectorAmounts", {})
+
+print("=== sectorAmounts ===")
+for k, v in sorted(sa.items(), key=lambda x: -x[1]):
+    print(f"  {k}: {v}")
+
+print()
+print("=== per-stock amounts (first 4 sectors) ===")
+for sector, stocks in list(cats.items())[:4]:
+    print(f"{sector}:")
+    for s in stocks[:6]:
+        print(f"  {s['name']}({s['code']}): {s['amount']}")
+    print()
+
+print("=== duplicate amount check ===")
+all_amts = {}
+for sector, stocks in cats.items():
+    for s in stocks:
+        a = s["amount"]
+        if a not in all_amts:
+            all_amts[a] = []
+        all_amts[a].append(f"{s['name']}({sector})")
+dupes = sorted([(k,v) for k,v in all_amts.items() if len(v) > 2], key=lambda x: -len(x[1]))
+for amt, names in dupes[:5]:
+    print(f"  amount={amt}: {len(names)} stocks - {names[:5]}")
+if not dupes:
+    print("  No significant duplicates found")
+
+print()
+print(f"=== zero amounts ===")
+zeros = all_amts.get(0, [])
+print(f"  {len(zeros)} stocks with amount=0")
+if zeros:
+    print(f"  {zeros[:10]}")
+PYEOF
 
             elif [ "$ACTION" = "preload-bk-date" ]; then
               echo "=== 清除${TARGET_DATE}缓存 ==="
