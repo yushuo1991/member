@@ -227,6 +227,20 @@ export class StockDatabase {
             : formatDateToISO(row.performance_date);
           result[perfDate] = parseFloat(row.pct_change) || 0;
         });
+
+        // 验证缓存的日期是否匹配预期的交易日
+        const cachedDates = Object.keys(result).sort();
+        const expectedDates = tradingDays.slice().sort();
+        if (cachedDates.length !== expectedDates.length || !cachedDates.every((d, i) => d === expectedDates[i])) {
+          console.log(`[BK数据库] 缓存日期不匹配，丢弃: ${stockCode} 在 ${formattedBaseDate} (缓存=${cachedDates}, 预期=${expectedDates})`);
+          // 删除过期缓存数据
+          await this.pool.execute(
+            `DELETE FROM stock_performance WHERE stock_code = ? AND base_date = ?`,
+            [stockCode, formattedBaseDate]
+          );
+          return null;
+        }
+
         console.log(`[BK数据库] 从缓存获取 ${stockCode} 在 ${formattedBaseDate} 的 ${data.length} 条表现数据`);
         return result;
       }
