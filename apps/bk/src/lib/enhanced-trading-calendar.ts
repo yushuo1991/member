@@ -255,11 +255,12 @@ export async function get7TradingDaysFromCalendar(endDate: string): Promise<stri
       let currentDate = new Date(endDate);
 
       // v4.8.9修改：根据时间决定起始位置
-      if (!shouldIncludeToday) {
-        currentDate.setDate(currentDate.getDate() - 1); // 从前一天开始
-        console.log(`[7天交易日] 当前时间<17:30，从前一天开始查找`);
+      // 修复：历史日期（非今天）应直接包含endDate本身
+      if (isToday && !shouldIncludeToday) {
+        currentDate.setDate(currentDate.getDate() - 1); // 今天且<17:30，从前一天开始
+        console.log(`[7天交易日] 今天且<17:30，从前一天开始查找`);
       } else {
-        console.log(`[7天交易日] 当前时间>=17:30，包含当天`);
+        console.log(`[7天交易日] 历史日期或今天>=17:30，包含endDate`);
       }
 
       while (tradingDays.length < 7) {
@@ -288,7 +289,7 @@ export async function get7TradingDaysFromCalendar(endDate: string): Promise<stri
       let currentDate = new Date(endDate);
 
       // v4.8.9修改：根据时间决定起始位置
-      if (!shouldIncludeToday) {
+      if (isToday && !shouldIncludeToday) {
         currentDate.setDate(currentDate.getDate() - 1);
       }
 
