@@ -109,49 +109,7 @@ jobs:
             elif [ "$ACTION" = "check-bk-amounts" ]; then
               echo "=== 检查个股成交额 ==="
               curl -s "http://localhost:3001/api/stocks?mode=7days&date=$TARGET_DATE" > /tmp/bk-check.json
-
-              cat > /tmp/check_amounts.py << 'ENDSCRIPT'
-import json, sys, os
-target_date = os.environ.get("TARGET_DATE_FOR_PY", "")
-with open("/tmp/bk-check.json") as f:
-    d = json.load(f)
-data = d.get("data", {})
-dates = sorted(data.keys())
-print("dates:", dates)
-use_date = target_date if target_date in data else (dates[-1] if dates else "")
-target = data.get(use_date, {})
-cats = target.get("categories", {})
-sa = target.get("sectorAmounts", {})
-print("=== sectorAmounts ===")
-for k, v in sorted(sa.items(), key=lambda x: -x[1]):
-    print("  %s: %s" % (k, v))
-print()
-print("=== per-stock amounts (first 4 sectors) ===")
-for sector, stocks in list(cats.items())[:4]:
-    print("%s:" % sector)
-    for s in stocks[:6]:
-        print("  %s(%s): %s" % (s["name"], s["code"], s["amount"]))
-    print()
-print("=== duplicate amount check ===")
-all_amts = {}
-for sector, stocks in cats.items():
-    for s in stocks:
-        a = s["amount"]
-        if a not in all_amts:
-            all_amts[a] = []
-        all_amts[a].append("%s(%s)" % (s["name"], sector))
-dupes = sorted([(k,v) for k,v in all_amts.items() if len(v) > 2], key=lambda x: -len(x[1]))
-for amt, names in dupes[:5]:
-    print("  amount=%s: %d stocks - %s" % (amt, len(names), names[:5]))
-if not dupes:
-    print("  No significant duplicates found")
-print()
-print("=== zero amounts ===")
-zeros = all_amts.get(0, [])
-print("  %d stocks with amount=0" % len(zeros))
-if zeros:
-    print("  %s" % zeros[:10])
-ENDSCRIPT
+              printf 'import json,sys,os\ntarget_date=os.environ.get("TARGET_DATE_FOR_PY","")\nwith open("/tmp/bk-check.json") as f:\n d=json.load(f)\ndata=d.get("data",{})\ndates=sorted(data.keys())\nprint("dates:",dates)\nuse_date=target_date if target_date in data else (dates[-1] if dates else "")\ntarget=data.get(use_date,{})\ncats=target.get("categories",{})\nsa=target.get("sectorAmounts",{})\nprint("=== sectorAmounts ===")\nfor k,v in sorted(sa.items(),key=lambda x:-x[1]):\n print("  %%s: %%s"%%(k,v))\nprint()\nprint("=== per-stock amounts (first 4 sectors) ===")\nfor sector,stocks in list(cats.items())[:4]:\n print("%%s:"%%sector)\n for s in stocks[:6]:\n  print("  %%s(%%s): %%s"%%(s["name"],s["code"],s["amount"]))\n print()\nprint("=== duplicate amount check ===")\nall_amts={}\nfor sector,stocks in cats.items():\n for s in stocks:\n  a=s["amount"]\n  if a not in all_amts:\n   all_amts[a]=[]\n  all_amts[a].append("%%s(%%s)"%%(s["name"],sector))\ndupes=sorted([(k,v) for k,v in all_amts.items() if len(v)>2],key=lambda x:-len(x[1]))\nfor amt,names in dupes[:5]:\n print("  amount=%%s: %%d stocks - %%s"%%(amt,len(names),names[:5]))\nif not dupes:\n print("  No significant duplicates found")\nprint()\nprint("=== zero amounts ===")\nzeros=all_amts.get(0,[])\nprint("  %%d stocks with amount=0"%%len(zeros))\nif zeros:\n print("  %%s"%%zeros[:10])\n' > /tmp/check_amounts.py
               TARGET_DATE_FOR_PY="$TARGET_DATE" python3 /tmp/check_amounts.py
 
             elif [ "$ACTION" = "preload-bk-date" ]; then
