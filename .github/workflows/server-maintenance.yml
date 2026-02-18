@@ -1,0 +1,166 @@
+name: Server Maintenance
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform'
+        required: true
+        type: choice
+        options:
+          - diagnose-bk-data
+          - preload-bk-date
+          - server-status
+          - custom-command
+      date:
+        description: 'Date for preload (YYYY-MM-DD)'
+        required: false
+        default: '2025-02-13'
+      command:
+        description: 'Custom command (only for custom-command action)'
+        required: false
+
+jobs:
+  maintenance:
+    name: Run Maintenance Task
+    runs-on: ubuntu-latest
+    steps:
+      - name: Execute on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: root
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: 22
+          command_timeout: 10m
+          script: |
+            set -e
+            ACTION="${{ github.event.inputs.action }}"
+            TARGET_DATE="${{ github.event.inputs.date }}"
+
+            echo "========================================="
+            echo "Action: $ACTION"
+            echo "Date: $TARGET_DATE"
+            echo "========================================="
+
+            if [ "$ACTION" = "server-status" ]; then
+              echo "=== 内存 ==="
+              free -h
+              echo ""
+              echo "=== PM2进程 ==="
+              pm2 list
+              echo ""
+              echo "=== 磁盘 ==="
+              df -h /
+              echo ""
+              echo "=== MySQL状态 ==="
+              mysql -u root -p'ChangeMe2026!Secure' -e "SHOW STATUS LIKE 'Threads_connected';" 2>/dev/null
+
+            elif [ "$ACTION" = "diagnose-bk-data" ]; then
+              echo "=== 检查涨停数据 ==="
+              mysql -u root -p'ChangeMe2026!Secure' stock_tracker -e "
+                SELECT trade_date, COUNT(*) as stocks
+                FROM limit_up_stocks
+                WHERE trade_date >= DATE_SUB('$TARGET_DATE', INTERVAL 5 DAY)
+                  AND trade_date <= DATE_ADD('$TARGET_DATE', INTERVAL 5 DAY)
+                GROUP BY trade_date
+                ORDER BY trade_date;" 2>/dev/null
+
+              echo ""
+              echo "=== 检查溢价数据 ==="
+              mysql -u root -p'ChangeMe2026!Secure' stock_tracker -e "
+                SELECT base_date, COUNT(*) as records
+                FROM stock_performance
+                WHERE base_date >= DATE_SUB('$TARGET_DATE', INTERVAL 5 DAY)
+                  AND base_date <= DATE_ADD('$TARGET_DATE', INTERVAL 5 DAY)
+                GROUP BY base_date
+                ORDER BY base_date;" 2>/dev/null
+
+              echo ""
+              echo "=== 检查缓存 ==="
+              mysql -u root -p'ChangeMe2026!Secure' stock_tracker -e "
+                SELECT trade_date, LENGTH(data) as data_size
+                FROM seven_days_cache
+                WHERE trade_date >= DATE_SUB('$TARGET_DATE', INTERVAL 5 DAY)
+                  AND trade_date <= DATE_ADD('$TARGET_DATE', INTERVAL 5 DAY)
+                ORDER BY trade_date;" 2>/dev/null
+
+              echo ""
+              echo "=== 测试BK API ==="
+              curl -s "http://localhost:3001/api/stocks?mode=7days&date=$TARGET_DATE" | python3 -c "
+              import sys,json
+              try:
+                d=json.load(sys.stdin)
+                dates=d.get('dates',[])
+                print(f'返回日期数: {len(dates)}')
+                print(f'日期列表: {dates}')
+                data=d.get('data',{})
+                for dt in sorted(data.keys()):
+                  cats=data[dt].get('categories',{})
+                  print(f'{dt}: {len(cats)}个板块')
+              except Exception as e:
+                print(f'解析失败: {e}')
+              " 2>/dev/null
+
+              echo ""
+              echo "=== BK最近日志 ==="
+              pm2 logs member-bk --lines 10 --nostream 2>&1 | grep -v TAILING | tail -10
+
+            elif [ "$ACTION" = "preload-bk-date" ]; then
+              echo "=== 清除${TARGET_DATE}缓存 ==="
+              mysql -u root -p'ChangeMe2026!Secure' stock_tracker -e "
+                DELETE FROM seven_days_cache WHERE trade_date = '$TARGET_DATE';" 2>/dev/null
+              echo "缓存已清除"
+
+              echo ""
+              echo "=== 预加载${TARGET_DATE}数据 ==="
+              RESULT=$(curl -s -X POST "http://localhost:3001/api/cron?action=preload&date=$TARGET_DATE")
+              echo "$RESULT" | python3 -c "
+              import sys,json
+              try:
+                d=json.load(sys.stdin)
+                print(json.dumps(d, indent=2, ensure_ascii=False))
+              except:
+                print(sys.stdin.read())
+              " 2>/dev/null
+
+              echo ""
+              echo "=== 验证数据 ==="
+              sleep 3
+              mysql -u root -p'ChangeMe2026!Secure' stock_tracker -e "
+                SELECT base_date, COUNT(*) as records
+                FROM stock_performance
+                WHERE base_date = '$TARGET_DATE'
+                GROUP BY base_date;" 2>/dev/null
+
+              echo ""
+              echo "=== 重新请求API验证 ==="
+              curl -s "http://localhost:3001/api/stocks?mode=7days&date=$TARGET_DATE" | python3 -c "
+              import sys,json
+              try:
+                d=json.load(sys.stdin)
+                dates=d.get('dates',[])
+                print(f'返回日期数: {len(dates)}')
+                data=d.get('data',{})
+                for dt in sorted(data.keys()):
+                  cats=data[dt].get('categories',{})
+                  fu=data[dt].get('followUpData',{})
+                  print(f'{dt}: {len(cats)}个板块, followUp={len(fu)}个板块')
+              except Exception as e:
+                print(f'解析失败: {e}')
+              " 2>/dev/null
+
+            elif [ "$ACTION" = "custom-command" ]; then
+              CUSTOM_CMD="${{ github.event.inputs.command }}"
+              if [ -n "$CUSTOM_CMD" ]; then
+                echo "=== 执行自定义命令 ==="
+                eval "$CUSTOM_CMD"
+              else
+                echo "未提供自定义命令"
+              fi
+            fi
+
+            echo ""
+            echo "========================================="
+            echo "✅ 维护任务完成"
+            echo "========================================="
