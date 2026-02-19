@@ -554,6 +554,29 @@ jobs:
             PORT=3001 pm2 start $SERVER_PATH --name $APP_NAME --max-memory-restart 200M
             pm2 save
 
+            # 确保分时图快照表结构正确
+            if [ -n "$DB_PASSWORD" ]; then
+              mysql -u root -p"$DB_PASSWORD" stock_tracker -e "
+                CREATE TABLE IF NOT EXISTS minute_chart_snapshots (
+                  id INT AUTO_INCREMENT PRIMARY KEY,
+                  stock_code VARCHAR(10) NOT NULL,
+                  stock_name VARCHAR(50) DEFAULT '',
+                  trade_date DATE NOT NULL,
+                  file_path VARCHAR(255) NOT NULL,
+                  file_size INT DEFAULT 0,
+                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                  UNIQUE KEY unique_snapshot (stock_code, trade_date),
+                  INDEX idx_trade_date (trade_date),
+                  INDEX idx_stock_code (stock_code)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;" 2>/dev/null || true
+              echo "✅ 分时图快照表已就绪"
+            fi
+
+            # 设置分时图快照定时任务（每天15:05执行，收盘后5分钟）
+            SCHEDULER_TOKEN=$(grep SCHEDULER_TOKEN "$DEPLOY_PATH/.env" 2>/dev/null | cut -d= -f2 || echo "bk-snapshot-token-2026")
+            (crontab -l 2>/dev/null | grep -v snapshot-scheduler; echo "5 15 * * 1-5 curl -s -X POST http://localhost:3001/api/snapshot-scheduler -H 'Authorization: Bearer $SCHEDULER_TOKEN' -H 'Content-Type: application/json' >> /var/log/bk-snapshot.log 2>&1") | crontab -
+            echo "✅ 分时图快照定时任务已设置（每交易日15:05）"
+
             rm -f /tmp/bk-build.tar.gz
 
             echo "✅ BK app deployed successfully"

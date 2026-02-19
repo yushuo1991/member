@@ -107,8 +107,10 @@ export class StockDatabase {
         CREATE TABLE IF NOT EXISTS minute_chart_snapshots (
           id INT AUTO_INCREMENT PRIMARY KEY,
           stock_code VARCHAR(10) NOT NULL,
+          stock_name VARCHAR(50) DEFAULT '',
           trade_date DATE NOT NULL,
-          snapshot_data JSON NOT NULL,
+          file_path VARCHAR(255) NOT NULL,
+          file_size INT DEFAULT 0,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           UNIQUE KEY unique_snapshot (stock_code, trade_date),
           INDEX idx_trade_date (trade_date),

@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3001';
     const today = new Date().toISOString().split('T')[0];
 
     console.log(`[分时图快照定时任务] 开始处理日期: ${today}`);
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
 // GET: 获取定时任务状态
 export async function GET(request: NextRequest) {
   try {
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3001';
     
     // 获取今天的快照统计
     // 这里可以添加更多状态检查逻辑
