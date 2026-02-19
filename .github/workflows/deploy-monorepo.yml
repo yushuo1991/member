@@ -573,7 +573,7 @@ jobs:
             fi
 
             # 设置分时图快照定时任务（每天15:05执行，收盘后5分钟）
-            SCHEDULER_TOKEN=$(grep SCHEDULER_TOKEN "$DEPLOY_PATH/.env" 2>/dev/null | cut -d= -f2 || echo "bk-snapshot-token-2026")
+            SCHEDULER_TOKEN=$(grep -m1 SCHEDULER_TOKEN "$DEPLOY_PATH/.env" 2>/dev/null | cut -d= -f2 || echo "default-secure-token")
             (crontab -l 2>/dev/null | grep -v snapshot-scheduler; echo "5 15 * * 1-5 curl -s -X POST http://localhost:3001/api/snapshot-scheduler -H 'Authorization: Bearer $SCHEDULER_TOKEN' -H 'Content-Type: application/json' >> /var/log/bk-snapshot.log 2>&1") | crontab -
             echo "✅ 分时图快照定时任务已设置（每交易日15:05）"
 
