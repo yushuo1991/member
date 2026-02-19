@@ -12,6 +12,10 @@ import EmotionTablesIntro from '@/components/products/EmotionTablesIntro';
 import EmotionLayoutIntro from '@/components/products/EmotionLayoutIntro';
 import BoardAssistantIntro from '@/components/products/BoardAssistantIntro';
 import BKSystemIntro from '@/components/products/BKSystemIntro';
+import XinliIntro from '@/components/products/XinliIntro';
+import FuplanIntro from '@/components/products/FuplanIntro';
+import PeibanyingIntro from '@/components/products/PeibanyingIntro';
+import JiandanFupanIntro from '@/components/products/JiandanFupanIntro';
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -25,7 +29,11 @@ export default function ProductDetailPage() {
     slug === 'qingxubiaoge_2022' ||
     slug === 'qingxubiaoge' ||
     slug === 'fupanbanmian' ||
-    slug === 'bk';
+    slug === 'bk' ||
+    slug === 'xinli' ||
+    slug === 'fuplan' ||
+    slug === 'peibanying' ||
+    slug === 'jiandanfupan';
 
   const [product, setProduct] = useState<Product | null>(null);
   const [productContent, setProductContent] = useState<any>(null);
@@ -292,6 +300,10 @@ export default function ProductDetailPage() {
               )}
               {slug === 'fupanbanmian' && <EmotionLayoutIntro />}
               {slug === 'bk' && <BKSystemIntro />}
+              {slug === 'xinli' && <XinliIntro />}
+              {slug === 'fuplan' && <FuplanIntro />}
+              {slug === 'peibanying' && <PeibanyingIntro />}
+              {slug === 'jiandanfupan' && <JiandanFupanIntro />}
 
               {!isCustomIntroSlug && (
                 <>
