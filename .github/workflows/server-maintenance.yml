@@ -11,6 +11,7 @@ on:
           - diagnose-bk-data
           - check-bk-amounts
           - preload-bk-date
+          - snapshot-test
           - server-status
           - custom-command
       date:
@@ -155,6 +156,44 @@ jobs:
               except Exception as e:
                 print(f'解析失败: {e}')
               " 2>/dev/null
+
+            elif [ "$ACTION" = "snapshot-test" ]; then
+              echo "=== 获取${TARGET_DATE}涨停股票 ==="
+              STOCKS_JSON=$(curl -s "http://localhost:3001/api/stocks?date=$TARGET_DATE&mode=single")
+              echo "$STOCKS_JSON" | python3 -c "
+              import sys,json
+              d=json.load(sys.stdin)
+              cats=d.get('data',{}).get('categories',{})
+              stocks=[{'code':s['code'],'name':s['name']} for sl in cats.values() for s in sl]
+              print(f'找到 {len(stocks)} 只涨停股票')
+              # 只取前20只测试
+              test_stocks=stocks[:20]
+              payload={'date':'$TARGET_DATE','stocks':test_stocks}
+              json.dump(payload,open('/tmp/snap-test.json','w'))
+              print(f'将保存前 {len(test_stocks)} 只的分时图')
+              " 2>/dev/null
+
+              echo ""
+              echo "=== 保存分时图快照 ==="
+              curl -s -X POST http://localhost:3001/api/minute-snapshot -H 'Content-Type: application/json' -d @/tmp/snap-test.json | python3 -c "
+              import sys,json
+              d=json.load(sys.stdin)
+              print(json.dumps(d, indent=2, ensure_ascii=False))
+              " 2>/dev/null
+
+              echo ""
+              echo "=== 验证快照 ==="
+              mysql -u root -p'ChangeMe2026!Secure' stock_tracker -e "
+                SELECT trade_date, COUNT(*) as snapshots, SUM(file_size) as total_bytes
+                FROM minute_chart_snapshots
+                GROUP BY trade_date
+                ORDER BY trade_date DESC
+                LIMIT 5;" 2>/dev/null
+
+              echo ""
+              echo "=== 磁盘占用 ==="
+              du -sh /www/wwwroot/bk-system/data/minute-snapshots/ 2>/dev/null || echo "目录不存在"
+              ls -la /www/wwwroot/bk-system/data/minute-snapshots/$TARGET_DATE/ 2>/dev/null | head -10 || echo "无该日期快照"
 
             elif [ "$ACTION" = "custom-command" ]; then
               CUSTOM_CMD="${{ github.event.inputs.command }}"
