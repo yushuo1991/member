@@ -225,6 +225,21 @@ export default function BKSystemIntro() {
         </div>
       </div>
 
+      {/* 产品截图 */}
+      <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm">
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">产品截图</h2>
+        <div className="space-y-4">
+          {[1, 2, 3, 4, 5, 6].map((n) => (
+            <img
+              key={n}
+              src={`/products/bk/${n}.png`}
+              alt={`板块节奏系统截图 ${n}`}
+              className="w-full rounded-lg shadow-sm"
+            />
+          ))}
+        </div>
+      </div>
+
       {/* 总结 */}
       <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-5 sm:p-6 shadow-sm text-white">
         <h2 className="text-lg sm:text-xl font-semibold mb-3">一句话总结</h2>
