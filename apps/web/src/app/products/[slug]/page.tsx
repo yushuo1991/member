@@ -23,7 +23,7 @@ export default function ProductDetailPage() {
   const slug = params.slug as string;
   const { isAuthenticated } = useAuth();
   const isCustomIntroSlug =
-    slug === 'xuexiquan' ||
+    slug === 'circle' ||
     slug === 'bankuaizhushou' ||
     slug === 'qingxubiaoge_2018' ||
     slug === 'qingxubiaoge_2022' ||
@@ -293,7 +293,7 @@ export default function ProductDetailPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-6">
-              {slug === 'xuexiquan' && <LearningCircleIntro />}
+              {slug === 'circle' && <LearningCircleIntro />}
               {slug === 'bankuaizhushou' && <BoardAssistantIntro />}
               {(slug === 'qingxubiaoge_2018' || slug === 'qingxubiaoge_2022' || slug === 'qingxubiaoge') && (
                 <EmotionTablesIntro />
