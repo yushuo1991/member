@@ -27,12 +27,12 @@ export default function BoardAssistantIntro() {
       {
         icon: '🔄',
         title: '自动同步盘面信息',
-        desc: '自动导入当日盘面亮点、亏钱效应，并生成“今天/1天前/2天前”的板块核心清单。',
+        desc: '自动导入当日盘面亮点、亏钱效应，并生成"今天/1天前/2天前"的板块核心清单。',
       },
       {
         icon: '🧠',
         title: '一键生成自定义板块',
-        desc: '基于“板块核心”涉及板块的3日涨停表现，自动生成自定义板块列表并按重要性排序。',
+        desc: '基于"板块核心"涉及板块的3日涨停表现，自动生成自定义板块列表并按重要性排序。',
       },
       {
         icon: '🏷️',
@@ -77,7 +77,7 @@ export default function BoardAssistantIntro() {
             </div>
             <h2 className="mt-3 text-2xl sm:text-3xl font-bold text-gray-900">宇硕板块助手</h2>
             <p className="mt-2 text-gray-600 leading-relaxed">
-              用更少的时间，把“热点板块—梯队—核心股—强弱信号”整理成可用的盘前清单与盘后复盘素材。
+              用更少的时间，把"热点板块—梯队—核心股—强弱信号"整理成可用的盘前清单与盘后复盘素材。
             </p>
           </div>
 
@@ -154,41 +154,10 @@ export default function BoardAssistantIntro() {
         </div>
       </section>
 
-      <section className="mt-8 bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-900">用户评价</h3>
-        <div className="mt-4 grid gap-4">
-          {[
-            {
-              name: '效率控',
-              duration: '使用5个月',
-              content: '以前每天手动整理板块要花一个多小时，现在用板块助手几分钟就搞定了。自动生成的自定义板块列表很实用，省去了大量重复劳动。',
-            },
-            {
-              name: '通达信深度用户',
-              duration: '使用8个月',
-              content: '强弱信号标记这个功能很贴心，当日强势和历史强势用颜色区分，复盘的时候一眼就能看出哪些票值得关注。',
-            },
-            {
-              name: '盘前准备党',
-              duration: '使用3个月',
-              content: '每天开盘前运行一下，板块核心清单就出来了，盘前准备变得很轻松。自动清理功能也不错，不用担心板块越积越多。',
-            },
-          ].map((review) => (
-            <div key={review.name} className="rounded-xl border border-gray-100 bg-gray-50 p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="font-medium text-gray-900">{review.name}</span>
-                <span className="text-xs text-gray-500">{review.duration}</span>
-              </div>
-              <p className="text-sm text-gray-700 leading-relaxed">{review.content}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
       <section className="mt-8 bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 text-white">
         <h3 className="text-lg font-semibold">适用人群</h3>
         <p className="mt-2 text-sm text-white/80 leading-relaxed">
-          适合“想把板块与核心股体系化”“盘前需要快速清单”“盘后想稳定复盘节奏”的短线交易者。
+          适合想把板块与核心股体系化、盘前需要快速清单、盘后想稳定复盘节奏的短线交易者。
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           {['盘前整理', '板块梯队', '核心股清单', '强弱信号', '自动清理'].map((t) => (
@@ -201,7 +170,37 @@ export default function BoardAssistantIntro() {
           ))}
         </div>
       </section>
+
+      <section className="mt-8 bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+        <h3 className="text-lg font-semibold text-gray-900">用户评价</h3>
+        <div className="mt-4 grid gap-4">
+          {[
+            {
+              name: '学员A',
+              duration: '使用5个月',
+              content: '以前每天手动整理板块要花一个多小时，现在用板块助手几分钟就搞定了。自动生成的自定义板块列表确实实用，省了大量重复劳动。',
+            },
+            {
+              name: '学员B',
+              duration: '使用8个月',
+              content: '强弱信号标记这个功能挺好的，当日强势和历史强势用颜色区分，复盘的时候一眼就能看出哪些票值得继续关注。',
+            },
+            {
+              name: '学员C',
+              duration: '使用3个月',
+              content: '每天开盘前运行一下，板块核心清单就出来了，盘前准备轻松了不少。自动清理功能也不错，不用担心板块越积越多。',
+            },
+          ].map((review) => (
+            <div key={review.name} className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="font-medium text-gray-900">{review.name}</span>
+                <span className="text-xs text-gray-500">{review.duration}</span>
+              </div>
+              <p className="text-sm text-gray-700 leading-relaxed">{review.content}</p>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   )
 }
-

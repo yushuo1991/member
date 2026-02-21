@@ -169,14 +169,23 @@ export default function XinliIntro() {
         </div>
       </div>
 
+      {/* 总结 */}
+      <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-5 sm:p-6 shadow-sm text-white">
+        <h2 className="text-lg sm:text-xl font-semibold mb-3">一句话总结</h2>
+        <p className="text-white/90 leading-relaxed">
+          交易心理测评不是算命，而是一面镜子——帮你看清那些在盘中反复让你亏钱的心理模式。
+          认识问题是解决问题的第一步，80道场景题，给你一份属于自己的交易心理画像。
+        </p>
+      </div>
+
       {/* 用户评价 */}
       <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm">
         <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3">用户评价</h2>
         <div className="grid grid-cols-1 gap-4">
           {[
-            { name: '短线交易者', duration: '使用3个月', content: '做完测评才发现自己最大的问题是"报复性交易"——亏了就想马上赚回来，结果越亏越多。现在每次冲动前都会想起测评结果，冷静了很多。' },
-            { name: '波段选手', duration: '使用5个月', content: '我一直觉得自己心态很好，测评结果显示我在"确认偏误"上得分很高——只看支持自己判断的信息。意识到这点后，开始刻意寻找反面证据。' },
-            { name: '量化转主观', duration: '使用2个月', content: '从量化转到主观交易后一直不适应，测评帮我找到了问题：我对"不确定性"的容忍度很低，习惯了数据驱动后很难接受模糊决策。' },
+            { name: '学员A', duration: '使用3个月', content: '做完测评才发现自己最大的问题是"报复性交易"——亏了就想马上赚回来，结果越亏越多。现在每次有冲动的时候都会想起测评结果，冷静了不少。' },
+            { name: '学员B', duration: '使用5个月', content: '我一直觉得自己心态挺好的，测评结果显示我在"确认偏误"上得分很高——只看支持自己判断的信息。意识到这点后开始刻意寻找反面证据，确实有改善。' },
+            { name: '学员C', duration: '使用2个月', content: '从量化转到主观交易后一直不适应，测评帮我找到了问题：我对不确定性的容忍度很低，习惯了数据驱动后很难接受模糊决策。知道问题在哪就好办了。' },
           ].map((review) => (
             <div key={review.name} className="rounded-xl border border-gray-100 bg-gray-50 p-4">
               <div className="flex items-center gap-2 mb-2">
@@ -187,15 +196,6 @@ export default function XinliIntro() {
             </div>
           ))}
         </div>
-      </div>
-
-      {/* 总结 */}
-      <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-5 sm:p-6 shadow-sm text-white">
-        <h2 className="text-lg sm:text-xl font-semibold mb-3">一句话总结</h2>
-        <p className="text-white/90 leading-relaxed">
-          交易心理测评不是算命，而是一面镜子——帮你看清那些在盘中反复让你亏钱的心理模式。
-          认识问题是解决问题的第一步，80道场景题，给你一份属于自己的交易心理画像。
-        </p>
       </div>
     </div>
   )

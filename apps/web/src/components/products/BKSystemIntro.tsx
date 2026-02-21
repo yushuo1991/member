@@ -193,38 +193,6 @@ export default function BKSystemIntro() {
         </div>
       </div>
 
-      {/* 用户评价 */}
-      <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm">
-        <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3">用户评价</h2>
-        <div className="grid grid-cols-1 gap-4">
-          {[
-            {
-              name: '板块轮动研究者',
-              duration: '使用6个月',
-              content: '以前看板块就是凭感觉，现在有了这个系统，板块之间的强弱对比一目了然。特别是后续5天溢价这个功能，对判断板块延续性帮助很大。',
-            },
-            {
-              name: '短线游击手',
-              duration: '使用4个月',
-              content: '手机端适配做得不错，通勤路上也能快速看一眼板块情况。7天涨停排行让我能快速定位最近的热点方向，省了不少时间。',
-            },
-            {
-              name: '情绪周期玩家',
-              duration: '使用8个月',
-              content: '这个系统最大的价值是把板块节奏可视化了。以前只能靠脑子记，现在数据都摆在那里，板块从分歧到一致的过程看得很清楚。',
-            },
-          ].map((review) => (
-            <div key={review.name} className="rounded-xl border border-gray-100 bg-gray-50 p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="font-medium text-gray-900">{review.name}</span>
-                <span className="text-xs text-gray-500">{review.duration}</span>
-              </div>
-              <p className="text-sm text-gray-700 leading-relaxed">{review.content}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* 产品截图 */}
       <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm">
         <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">产品截图</h2>
@@ -247,6 +215,38 @@ export default function BKSystemIntro() {
           板块节奏系统通过数据记录，把板块之间的联系、板块自身的发展、以及发展后的联系具象化呈现，
           让你用联系和发展的视角看市场，而不是凭主观臆断。工具辅助判断，但核心还是你对市场的理解。
         </p>
+      </div>
+
+      {/* 用户评价 */}
+      <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm">
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3">用户评价</h2>
+        <div className="grid grid-cols-1 gap-4">
+          {[
+            {
+              name: '学员A',
+              duration: '使用6个月',
+              content: '之前看板块全凭感觉，用了这个系统之后才发现板块之间的强弱对比可以这么直观。后续5天溢价那个功能我每天都看，对判断板块能不能延续帮助挺大的。',
+            },
+            {
+              name: '学员B',
+              duration: '使用4个月',
+              content: '手机上也能用这点很方便，通勤的时候刷一下就知道最近哪些板块在活跃。7天涨停排行省了我不少整理时间。',
+            },
+            {
+              name: '学员C',
+              duration: '使用8个月',
+              content: '对我来说最大的价值是把板块节奏用数据记下来了。以前全靠脑子记，过两天就忘了，现在回头翻数据能很清楚地看到板块从分歧到一致的过程。',
+            },
+          ].map((review) => (
+            <div key={review.name} className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="font-medium text-gray-900">{review.name}</span>
+                <span className="text-xs text-gray-500">{review.duration}</span>
+              </div>
+              <p className="text-sm text-gray-700 leading-relaxed">{review.content}</p>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )

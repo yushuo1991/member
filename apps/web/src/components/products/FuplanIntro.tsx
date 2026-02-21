@@ -148,14 +148,23 @@ export default function FuplanIntro() {
         </div>
       </div>
 
+      {/* 总结 */}
+      <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-5 sm:p-6 shadow-sm text-white">
+        <h2 className="text-lg sm:text-xl font-semibold mb-3">一句话总结</h2>
+        <p className="text-white/90 leading-relaxed">
+          复盘系统把"每天看看盘"变成一套有流程、有记录、有数据的市场梳理体系。
+          日积月累，你的复盘记录就是一本属于自己的交易图鉴，每一页都是真实的市场经验。
+        </p>
+      </div>
+
       {/* 用户评价 */}
       <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm">
         <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3">用户评价</h2>
         <div className="grid grid-cols-1 gap-4">
           {[
-            { name: '日内交易者', duration: '使用4个月', content: '以前复盘就是翻翻涨停板，现在有了结构化流程，每天20分钟就能把市场梳理清楚。最有用的是情绪记录，回头看才发现自己亏钱的日子情绪评分都很低。' },
-            { name: '趋势交易者', duration: '使用6个月', content: '统计图表功能很实用，我发现自己周一的胜率明显低于其他日子，调整后整体收益提升了不少。数据不会骗人。' },
-            { name: '新手学员', duration: '使用2个月', content: '刚开始觉得每天复盘很麻烦，坚持一个月后发现对市场的感觉完全不一样了。模板化的流程让我不会遗漏重要信息。' },
+            { name: '学员A', duration: '使用4个月', content: '以前复盘就是翻翻涨停板，现在有了结构化流程，每天20分钟就能把市场梳理清楚。最有用的是情绪记录，回头看才发现自己亏钱的日子情绪评分都很低。' },
+            { name: '学员B', duration: '使用6个月', content: '统计图表功能挺实用的，我发现自己周一的胜率明显低于其他日子，调整之后整体收益有提升。数据摆在那里，比自己凭感觉靠谱。' },
+            { name: '学员C', duration: '使用2个月', content: '刚开始觉得每天复盘挺麻烦的，坚持一个月后发现对市场的感觉完全不一样了。模板化的流程让我不会遗漏重要信息，慢慢就成习惯了。' },
           ].map((review) => (
             <div key={review.name} className="rounded-xl border border-gray-100 bg-gray-50 p-4">
               <div className="flex items-center gap-2 mb-2">
@@ -166,15 +175,6 @@ export default function FuplanIntro() {
             </div>
           ))}
         </div>
-      </div>
-
-      {/* 总结 */}
-      <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-5 sm:p-6 shadow-sm text-white">
-        <h2 className="text-lg sm:text-xl font-semibold mb-3">一句话总结</h2>
-        <p className="text-white/90 leading-relaxed">
-          复盘系统把"每天看看盘"变成一套有流程、有记录、有数据的市场梳理体系。
-          日积月累，你的复盘记录就是一本属于自己的交易图鉴，每一页都是真实的市场经验。
-        </p>
       </div>
     </div>
   )

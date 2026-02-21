@@ -163,14 +163,23 @@ export default function PeibanyingIntro() {
         </div>
       </div>
 
+      {/* 总结 */}
+      <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-5 sm:p-6 shadow-sm text-white">
+        <h2 className="text-lg sm:text-xl font-semibold mb-3">一句话总结</h2>
+        <p className="text-white/90 leading-relaxed">
+          陪伴营是一个完整的交易成长体系——全部产品永久解锁，按阶段循序渐进，
+          在实战中用工具辅助学习、复盘、迭代。不定期开放，适合愿意长期投入的交易者。
+        </p>
+      </div>
+
       {/* 用户评价 */}
       <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm">
         <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3">用户评价</h2>
         <div className="grid grid-cols-1 gap-4">
           {[
-            { name: '第一期学员', duration: '加入1年', content: '陪伴营最大的价值不是某个单独的工具，而是把所有工具串起来形成体系。心理测评让我认识自己，复盘系统帮我记录成长，板块系统辅助分析——这些组合在一起的效果远大于单独使用。' },
-            { name: '转型交易者', duration: '加入8个月', content: '从基金转到短线，一开始完全不知道怎么看盘。陪伴营的学习路径很清晰，先建立认知再学工具，不会一上来就被信息淹没。永久权限也让我可以按自己的节奏学习。' },
-            { name: '兼职交易者', duration: '加入6个月', content: '工作忙没法全职盯盘，但每天晚上花半小时用复盘系统梳理一下市场，周末用板块系统看看节奏，慢慢也建立起了自己的市场感觉。永久权限没有时间压力，很适合我这种节奏。' },
+            { name: '学员A', duration: '加入1年', content: '陪伴营最大的价值不是某个单独的工具，而是把所有工具串起来形成体系。心理测评让我认识自己，复盘系统帮我记录成长，板块系统辅助分析——组合在一起的效果比单独用强很多。' },
+            { name: '学员B', duration: '加入8个月', content: '从基金转到短线，一开始完全不知道怎么看盘。陪伴营的学习路径比较清晰，先建立认知再学工具，不会一上来就被信息淹没。永久权限也让我可以按自己的节奏来。' },
+            { name: '学员C', duration: '加入6个月', content: '工作忙没法全职盯盘，但每天晚上花半小时用复盘系统梳理一下市场，周末用板块系统看看节奏，慢慢也建立起了自己的市场感觉。没有时间压力这点很重要。' },
           ].map((review) => (
             <div key={review.name} className="rounded-xl border border-gray-100 bg-gray-50 p-4">
               <div className="flex items-center gap-2 mb-2">
@@ -181,15 +190,6 @@ export default function PeibanyingIntro() {
             </div>
           ))}
         </div>
-      </div>
-
-      {/* 总结 */}
-      <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-5 sm:p-6 shadow-sm text-white">
-        <h2 className="text-lg sm:text-xl font-semibold mb-3">一句话总结</h2>
-        <p className="text-white/90 leading-relaxed">
-          陪伴营是一个完整的交易成长体系——全部产品永久解锁，按阶段循序渐进，
-          在实战中用工具辅助学习、复盘、迭代。不定期开放，适合愿意长期投入的交易者。
-        </p>
       </div>
     </div>
   )

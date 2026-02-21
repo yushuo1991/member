@@ -139,6 +139,26 @@ export default function JiandanFupanIntro() {
           核心信息一网打尽，适合每天花一分钟快速了解市场全貌的交易者。
         </p>
       </div>
+
+      {/* 用户评价 */}
+      <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm">
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3">用户评价</h2>
+        <div className="grid grid-cols-1 gap-4">
+          {[
+            { name: '学员A', duration: '使用3个月', content: '下班后打开看一眼就知道今天市场什么情况，涨停多少、哪些板块热，一分钟搞定。对我这种没时间深度复盘的人来说刚刚好。' },
+            { name: '学员B', duration: '使用5个月', content: '之前用的复盘工具功能太多反而用不起来，简单复盘就是纯数据罗列，没有多余的东西，每天看一眼就够了。' },
+            { name: '学员C', duration: '使用2个月', content: '手机上看很方便，通勤的时候刷一下当天数据，周末再翻翻这周的变化，慢慢对市场节奏有感觉了。200块买断挺值的。' },
+          ].map((review) => (
+            <div key={review.name} className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="font-medium text-gray-900">{review.name}</span>
+                <span className="text-xs text-gray-500">{review.duration}</span>
+              </div>
+              <p className="text-sm text-gray-700 leading-relaxed">{review.content}</p>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

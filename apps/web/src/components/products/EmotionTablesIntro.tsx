@@ -180,19 +180,19 @@ export default function EmotionTablesIntro() {
         <div className="grid grid-cols-1 gap-4">
           {[
             {
-              name: '复盘达人',
+              name: '学员A',
               duration: '使用6个月',
-              content: '以前复盘就是随便看看涨停板，现在有了这套表格，每天花20分钟就能把市场情绪摸清楚。特别是连板溢价那张表，对判断次日该不该追高帮助很大。',
+              content: '以前复盘就是随便翻翻涨停板，有了这套表格之后每天花20分钟就能把市场情绪理清楚。连板溢价那张表我用得最多，对判断次日该不该追高帮助挺大的。',
             },
             {
-              name: '情绪周期研究者',
+              name: '学员B',
               duration: '使用1年',
               content: '表格设计得很用心，从势能到动能，从高度到板块节奏，逻辑很清晰。我现在基本每天都会看A1和A2表，已经成习惯了。',
             },
             {
-              name: '短线新手',
+              name: '学员C',
               duration: '使用3个月',
-              content: '刚开始看不太懂，后来看了宇硕的解读视频才明白每张表的用法。现在慢慢能看出一些规律了，比如黑色块出现确实要小心。',
+              content: '刚开始看不太懂，后来看了配套的解读视频才明白每张表的用法。现在慢慢能看出一些规律了，比如黑色块出现的时候确实要小心。',
             },
           ].map((review) => (
             <div key={review.name} className="rounded-xl border border-gray-100 bg-gray-50 p-4">
