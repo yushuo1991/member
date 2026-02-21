@@ -7,24 +7,28 @@ const VIDEO_LINK = 'https://mp.weixin.qq.com/s/68M2Rtno3Trh5r02WrUH4A?mpshare=1&
 type LinkItem = { label: string; href: string }
 
 export default function EmotionLayoutIntro() {
-  const screenshots = useMemo(
+  const screenshotsFupan = useMemo(
     () => [
-      'https://image.taoguba.com.cn/img/2024/01/21/4puk0so56fez.png_760w.png',
-      'https://image.taoguba.com.cn/img/2024/01/21/5d6g2ef9kezy.png_760w.png',
-      'https://image.taoguba.com.cn/img/2024/01/21/qm1qj8cii6qz.png_760w.png',
-      'https://image.taoguba.com.cn/img/2024/01/21/0sku6fvfpzy3.png_760w.png',
-      'https://image.taoguba.com.cn/img/2024/01/21/8qz1hhcbfmmz.png_760w.png',
-      'https://image.taoguba.com.cn/img/2024/01/21/4a5q0ees3zy3.png_760w.png',
-      'https://image.taoguba.com.cn/img/2024/01/21/ll17dy2ba84z.png_760w.png',
-      'https://image.taoguba.com.cn/img/2024/01/21/nbwlxo9m7x5z.png_760w.png',
-      'https://image.taoguba.com.cn/img/2024/01/21/fy2ue8uz6zy3.png_760w.png',
-      'https://image.taoguba.com.cn/img/2024/01/21/2em033u1appz.png_760w.png',
-      'https://image.taoguba.com.cn/img/2024/01/21/omvkxyirfidz.png_760w.png',
-      'https://image.taoguba.com.cn/img/2024/01/21/pvretuaimh2z.png_760w.png',
-      'https://image.taoguba.com.cn/img/2024/01/21/j2f7cc86uzy3.png_760w.png',
-      'https://image.taoguba.com.cn/img/2024/01/21/oropszcd89qz.png_760w.png',
-      'https://image.taoguba.com.cn/img/2024/01/21/3tf61136zy33.png_760w.png',
-      'https://image.taoguba.com.cn/img/2024/01/21/7dy7pqeilqaz.png_760w.png',
+      { src: '/products/fupanbanmian/F0-新闻.png', label: '新闻消息' },
+      { src: '/products/fupanbanmian/F1-题材解读.png', label: '题材解读' },
+      { src: '/products/fupanbanmian/F02-行情回顾.png', label: '行情回顾' },
+      { src: '/products/fupanbanmian/F03-大盘复盘.png', label: '大盘复盘' },
+      { src: '/products/fupanbanmian/F04-风格复盘.png', label: '风格复盘' },
+      { src: '/products/fupanbanmian/F05-情绪复盘.png', label: '情绪复盘' },
+      { src: '/products/fupanbanmian/F06-资金版面.png', label: '资金版面' },
+      { src: '/products/fupanbanmian/F07-板块信息.png', label: '板块信息' },
+      { src: '/products/fupanbanmian/F08-梯队.png', label: '梯队' },
+      { src: '/products/fupanbanmian/F09-个股分时.png', label: '个股分时' },
+    ],
+    []
+  )
+
+  const screenshotsKanpan = useMemo(
+    () => [
+      { src: '/products/fupanbanmian/K01-情绪.png', label: '情绪' },
+      { src: '/products/fupanbanmian/K02-看盘.png', label: '盘面' },
+      { src: '/products/fupanbanmian/K03-核心板块.png', label: '核心板块' },
+      { src: '/products/fupanbanmian/YS_板块.png', label: '板块总览' },
     ],
     []
   )
@@ -54,9 +58,12 @@ export default function EmotionLayoutIntro() {
 
         <h2 className="text-lg sm:text-xl font-semibold text-gray-900">全面信息捕捉：让复盘与看盘更高效</h2>
         <p className="mt-3 text-gray-700 leading-relaxed">
-          版面只是交易体系与交易思路的"可视化呈现"。它的目标不是增加信息，而是把你真正需要的关键信息固定在最顺手的位置，
-          让你在复盘/看盘过程中快速捕捉重点，把节省下来的精力用于理解市场与执行。
+          第三次大版本更新，免安装使用。新版版面从两个层级系统构建，新增分时线，不仅能够高效看盘复盘，也蕴含了操盘思路。
         </p>
+        <div className="mt-3 text-sm text-gray-700 space-y-1">
+          <p><span className="font-medium text-gray-900">复盘：</span>新闻消息 → 题材解读 → 大盘 → 风格 → 情绪 → 板块 → 个股</p>
+          <p><span className="font-medium text-gray-900">看盘：</span>情绪 → 盘面 → 板块</p>
+        </div>
 
         <div className="mt-4">
           <a
@@ -113,19 +120,39 @@ export default function EmotionLayoutIntro() {
       </div>
 
       <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm">
-        <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3">版面截图（第一版）</h2>
-        <p className="text-sm text-gray-600 mb-4">下方为版面截图，理解思路后可按图复刻；部分为特定场景才会用到。</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {screenshots.map((src) => (
-            <img
-              key={src}
-              src={src}
-              alt="通达信版面截图"
-              loading="lazy"
-              decoding="async"
-              className="w-full rounded-2xl border border-gray-100 shadow-sm"
-              referrerPolicy="no-referrer"
-            />
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3">复盘版面</h2>
+        <p className="text-sm text-gray-600 mb-4">新闻消息 → 题材解读 → 大盘 → 风格 → 情绪 → 板块 → 个股，完整复盘流程。</p>
+        <div className="space-y-4">
+          {screenshotsFupan.map((item) => (
+            <div key={item.src}>
+              <p className="text-sm font-medium text-gray-700 mb-2">{item.label}</p>
+              <img
+                src={item.src}
+                alt={`复盘版面 - ${item.label}`}
+                loading="lazy"
+                decoding="async"
+                className="w-full rounded-2xl border border-gray-100 shadow-sm"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm">
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3">看盘版面</h2>
+        <p className="text-sm text-gray-600 mb-4">情绪 → 盘面 → 板块，盘中快速捕捉关键信息。</p>
+        <div className="space-y-4">
+          {screenshotsKanpan.map((item) => (
+            <div key={item.src}>
+              <p className="text-sm font-medium text-gray-700 mb-2">{item.label}</p>
+              <img
+                src={item.src}
+                alt={`看盘版面 - ${item.label}`}
+                loading="lazy"
+                decoding="async"
+                className="w-full rounded-2xl border border-gray-100 shadow-sm"
+              />
+            </div>
           ))}
         </div>
       </div>
